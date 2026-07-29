@@ -88,8 +88,8 @@ Dokumen ini dibaca secara otomatis oleh AI System Instructions pada setiap sesi 
 
 - **Fitur Utama Selalu Gratis**: Sinkronisasi Awan, Tagging & Rangkuman AI, serta Keamanan PIN Akses tidak boleh dibatasi untuk pengguna Free.
 - **Batasan Fitur Pro (Opsional)**:
-  1. **Komentar Pengumuman**: Menulis komentar pada pengumuman khusus untuk akun Pro/Admin.
-  2. **Pesan Pribadi Admin**: Mengirim pesan pribadi direct ke Admin khusus untuk akun Pro/Admin.
+  1. **Komentar Pengumuman**: Akun Free dibatasi maksimal **1 kali komentar per hari** di pengumuman (kuota di-reset setiap hari), sedangkan akun Pro/Admin tanpa batas.
+  2. **Pesan Pribadi Admin**: Akun Free dibatasi maksimal **3 kali kirim pesan** pribadi ke Admin per hari (kuota di-reset setiap hari), sedangkan akun Pro/Admin tanpa batas.
   3. **Generate Ulang AI**: Akun Free dibatasi maksimal **2 kali per hari** (kuota di-reset setiap hari), sedangkan akun Pro/Admin tanpa batas.
   4. **Kunci Folder**: Akun Free dibatasi maksimal **1 folder terkunci**, sedangkan akun Pro/Admin dapat mengunci folder tanpa batas.
 

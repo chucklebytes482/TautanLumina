@@ -93,29 +93,29 @@ export const MoveKeypadModal: React.FC<MoveKeypadModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl max-w-xs w-full p-5 shadow-2xl border border-[#e2ddd5] relative select-none">
+      <div className="bg-white dark:bg-neutral-900 rounded-2xl max-w-xs w-full p-5 shadow-2xl border border-[#e2ddd5] dark:border-neutral-800 relative select-none">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-neutral-100 text-neutral-500 hover:text-neutral-800 transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors"
         >
           <X size={18} />
         </button>
 
         {/* Header */}
         <div className="text-center mb-4">
-          <div className="w-11 h-11 bg-[#fff0eb] text-[#ff4f00] rounded-xl flex items-center justify-center mx-auto mb-2 border border-[#ff4f00]/20">
+          <div className="w-11 h-11 bg-[#fff0eb] dark:bg-[#ff4f00]/15 text-[#ff4f00] rounded-xl flex items-center justify-center mx-auto mb-2 border border-[#ff4f00]/20 dark:border-[#ff4f00]/35">
             <Move size={20} />
           </div>
-          <h3 className="text-base font-bold text-neutral-900">
+          <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
             {t('action.moveToNum') || 'Pindahkan ke Nomor...'}
           </h3>
           {itemTitle && (
-            <p className="text-xs text-neutral-500 truncate mt-0.5 max-w-[200px] mx-auto">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate mt-0.5 max-w-[200px] mx-auto">
               {itemTitle}
             </p>
           )}
-          <p className="text-xs text-neutral-600 mt-1 font-medium">
+          <p className="text-xs text-neutral-600 dark:text-neutral-300 mt-1 font-medium">
             {t('move.determinePosition').replace('{max}', maxNum.toString())}
           </p>
         </div>
@@ -126,14 +126,10 @@ export const MoveKeypadModal: React.FC<MoveKeypadModalProps> = ({
             isShaking ? 'animate-shake' : ''
           }`}
         >
-          <div className="w-full h-14 bg-[#faf8f5] border-2 border-[#e2ddd5] focus-within:border-[#ff4f00] focus-within:ring-2 focus-within:ring-[#ff4f00]/20 rounded-xl flex items-center justify-center text-2xl font-bold text-neutral-900 shadow-inner px-4 tracking-wider">
+          <div className="w-full h-14 bg-[#faf8f5] dark:bg-neutral-800 border-2 border-[#e2ddd5] dark:border-neutral-700 focus-within:border-[#ff4f00] focus-within:ring-2 focus-within:ring-[#ff4f00]/20 rounded-xl flex items-center justify-center text-2xl font-bold text-neutral-900 dark:text-white shadow-inner px-4 tracking-wider">
             {valueStr ? (
               <span className="text-[#ff4f00] font-mono">{valueStr}</span>
-            ) : (
-              <span className="text-neutral-300 font-normal text-sm font-sans">
-                {t('move.example').replace('{max}', maxNum.toString())}
-              </span>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -154,10 +150,10 @@ export const MoveKeypadModal: React.FC<MoveKeypadModalProps> = ({
               onClick={() => handleKeyPress(k)}
               className={`h-11 rounded-xl text-lg font-bold transition-all active:scale-95 flex items-center justify-center cursor-pointer ${
                 k === 'C'
-                  ? 'bg-neutral-100 hover:bg-neutral-200 text-neutral-600 text-xs font-semibold'
+                  ? 'bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300 text-xs font-semibold'
                   : k === 'BACK'
-                  ? 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'
-                  : 'bg-[#faf8f5] hover:bg-[#fff0eb] hover:text-[#ff4f00] hover:border-[#ff4f00]/40 border border-[#e2ddd5] text-neutral-800 shadow-2xs'
+                  ? 'bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200'
+                  : 'bg-[#faf8f5] dark:bg-neutral-800 hover:bg-[#fff0eb] dark:hover:bg-[#ff4f00]/20 hover:text-[#ff4f00] dark:hover:text-[#ff4f00] hover:border-[#ff4f00]/40 border border-[#e2ddd5] dark:border-neutral-700 text-neutral-800 dark:text-neutral-100 shadow-2xs'
               }`}
             >
               {k === 'BACK' ? <Delete size={18} /> : k}
@@ -170,7 +166,7 @@ export const MoveKeypadModal: React.FC<MoveKeypadModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-2.5 px-3 border border-[#e2ddd5] rounded-xl text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+            className="flex-1 py-2.5 px-3 border border-[#e2ddd5] dark:border-neutral-700 rounded-xl text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
           >
             {t('action.cancel') || 'Batal'}
           </button>
@@ -178,7 +174,7 @@ export const MoveKeypadModal: React.FC<MoveKeypadModalProps> = ({
             type="button"
             onClick={handleSubmit}
             disabled={!valueStr}
-            className="flex-1 py-2.5 px-3 bg-[#ff4f00] hover:bg-[#e04500] disabled:bg-neutral-300 text-white rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5"
+            className="flex-1 py-2.5 px-3 bg-[#ff4f00] hover:bg-[#e04500] disabled:bg-neutral-300 dark:disabled:bg-neutral-800 disabled:text-neutral-500 text-white rounded-xl text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
           >
             <Check size={16} />
             <span>{t('action.move') || 'Pindahkan'}</span>

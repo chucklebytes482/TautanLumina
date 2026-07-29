@@ -189,6 +189,10 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
   };
 
   const startRecording = async () => {
+    if (!isAdmin && !isProOrAdmin && getUserPrivateMsgCountToday() >= 3) {
+      alert(t('toast.proLimitPrivateMsg') || 'Akun Free dibatasi maksimal 3 kali kirim pesan pribadi per hari ke Admin. Tingkatkan ke Pro untuk pesan tanpa batas.');
+      return;
+    }
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         alert(t.micNotSupported);
@@ -382,6 +386,10 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
   };
 
   const sendAudioMessage = async (voiceContent: string) => {
+    if (!isAdmin && !isProOrAdmin && getUserPrivateMsgCountToday() >= 3) {
+      alert(t('toast.proLimitPrivateMsg') || 'Akun Free dibatasi maksimal 3 kali kirim pesan pribadi per hari ke Admin. Tingkatkan ke Pro untuk pesan tanpa batas.');
+      return;
+    }
     setSendingMessage(true);
     const targetReceiver = isAdmin ? (selectedChatUser || 'user@lumina.app') : ADMIN_EMAIL;
     const msgObj: PrivateMessageItem = {
@@ -553,13 +561,16 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
       );
     }
 
-    if (!isAdmin && !isProOrAdmin) {
+    if (!isAdmin && !isProOrAdmin && getUserPrivateMsgCountToday() >= 3) {
       return (
         <div className="p-3.5 bg-orange-50 border-t border-orange-200 text-center space-y-1.5 shrink-0">
           <div className="flex items-center justify-center gap-1.5 font-bold text-xs text-[#FF4F00]">
             <Crown size={16} />
-            <span>{t('toast.proLimitPrivateMsg') || 'Kirim pesan pribadi ke Admin adalah fitur khusus Pengguna Pro.'}</span>
+            <span>{t('toast.proLimitPrivateMsg') || 'Akun Free dibatasi maksimal 3 kali kirim pesan pribadi per hari ke Admin.'}</span>
           </div>
+          <p className="text-[11px] text-neutral-500 font-medium">
+            (Batas 3/3 pesan per hari terpakai)
+          </p>
         </div>
       );
     }
@@ -582,7 +593,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder={placeholder}
+          placeholder={!isAdmin && !isProOrAdmin ? `${placeholder} (${getUserPrivateMsgCountToday()}/3 per hari)` : placeholder}
           className="flex-1 px-3.5 py-2.5 text-sm rounded-xl border border-[#e2ddd5] focus:outline-none focus:ring-2 focus:ring-[#FF4F00] bg-[#faf8f5]"
         />
         <button
@@ -643,6 +654,47 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
 
   const isAdmin = userEmail.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim();
   const isProOrAdmin = isAdmin || proStatus === 'pro';
+
+  // Helper to check if a timestamp is from today
+  const isToday = (ts: number | string) => {
+    if (!ts) return false;
+    const d = new Date(ts);
+    const now = new Date();
+    return (
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate()
+    );
+  };
+
+  // Helper to count total comments written TODAY by current user across announcements
+  const getUserCommentCountToday = () => {
+    let count = 0;
+    const user = userEmail.toLowerCase().trim();
+    if (!user) return 0;
+    announcements.forEach((ann) => {
+      if (ann.comments && Array.isArray(ann.comments)) {
+        ann.comments.forEach((c) => {
+          if (c.senderEmail?.toLowerCase().trim() === user && isToday(c.createdAt)) count++;
+          if (c.replies && Array.isArray(c.replies)) {
+            c.replies.forEach((r) => {
+              if (r.senderEmail?.toLowerCase().trim() === user && isToday(r.createdAt)) count++;
+            });
+          }
+        });
+      }
+    });
+    return count;
+  };
+
+  // Helper to count total private messages sent TODAY by current user to Admin
+  const getUserPrivateMsgCountToday = () => {
+    const user = userEmail.toLowerCase().trim();
+    if (!user) return 0;
+    return messages.filter(
+      (m) => m.senderEmail?.toLowerCase().trim() === user && isToday(m.createdAt)
+    ).length;
+  };
 
   // Scroll chat to bottom
   const scrollToBottom = () => {
@@ -770,8 +822,8 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
   const handleAddComment = async (announcementId: string, content: string, parentId?: string | null) => {
     if (!content.trim()) return;
 
-    if (!isProOrAdmin) {
-      alert(t('toast.proLimitComment') || 'Komentar pada pengumuman adalah fitur khusus Pengguna Pro. Tingkatkan ke Pro untuk berdiskusi.');
+    if (!isProOrAdmin && getUserCommentCountToday() >= 1) {
+      alert(t('toast.proLimitComment') || 'Akun Free dibatasi maksimal 1 kali komentar per hari di pengumuman. Tingkatkan ke Pro untuk komentar tanpa batas.');
       return;
     }
 
@@ -986,8 +1038,8 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
     e.preventDefault();
     if (!newMessage.trim()) return;
 
-    if (!isAdmin && !isProOrAdmin) {
-      alert(t('toast.proLimitPrivateMsg') || 'Kirim pesan pribadi ke Admin adalah fitur khusus Pengguna Pro. Tingkatkan ke Pro untuk mengobrol.');
+    if (!isAdmin && !isProOrAdmin && getUserPrivateMsgCountToday() >= 3) {
+      alert(t('toast.proLimitPrivateMsg') || 'Akun Free dibatasi maksimal 3 kali kirim pesan pribadi per hari ke Admin. Tingkatkan ke Pro untuk pesan tanpa batas.');
       return;
     }
 
@@ -1146,10 +1198,10 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#faf8f5] text-neutral-900 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#faf8f5] dark:bg-[#161618] text-neutral-900 dark:text-neutral-100 animate-in fade-in duration-200">
       {/* Compact Top Header with Segmented Tabs & Actions */}
-      <div className="p-2 bg-[#f2eee9] border-b border-[#e2ddd5] shrink-0 flex items-center gap-2">
-        <div className="flex-1 grid grid-cols-2 bg-white rounded-xl p-1 shadow-2xs border border-[#e2ddd5]">
+      <div className="p-2 bg-[#f2eee9] dark:bg-[#1e1e22] border-b border-[#e2ddd5] dark:border-[#2d2d35] shrink-0 flex items-center gap-2">
+        <div className="flex-1 grid grid-cols-2 bg-white dark:bg-[#28282e] rounded-xl p-1 shadow-2xs border border-[#e2ddd5] dark:border-[#2d2d35]">
           <button
             onClick={() => {
               setActiveTab('announcements');
@@ -1157,7 +1209,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
             className={`flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
               activeTab === 'announcements'
                 ? 'bg-[#FF4F00] text-white shadow-2xs'
-                : 'text-neutral-600 hover:text-neutral-900'
+                : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white'
             }`}
           >
             <Megaphone size={15} />
@@ -1171,7 +1223,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
             className={`flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
               activeTab === 'private'
                 ? 'bg-[#FF4F00] text-white shadow-2xs'
-                : 'text-neutral-600 hover:text-neutral-900'
+                : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white'
             }`}
           >
             <MessageSquare size={15} />
@@ -1179,10 +1231,10 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
           </button>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0 bg-white rounded-xl p-1 shadow-2xs border border-[#e2ddd5]">
+        <div className="flex items-center gap-1 shrink-0 bg-white dark:bg-[#28282e] rounded-xl p-1 shadow-2xs border border-[#e2ddd5] dark:border-[#2d2d35]">
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-neutral-600 hover:bg-red-50 hover:text-red-600 active:bg-red-100 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-600 dark:hover:text-red-400 active:bg-red-100 transition-colors cursor-pointer"
             aria-label={t.close}
             title={t.close}
           >
@@ -1192,7 +1244,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
       </div>
 
       {/* Main Body */}
-      <div className="flex-1 overflow-hidden relative flex flex-col bg-[#fdfcfb]">
+      <div className="flex-1 overflow-hidden relative flex flex-col bg-[#fdfcfb] dark:bg-[#161618]">
         {/* ================= TAB 1: PENGUMUMAN PUBLIK ================= */}
         {activeTab === 'announcements' && (
           <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -1316,11 +1368,11 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                       {isExpanded && (
                         <div className="pt-2.5 space-y-3 bg-[#faf8f5] p-3 rounded-xl border border-[#e2ddd5]">
                           {/* Input New Top-Level Comment */}
-                          {!isProOrAdmin ? (
+                          {!isProOrAdmin && getUserCommentCountToday() >= 1 ? (
                             <div className="p-2.5 bg-[#fff0eb] border border-[#ff4f00]/20 rounded-xl flex items-center justify-between text-xs text-neutral-700">
                               <span className="flex items-center gap-1.5 font-medium text-neutral-800">
                                 <Crown size={15} className="text-[#ff4f00] shrink-0" />
-                                {t('toast.proLimitComment') || 'Komentar pada pengumuman adalah fitur khusus Pengguna Pro.'}
+                                {t('toast.proLimitComment') || 'Akun Free dibatasi maksimal 1 kali komentar per hari di pengumuman.'}
                               </span>
                               <span className="px-2 py-0.5 bg-[#ff4f00] text-white rounded-md font-bold text-[10px] uppercase shrink-0">Pro</span>
                             </div>
@@ -1391,8 +1443,8 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                                     <div className="pl-6 pt-0.5 flex items-center gap-3 text-[10px]">
                                       <button
                                         onClick={() => {
-                                          if (!isProOrAdmin) {
-                                            alert(t('toast.proLimitComment') || 'Komentar pada pengumuman adalah fitur khusus Pengguna Pro.');
+                                          if (!isProOrAdmin && getUserCommentCountToday() >= 1) {
+                                            alert(t('toast.proLimitComment') || 'Akun Free dibatasi maksimal 1 kali komentar per hari di pengumuman.');
                                             return;
                                           }
                                           setReplyingToCommentId(replyingToCommentId === comment.id ? null : comment.id);
