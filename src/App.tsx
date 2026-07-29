@@ -35,6 +35,7 @@ import { SettingsDialog } from './components/SettingsDialog';
 import { LoginScreen } from './components/LoginScreen';
 import { PinModal } from './components/PinModal';
 import { MoveKeypadModal } from './components/MoveKeypadModal';
+import { FullscreenChatModal } from './components/FullscreenChatModal';
 import { useDialog } from './context/DialogContext';
 
 import { useFileSystem } from './hooks/useFileSystem';
@@ -313,20 +314,41 @@ export default function App() {
     
     const finalUrl = url.trim().startsWith('http') ? url.trim() : `https://${url.trim()}`;
     
-    showToast(t('toast.creatingBookmark'));
+    let domain = t('file.bookmark') || 'Bookmark';
     try {
-      const apiKey = loadKey();
-      const model = loadModel();
-      const endpoint = loadEndpoint();
-      const { title, category } = await generateBookmarkData(apiKey, model, endpoint, finalUrl, t('ai.bookmarkPrompt'), t('file.bookmark'));
-      
-      await createItem(title, 'file', currentFolderId, finalUrl, category);
+      domain = new URL(finalUrl).hostname;
+    } catch {}
+
+    try {
+      const newItem = await createItem(domain, 'file', currentFolderId, finalUrl);
       showToast(t('toast.bookmarkSaved'));
+
+      // Background AI generation
+      (async () => {
+        try {
+          const apiKey = loadKey();
+          const model = loadModel();
+          const endpoint = loadEndpoint();
+          const { title, category } = await generateBookmarkData(
+            apiKey,
+            model,
+            endpoint,
+            finalUrl,
+            t('ai.bookmarkPrompt'),
+            domain
+          );
+          if (title || category) {
+            await updateItem(newItem.id, {
+              ...(title ? { name: title } : {}),
+              ...(category ? { category } : {}),
+            });
+          }
+        } catch {
+          // Keep domain name on AI failure
+        }
+      })();
     } catch (e: any) {
-      let domain = t('file.bookmark');
-      try { domain = new URL(finalUrl).hostname; } catch {}
-      await createItem(domain, 'file', currentFolderId, finalUrl);
-      showToast(t('toast.bookmarkSavedFallback'));
+      showToast(e?.message || 'Gagal menyimpan bookmark');
     }
   };
 
@@ -529,10 +551,6 @@ export default function App() {
     input.click();
   };
 
-  const handleSmartSync = async () => {
-    await smartSync();
-  };
-
   const onDropOnFolder = async (targetFolderId: string, draggedIds: string[]) => {
     await moveMany(draggedIds, targetFolderId);
     clearSelection();
@@ -590,6 +608,11 @@ export default function App() {
       sonnerToast.info(t('toast.noBookmarksInFolder') || 'Tidak ada bookmark di folder ini');
       return;
     }
+
+    const folderName = targetFolder?.name || 'folder ini';
+    const confirmMessage = `Generate ulang judul & tag AI untuk ${folderBookmarks.length} bookmark di "${folderName}"?`;
+    const confirmed = await customConfirm(confirmMessage);
+    if (!confirmed) return;
 
     const toastId = sonnerToast.loading(t('toast.regenerating') || 'Regenerasi judul & tag bookmark...');
     try {
@@ -742,17 +765,15 @@ export default function App() {
         </div>
         <div className="flex items-center gap-2 sm:gap-4 relative">
           <div className="relative">
-            <a 
-              href={getCommunityChatUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button 
+              onClick={() => setShowChatPopup(true)}
               className="inline-flex text-neutral-800 hover:bg-[#faf8f5] p-2 rounded-full transition-all relative border border-transparent hover:border-[#e2ddd5]"
-              title={t('chat.title')}
-              aria-label={t('chat.title')}
+              title={t('chat.title') || 'Chat & Pengumuman'}
+              aria-label={t('chat.title') || 'Chat & Pengumuman'}
             >
               <MessageCircle size={20} className="text-[#FF4F00]" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-[#FF4F00] rounded-full animate-pulse" />
-            </a>
+            </button>
           </div>
           <div className="relative">
             <button 
@@ -989,7 +1010,6 @@ export default function App() {
             }}
             onOpenPinMenu={handleOpenPinMenu}
             onResetPinPassword={() => setPinModalMode('reset_password')}
-            onSmartSync={handleSmartSync}
             onExport={handleExport}
             onImport={handleImport}
           />
@@ -1033,6 +1053,12 @@ export default function App() {
             onClose={() => setMoveKeypadConfig(null)}
           />
         )}
+
+        <FullscreenChatModal
+          isOpen={showChatPopup}
+          onClose={() => setShowChatPopup(false)}
+          currentUserEmail={user?.email}
+        />
 
 
       </Suspense>

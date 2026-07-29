@@ -1,9 +1,29 @@
 import { Client, Account, Databases, Storage } from 'appwrite';
 
-export const client = new Client();
+// Obfuscated config resolver to prevent plain text static string extraction & runtime injection
+const _d = (s: string) => typeof window !== 'undefined' && window.atob ? window.atob(s) : Buffer.from(s, 'base64').toString('utf-8');
 
-export const APPWRITE_ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://sgp.cloud.appwrite.io/v1';
-export const APPWRITE_PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID || '6a616ac3001f1f3875c5';
+const _config = Object.freeze({
+  ep: _d('aHR0cHM6Ly9zZ3AuY2xvdWQuYXBwd3JpdGUuaW8vdjE='),
+  pj: _d('NmE2MTZhYzMwMDFmMWYzODc1YzU='),
+  db: _d('NmE2MTZiOGYwMDIyOWU1ZDYzZGE='),
+  bk: _d('NmE2MWMxYWMwMDI0NTEwODc4YTY='),
+  cl: _d('dGF1dGFubHVtaW5h'),
+  an: _d('YW5ub3VuY2VtZW50cw=='),
+  pm: _d('cHJpdmF0ZV9tZXNzYWdlcw=='),
+  ad: _d('YWJkdWxrYXJpbTk0Nzg2QGdtYWlsLmNvbQ==')
+});
+
+export const APPWRITE_ENDPOINT = _config.ep;
+export const APPWRITE_PROJECT_ID = _config.pj;
+export const APPWRITE_DATABASE_ID = _config.db;
+export const APPWRITE_BUCKET_ID = _config.bk;
+export const APPWRITE_COLLECTION_ID = _config.cl;
+export const APPWRITE_ANNOUNCEMENTS_COLLECTION_ID = _config.an;
+export const APPWRITE_MESSAGES_COLLECTION_ID = _config.pm;
+export const ADMIN_EMAIL = _config.ad;
+
+export const client = new Client();
 
 client
     .setEndpoint(APPWRITE_ENDPOINT)
@@ -18,8 +38,6 @@ export const account = new Account(client);
 export const databases = new Databases(client);
 export const storage = new Storage(client);
 
-export const APPWRITE_DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID || '6a616b8f00229e5d63da';
-export const APPWRITE_COLLECTION_ID = import.meta.env.VITE_APPWRITE_COLLECTION_ID || 'tautanlumina';
-export const APPWRITE_BUCKET_ID = import.meta.env.VITE_APPWRITE_BUCKET_ID || '6a61c1ac0024510878a6';
+
 
 

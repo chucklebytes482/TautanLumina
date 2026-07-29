@@ -93,6 +93,11 @@ export const getAllItems = async (): Promise<FileSystemItem[]> => {
   return db.getAll(STORE);
 };
 
+export const getItem = async (id: string): Promise<FileSystemItem | undefined> => {
+  const db = await initDB();
+  return db.get(STORE, id);
+};
+
 export const saveItem = async (item: FileSystemItem) => {
   const db = await initDB();
   await db.put(STORE, item);

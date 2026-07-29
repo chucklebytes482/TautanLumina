@@ -34,7 +34,6 @@ interface Props {
   onClose: () => void;
   onOpenPinMenu?: () => void;
   onResetPinPassword?: () => void;
-  onSmartSync?: () => Promise<void>;
   onExport?: () => void;
   onImport?: () => void;
   initialTab?: TabType;
@@ -50,7 +49,6 @@ export const SettingsDialog = ({
   onClose, 
   onOpenPinMenu, 
   onResetPinPassword,
-  onSmartSync, 
   onExport, 
   onImport, 
   initialTab
@@ -298,19 +296,9 @@ export const SettingsDialog = ({
       <h4 className="text-sm font-semibold text-neutral-800 border-b border-neutral-100 pb-2">{t('menu.sync') || 'Sync'}</h4>
       {user ? (
         <div className="space-y-3">
-          <button
-            onClick={onSmartSync}
-            disabled={syncing}
-            className="w-full flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors disabled:opacity-50 text-left shadow-xs cursor-pointer"
-          >
-            <div className={`p-2 rounded-lg bg-blue-50 text-blue-600 ${syncing ? 'animate-pulse' : ''}`}>
-              <RefreshCw size={20} className={syncing ? 'animate-spin' : ''} />
-            </div>
-            <div>
-              <p className="font-medium text-sm text-neutral-900">{t('btn.smartSync') || 'Smart Sync'}</p>
-              <p className="text-xs text-neutral-500 mt-0.5">{t('sync.smart.desc') || 'Intelligently merge and sync local & cloud data'}</p>
-            </div>
-          </button>
+          <p className="text-sm text-neutral-500">
+            Sinkronisasi manual cukup dengan memuat ulang halaman.
+          </p>
         </div>
       ) : (
         <p className="text-sm text-neutral-500">{t('settings.profile.notLoggedIn')}</p>

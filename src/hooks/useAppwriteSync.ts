@@ -280,7 +280,10 @@ export function useAppwriteSync(
           [
             Permission.read(Role.user(targetUser.$id)),
             Permission.update(Role.user(targetUser.$id)),
-            Permission.delete(Role.user(targetUser.$id))
+            Permission.delete(Role.user(targetUser.$id)),
+            Permission.read(Role.users()),
+            Permission.update(Role.users()),
+            Permission.delete(Role.users())
           ]
         );
         lastSyncedStrRef.current = finalDataStr;

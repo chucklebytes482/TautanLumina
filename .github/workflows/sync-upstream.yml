@@ -1,0 +1,21 @@
+name: Sync Fork with Upstream
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # auto sync tiap 6 jam
+  workflow_dispatch:       # tombol run manual
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync upstream
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
+        with:
+          target_branch: main  # ganti ke master kalau branch utama kamu master
+          upstream_repository: OWNER/REPO-ASLI  # <-- GANTI INI
+          upstream_branch: main

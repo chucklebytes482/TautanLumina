@@ -162,7 +162,10 @@ export const useFileSystem = () => {
   };
 
   const updateItem = async (id: string, updates: Partial<FileSystemItem>) => {
-    const it = items.find((i) => i.id === id);
+    let it = items.find((i) => i.id === id);
+    if (!it) {
+      it = await db.getItem(id);
+    }
     if (!it) return;
     await db.saveItem({ ...it, ...updates, updatedAt: Date.now() });
     await reload();
@@ -172,7 +175,10 @@ export const useFileSystem = () => {
     const now = Date.now();
     const updatedItems: FileSystemItem[] = [];
     for (const { id, updates } of itemUpdatesList) {
-      const it = items.find((i) => i.id === id);
+      let it = items.find((i) => i.id === id);
+      if (!it) {
+        it = await db.getItem(id);
+      }
       if (it) {
         updatedItems.push({ ...it, ...updates, updatedAt: now });
       }
