@@ -139,10 +139,21 @@ export const generateBookmarkData = async (apiKey: string, model: string, endpoi
   const parseResponse = (res: string) => {
     try {
       const cleanJson = stripCodeFence(res);
-      const parsed = JSON.parse(cleanJson);
-      let title = parsed.title || fallbackDomain;
-      if (title.length > 12) title = title.substring(0, 12);
-      return { title, category: parsed.category };
+      let parsed: any = null;
+      try {
+        parsed = JSON.parse(cleanJson);
+      } catch {
+        const match = cleanJson.match(/\{[\s\S]*\}/);
+        if (match) {
+          parsed = JSON.parse(match[0]);
+        }
+      }
+      if (parsed && typeof parsed === 'object') {
+        let title = parsed.title || parsed.name || fallbackDomain;
+        if (title.length > 12) title = title.substring(0, 12);
+        return { title, category: parsed.category || parsed.tag };
+      }
+      throw new Error('Invalid JSON');
     } catch {
       let title = stripCodeFence(res).trim().replace(/^["']|["']$/g, '');
       if (title.length > 12) title = title.substring(0, 12);
@@ -217,7 +228,14 @@ export const callAI = async ({ apiKey, model, endpoint, prompt, signal }: CallOp
   }
 
   const data = await res.json();
-  const text: string | undefined = data?.choices?.[0]?.message?.content;
+  const text: string | undefined = 
+    data?.choices?.[0]?.message?.content || 
+    data?.choices?.[0]?.text || 
+    data?.response || 
+    data?.output || 
+    data?.text || 
+    data?.content ||
+    (typeof data === 'string' ? data : undefined);
   if (!text) throw new Error('Respons AI kosong.');
   return text;
 };

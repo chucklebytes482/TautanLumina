@@ -1,5 +1,8 @@
 export const missingTranslations = {
   "en": {
+    "ai": {
+      "bookmarkPrompt": "Analyze this URL and return a concise, clean title (maximum 12 characters) and a short category tag for the following URL: {url}"
+    },
     "action": {
       "cancel": "Cancel",
       "delete": "Delete",
@@ -267,6 +270,9 @@ export const missingTranslations = {
     }
   },
   "id": {
+    "ai": {
+      "bookmarkPrompt": "Analisis URL ini dan berikan judul yang singkat, bersih (maksimal 12 karakter) serta tag kategori pendek untuk URL berikut: {url}"
+    },
     "action": {
       "cancel": "Batal",
       "delete": "Hapus",
@@ -534,6 +540,9 @@ export const missingTranslations = {
     }
   },
   "zh": {
+    "ai": {
+      "bookmarkPrompt": "分析此URL，并为以下URL返回简洁干净的标题（最多12个字符）和简短的分类标签：{url}"
+    },
     "action": {
       "cancel": "取消",
       "delete": "删除",
@@ -801,6 +810,9 @@ export const missingTranslations = {
     }
   },
   "ja": {
+    "ai": {
+      "bookmarkPrompt": "このURLを分析し、簡潔でクリーンなタイトル（最大12文字）と短いカテゴリタグを返してください：{url}"
+    },
     "action": {
       "cancel": "キャンセル",
       "delete": "削除",
@@ -1068,6 +1080,9 @@ export const missingTranslations = {
     }
   },
   "ko": {
+    "ai": {
+      "bookmarkPrompt": "이 URL을 분석하여 간결하고 깔끔한 제목(최대 12자)과 짧은 카테고리 태그를 반환하세요: {url}"
+    },
     "action": {
       "cancel": "취소",
       "delete": "삭제",
@@ -1335,6 +1350,9 @@ export const missingTranslations = {
     }
   },
   "ru": {
+    "ai": {
+      "bookmarkPrompt": "Проанализируйте этот URL и верните краткое, чистое название (максимум 12 символов) и короткий тег категории для следующего URL: {url}"
+    },
     "action": {
       "cancel": "Отмена",
       "delete": "Удалить",
