@@ -193,6 +193,11 @@ export const SubscriptionCard = ({ user }: { user: any }) => {
             </div>
           </div>
           
+          <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200/80 rounded-xl text-xs text-emerald-800 font-medium flex items-center gap-2 shadow-xs">
+            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+            <span>{t("sub.freeCoreNote")}</span>
+          </div>
+
           <div className="space-y-3 mb-6">
             <div className="flex items-start gap-2.5 text-sm text-neutral-700">
               <CheckCircle2 size={18} className="text-[#ff4f00] shrink-0 mt-0.5" />
@@ -200,11 +205,11 @@ export const SubscriptionCard = ({ user }: { user: any }) => {
             </div>
             <div className="flex items-start gap-2.5 text-sm text-neutral-700">
               <CheckCircle2 size={18} className="text-[#ff4f00] shrink-0 mt-0.5" />
-              <span dangerouslySetInnerHTML={{ __html: t("sub.feat3") }}></span>
+              <span dangerouslySetInnerHTML={{ __html: t("sub.feat2") }}></span>
             </div>
             <div className="flex items-start gap-2.5 text-sm text-neutral-700">
               <CheckCircle2 size={18} className="text-[#ff4f00] shrink-0 mt-0.5" />
-              <span dangerouslySetInnerHTML={{ __html: t("sub.feat5") }}></span>
+              <span dangerouslySetInnerHTML={{ __html: t("sub.feat3") }}></span>
             </div>
             <div className="flex items-start gap-2.5 text-sm text-neutral-700">
               <CheckCircle2 size={18} className="text-[#ff4f00] shrink-0 mt-0.5" />

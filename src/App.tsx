@@ -42,6 +42,7 @@ import { useDialog } from './context/DialogContext';
 import { useFileSystem } from './hooks/useFileSystem';
 import { useAppwriteSync } from './hooks/useAppwriteSync';
 import { useI18n, languages } from './lib/i18n';
+import { ADMIN_EMAIL } from './lib/appwrite';
 
 import { FileSystemItem } from './Types';
 import { loadKey, loadModel, loadEndpoint, generateBookmarkData } from './lib/ai';
@@ -271,6 +272,18 @@ export default function App() {
     }
 
     const nextLocked = !f.locked;
+
+    if (nextLocked) {
+      const isProOrAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || user?.prefs?.proStatus === 'pro';
+      if (!isProOrAdmin) {
+        const currentlyLockedCount = items.filter((i) => i.type === 'folder' && i.locked).length;
+        if (currentlyLockedCount >= 1) {
+          showToast(t('toast.proLimitFolderLock') || 'Akun Free dibatasi maksimal 1 folder terkunci. Tingkatkan ke Pro untuk kunci folder tanpa batas.');
+          return;
+        }
+      }
+    }
+
     await fs.updateItem(folderId, { locked: nextLocked });
     if (nextLocked) {
       setUnlockedFolderIds((prev) => {
@@ -503,7 +516,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'lumina.json';
+    a.download = 'tautan-lumina.json';
     a.click();
     URL.revokeObjectURL(url);
     showToast(t('settings.export.success') || 'Exported successfully');
@@ -575,6 +588,17 @@ export default function App() {
   };
 
   const handleRegenerateFolder = async (folderId: string) => {
+    const isProOrAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || user?.prefs?.proStatus === 'pro';
+    if (!isProOrAdmin) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const countKey = `tautanlumina:regenerate_count_${todayStr}`;
+      const currentCount = parseInt(localStorage.getItem(countKey) || '0', 10);
+      if (currentCount >= 2) {
+        sonnerToast.error(t('toast.proLimitRegenerate') || 'Batas 2x generate ulang per hari untuk akun Free tercapai. Tingkatkan ke Pro untuk tanpa batas.');
+        return;
+      }
+    }
+
     const targetFolder = items.find((i) => i.id === folderId);
     if (targetFolder && isNoteFolderOrSubfolder(targetFolder)) {
       sonnerToast.info(t('toast.noBookmarksInFolder') || 'Tidak ada bookmark di folder ini');
@@ -652,6 +676,13 @@ export default function App() {
         await updateMany(updates);
       }
 
+      if (!isProOrAdmin) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const countKey = `tautanlumina:regenerate_count_${todayStr}`;
+        const currentCount = parseInt(localStorage.getItem(countKey) || '0', 10);
+        localStorage.setItem(countKey, (currentCount + 1).toString());
+      }
+
       sonnerToast.success(t('toast.regenerated') || 'Judul & tag berhasil diperbarui!', { id: toastId, duration: 2000 });
     } catch (e) {
       sonnerToast.error(t('toast.syncError') || 'Gagal memperbarui', { id: toastId, duration: 2000 });
@@ -695,7 +726,7 @@ export default function App() {
       if (!isNoteFolderOrSubfolder(item)) {
         list.push({
           key: 'regenerate',
-          label: t('action.regenerate') || 'Generate Ulang Judul & Tag',
+          label: t('action.regenerate') || 'Generate ulang judul dan tag',
           onClick: () => handleRegenerateFolder(item.id),
         });
       }
@@ -751,7 +782,7 @@ export default function App() {
           </button>
           <a href="#" className="flex items-center gap-2 text-[#131313] text-xl font-bold tracking-tight no-underline select-none">
             <AppLogo size={26} className="text-[#FF4F00]" />
-            Tautan<span className="text-[#FF4F00]">Lumina</span>
+            Tautan <span className="text-[#FF4F00]">Lumina</span>
           </a>
         </div>
         <div className="flex items-center gap-2 sm:gap-4 relative">

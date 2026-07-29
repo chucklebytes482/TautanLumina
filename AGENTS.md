@@ -76,3 +76,21 @@ Dokumen ini dibaca secara otomatis oleh AI System Instructions pada setiap sesi 
 - **Default Filter Free**: Saat jendela model dibuka pertama kali, filter **WAJIB** secara otomatis mengarah pada tab **🎁 Free**.
 - **Pengurutan Otomatis Tanpa Ornamen**: Daftar model diurutkan secara otomatis berdasarkan peringkat skor kualitas terbaik (tanpa opsi dropdown sortir manual dan tanpa badge dekoratif seperti "🔥 Top") untuk pengalaman pengguna yang bersih dan efisien.
 
+---
+
+## 8. Aturan Perbaikan Kalimat & Lokalisasi Multi-Bahasa
+
+- Setiap kali pengguna meminta untuk memperbaiki, mengubah, atau memperbarui suatu kalimat, teks, atau label UI, AI **WAJIB** secara otomatis memperbarui dan menyesuaikan teks tersebut di **seluruh 6 bahasa** yang didukung (Bahasa Indonesia, Inggris, Mandarin, Jepang, Korea, dan Rusia) pada file `src/lib/i18n-missing.ts` atau file lokalisasi terkait tanpa harus diminta berulang kali.
+
+---
+
+## 9. Aturan Pembatasan Fitur Free vs Pro
+
+- **Fitur Utama Selalu Gratis**: Sinkronisasi Awan, Tagging & Rangkuman AI, serta Keamanan PIN Akses tidak boleh dibatasi untuk pengguna Free.
+- **Batasan Fitur Pro (Opsional)**:
+  1. **Komentar Pengumuman**: Menulis komentar pada pengumuman khusus untuk akun Pro/Admin.
+  2. **Pesan Pribadi Admin**: Mengirim pesan pribadi direct ke Admin khusus untuk akun Pro/Admin.
+  3. **Generate Ulang AI**: Akun Free dibatasi maksimal **2 kali per hari** (kuota di-reset setiap hari), sedangkan akun Pro/Admin tanpa batas.
+  4. **Kunci Folder**: Akun Free dibatasi maksimal **1 folder terkunci**, sedangkan akun Pro/Admin dapat mengunci folder tanpa batas.
+
+

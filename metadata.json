@@ -1,6 +1,6 @@
 {
-  "name": "Lumina",
-  "description": "Lumina is an ultra-minimalist, AI-powered smart bookmark and note manager with auto-tagging, PIN folder locking, and cloud sync.",
+  "name": "Tautan Lumina",
+  "description": "Tautan Lumina is an ultra-minimalist, AI-powered smart bookmark and note manager with auto-tagging, PIN folder locking, and cloud sync.",
   "requestFramePermissions": [
     "microphone"
   ],

@@ -73,7 +73,7 @@ export const translations = {
     searching: 'Searching...',
     noMessages: 'No messages yet.',
     delete: 'Delete',
-    adminLumina: 'Lumina Admin',
+    adminLumina: 'Admin TautanLumina',
     announcements: 'Announcements',
     myMessages: 'My Messages',
     doneAndPreview: 'Done & Preview Audio',

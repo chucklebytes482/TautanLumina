@@ -18,11 +18,16 @@ import {
   Play,
   Pause,
   Square,
-  Check
+  Check,
+  MessageCircle,
+  CornerDownRight,
+  Reply,
+  Crown
 } from 'lucide-react';
 import { ID, Query, Permission, Role } from 'appwrite';
 import { 
   client,
+  account,
   databases, 
   APPWRITE_DATABASE_ID, 
   APPWRITE_ANNOUNCEMENTS_COLLECTION_ID, 
@@ -38,6 +43,16 @@ interface FullscreenChatModalProps {
   currentUserEmail?: string | null;
 }
 
+export interface AnnouncementComment {
+  id: string;
+  announcementId: string;
+  parentId?: string | null;
+  senderEmail: string;
+  content: string;
+  createdAt: number;
+  replies?: AnnouncementComment[];
+}
+
 export interface AnnouncementItem {
   $id?: string;
   id: string;
@@ -46,6 +61,7 @@ export interface AnnouncementItem {
   senderEmail: string;
   senderName?: string;
   createdAt: number;
+  comments?: AnnouncementComment[];
 }
 
 export interface PrivateMessageItem {
@@ -56,6 +72,52 @@ export interface PrivateMessageItem {
   content: string;
   createdAt: number;
 }
+
+export const MaskedEmail: React.FC<{ email?: string; className?: string }> = ({ email, className = '' }) => {
+  const { t } = useI18n();
+  if (!email) return null;
+
+  let clean = email.trim();
+  // Strip literal quotes or braces if present from template strings
+  clean = clean.replace(/['"`{}]/g, '').trim();
+
+  if (
+    clean.toLowerCase() === ADMIN_EMAIL.toLowerCase() ||
+    clean.toLowerCase().includes('abdulkarim94786') ||
+    clean.toLowerCase().includes('admin') ||
+    clean.toLowerCase().includes('t.adminlumina') ||
+    clean.toLowerCase().includes('adminlumina')
+  ) {
+    return (
+      <span className={`inline-flex items-center gap-1 font-bold text-neutral-900 ${className}`}>
+        <span>{t.adminLumina || 'Admin TautanLumina'}</span>
+        <span className="px-1.5 py-0.2 text-[9px] font-extrabold bg-[#FF4F00]/10 text-[#FF4F00] rounded uppercase tracking-wider">
+          Admin
+        </span>
+      </span>
+    );
+  }
+
+  const atIndex = clean.indexOf('@');
+  if (atIndex === -1) {
+    return <span className={`font-medium text-xs text-neutral-800 ${className}`}>{clean}</span>;
+  }
+
+  const username = clean.substring(0, atIndex);
+  const domain = clean.substring(atIndex); // includes '@'
+  const visibleLen = Math.max(0, username.length - 5);
+  const visiblePrefix = username.substring(0, visibleLen);
+  const blurredSuffix = username.substring(visibleLen) + domain;
+
+  return (
+    <span className={`inline-flex items-center tracking-tight font-mono text-xs text-neutral-800 ${className}`}>
+      {visiblePrefix && <span>{visiblePrefix}</span>}
+      <span className="blur-[3.5px] select-none opacity-60 filter pointer-events-none font-mono">
+        {blurredSuffix}
+      </span>
+    </span>
+  );
+};
 
 export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
   isOpen,
@@ -72,6 +134,12 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
   const [loadingAnnouncements, setLoadingAnnouncements] = useState(false);
   const [postingAnnouncement, setPostingAnnouncement] = useState(false);
   const [showAdminPostForm, setShowAdminPostForm] = useState(false);
+
+  // Announcement Comments State
+  const [commentInputs, setCommentInputs] = useState<{ [annId: string]: string }>({});
+  const [replyInputs, setReplyInputs] = useState<{ [commentId: string]: string }>({});
+  const [replyingToCommentId, setReplyingToCommentId] = useState<string | null>(null);
+  const [expandedComments, setExpandedComments] = useState<{ [annId: string]: boolean }>({});
 
   // Private Messages State
   const [messages, setMessages] = useState<PrivateMessageItem[]>([]);
@@ -485,6 +553,17 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
       );
     }
 
+    if (!isAdmin && !isProOrAdmin) {
+      return (
+        <div className="p-3.5 bg-orange-50 border-t border-orange-200 text-center space-y-1.5 shrink-0">
+          <div className="flex items-center justify-center gap-1.5 font-bold text-xs text-[#FF4F00]">
+            <Crown size={16} />
+            <span>{t('toast.proLimitPrivateMsg') || 'Kirim pesan pribadi ke Admin adalah fitur khusus Pengguna Pro.'}</span>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <form
         onSubmit={handleSendMessage}
@@ -545,13 +624,25 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Determine user email
+  const [proStatus, setProStatus] = useState<'free' | 'pending' | 'pro'>('free');
+
+  // Determine user email & Pro status
   useEffect(() => {
     const email = currentUserEmail || localStorage.getItem('tautanlumina:current_user_email') || 'user@lumina.app';
     setUserEmail(email);
+
+    if (isOpen) {
+      account.get().then((res) => {
+        setProStatus(res.prefs?.proStatus || 'free');
+        if (res.email) setUserEmail(res.email);
+      }).catch(() => {
+        setProStatus('free');
+      });
+    }
   }, [currentUserEmail, isOpen]);
 
   const isAdmin = userEmail.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim();
+  const isProOrAdmin = isAdmin || proStatus === 'pro';
 
   // Scroll chat to bottom
   const scrollToBottom = () => {
@@ -567,6 +658,24 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
   // Load Announcements
   const fetchAnnouncements = async () => {
     setLoadingAnnouncements(true);
+
+    // Read cached comments from local storage to preserve comments even if Appwrite comments attribute is pending
+    let localCommentsMap: { [annId: string]: AnnouncementComment[] } = {};
+    try {
+      const cachedData = localStorage.getItem('tautanlumina:announcements');
+      if (cachedData) {
+        const cachedItems: AnnouncementItem[] = JSON.parse(cachedData);
+        if (Array.isArray(cachedItems)) {
+          cachedItems.forEach((cItem) => {
+            const cKey = cItem.$id || cItem.id;
+            if (cKey && Array.isArray(cItem.comments) && cItem.comments.length > 0) {
+              localCommentsMap[cKey] = cItem.comments;
+            }
+          });
+        }
+      }
+    } catch {}
+
     try {
       let response;
       try {
@@ -582,23 +691,48 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
           [Query.orderDesc('$createdAt'), Query.limit(50)]
         );
       }
-      const items: AnnouncementItem[] = response.documents.map((doc: any) => ({
-        $id: doc.$id,
-        id: doc.$id || doc.id,
-        title: doc.title,
-        content: doc.content || '',
-        senderEmail: doc.senderEmail || ADMIN_EMAIL,
-        senderName: doc.senderName,
-        createdAt: typeof doc.createdAt === 'number' ? doc.createdAt : (doc.$createdAt ? new Date(doc.$createdAt).getTime() : Date.now())
-      }));
+      const items: AnnouncementItem[] = response.documents.map((doc: any) => {
+        const docKey = doc.$id || doc.id;
+        let parsedComments: AnnouncementComment[] = [];
+        if (doc.comments) {
+          try {
+            parsedComments = typeof doc.comments === 'string' ? JSON.parse(doc.comments) : doc.comments;
+          } catch {
+            parsedComments = [];
+          }
+        }
+
+        // If server returns empty comments array, check local cache fallback so comments don't get wiped out by polling
+        if ((!parsedComments || parsedComments.length === 0) && localCommentsMap[docKey]) {
+          parsedComments = localCommentsMap[docKey];
+        }
+
+        let cleanSenderName = doc.senderName;
+        if (cleanSenderName && (cleanSenderName.includes('{t.') || cleanSenderName.includes('t.admin') || cleanSenderName.includes('Lumina'))) {
+          cleanSenderName = 'Admin TautanLumina';
+        }
+        return {
+          $id: doc.$id,
+          id: docKey,
+          title: doc.title,
+          content: doc.content || '',
+          senderEmail: doc.senderEmail || ADMIN_EMAIL,
+          senderName: cleanSenderName || 'Admin TautanLumina',
+          createdAt: typeof doc.createdAt === 'number' ? doc.createdAt : (doc.$createdAt ? new Date(doc.$createdAt).getTime() : Date.now()),
+          comments: Array.isArray(parsedComments) ? parsedComments : []
+        };
+      });
+
       setAnnouncements(items);
+      safeSetLocalStorage('tautanlumina:announcements', JSON.stringify(items));
       setAppwriteStatus('synced');
     } catch (e) {
       console.warn('Appwrite announcements collection fetch fallback:', e);
       const localData = localStorage.getItem('tautanlumina:announcements');
       if (localData) {
         try {
-          setAnnouncements(JSON.parse(localData));
+          const parsed = JSON.parse(localData);
+          setAnnouncements(Array.isArray(parsed) ? parsed : []);
         } catch {}
       } else {
         const defaultAnnouncements: AnnouncementItem[] = [
@@ -607,8 +741,9 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
             title: 'Selamat Datang di TautanLumina Chat',
             content: `### 📢 Pengumuman Resmi Lumina\n\nSelamat datang di ruang pengumuman dan komunikasi **TautanLumina**.\n\n- Ruang ini khusus menampilkan pengumuman resmi dari Admin.\n- Format teks mendukung **Markdown** dan **Plain Text**.\n- Untuk berkonsultasi secara privat dengan Admin, silakan gunakan tab **Chat Private Admin**.`,
             senderEmail: ADMIN_EMAIL,
-            senderName: '{t.adminLumina}',
-            createdAt: Date.now()
+            senderName: 'Admin TautanLumina',
+            createdAt: Date.now(),
+            comments: []
           }
         ];
         setAnnouncements(defaultAnnouncements);
@@ -617,6 +752,129 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
       setAppwriteStatus('local_fallback');
     } finally {
       setLoadingAnnouncements(false);
+    }
+  };
+
+  const getCommentCount = (item: AnnouncementItem): number => {
+    if (!item.comments || !Array.isArray(item.comments)) return 0;
+    return item.comments.reduce((acc, c) => acc + 1 + (c.replies ? c.replies.length : 0), 0);
+  };
+
+  const toggleCommentsExpanded = (annId: string) => {
+    setExpandedComments((prev) => ({
+      ...prev,
+      [annId]: prev[annId] === undefined ? false : !prev[annId]
+    }));
+  };
+
+  const handleAddComment = async (announcementId: string, content: string, parentId?: string | null) => {
+    if (!content.trim()) return;
+
+    if (!isProOrAdmin) {
+      alert(t('toast.proLimitComment') || 'Komentar pada pengumuman adalah fitur khusus Pengguna Pro. Tingkatkan ke Pro untuk berdiskusi.');
+      return;
+    }
+
+    const newComment: AnnouncementComment = {
+      id: 'cmt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      announcementId,
+      parentId: parentId || null,
+      senderEmail: userEmail || 'user@lumina.app',
+      content: content.trim(),
+      createdAt: Date.now(),
+      replies: []
+    };
+
+    const updatedAnnouncements = announcements.map((ann) => {
+      if ((ann.$id || ann.id) !== announcementId) return ann;
+
+      const existingComments = ann.comments || [];
+      let updatedCommentsList: AnnouncementComment[] = [];
+
+      if (!parentId) {
+        updatedCommentsList = [...existingComments, newComment];
+      } else {
+        updatedCommentsList = existingComments.map((c) => {
+          if (c.id === parentId) {
+            return {
+              ...c,
+              replies: [...(c.replies || []), newComment]
+            };
+          }
+          if (c.replies && c.replies.some((r) => r.id === parentId)) {
+            return {
+              ...c,
+              replies: [...c.replies, newComment]
+            };
+          }
+          return c;
+        });
+      }
+
+      return {
+        ...ann,
+        comments: updatedCommentsList
+      };
+    });
+
+    setAnnouncements(updatedAnnouncements);
+    safeSetLocalStorage('tautanlumina:announcements', JSON.stringify(updatedAnnouncements));
+
+    const targetAnn = updatedAnnouncements.find((a) => (a.$id || a.id) === announcementId);
+    const docId = targetAnn?.$id || targetAnn?.id;
+    if (docId) {
+      try {
+        await databases.updateDocument(
+          APPWRITE_DATABASE_ID,
+          APPWRITE_ANNOUNCEMENTS_COLLECTION_ID,
+          docId,
+          {
+            comments: JSON.stringify(targetAnn?.comments || [])
+          }
+        );
+      } catch (err) {
+        console.warn('Appwrite add comment fallback:', err);
+      }
+    }
+  };
+
+  const handleDeleteComment = async (announcementId: string, commentId: string) => {
+    const updatedAnnouncements = announcements.map((ann) => {
+      if ((ann.$id || ann.id) !== announcementId) return ann;
+
+      const filterComments = (cmts: AnnouncementComment[]): AnnouncementComment[] => {
+        return cmts
+          .filter((c) => c.id !== commentId)
+          .map((c) => ({
+            ...c,
+            replies: c.replies ? c.replies.filter((r) => r.id !== commentId) : []
+          }));
+      };
+
+      return {
+        ...ann,
+        comments: filterComments(ann.comments || [])
+      };
+    });
+
+    setAnnouncements(updatedAnnouncements);
+    safeSetLocalStorage('tautanlumina:announcements', JSON.stringify(updatedAnnouncements));
+
+    const targetAnn = updatedAnnouncements.find((a) => (a.$id || a.id) === announcementId);
+    const docId = targetAnn?.$id || targetAnn?.id;
+    if (docId) {
+      try {
+        await databases.updateDocument(
+          APPWRITE_DATABASE_ID,
+          APPWRITE_ANNOUNCEMENTS_COLLECTION_ID,
+          docId,
+          {
+            comments: JSON.stringify(targetAnn?.comments || [])
+          }
+        );
+      } catch (err) {
+        console.warn('Appwrite delete comment fallback:', err);
+      }
     }
   };
 
@@ -630,7 +888,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
       id: 'ann_' + Date.now(),
       content: newAnnouncement.trim(),
       senderEmail: userEmail || ADMIN_EMAIL,
-      senderName: '{t.adminLumina}',
+      senderName: 'Admin TautanLumina',
       createdAt: Date.now()
     };
 
@@ -727,6 +985,11 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
+
+    if (!isAdmin && !isProOrAdmin) {
+      alert(t('toast.proLimitPrivateMsg') || 'Kirim pesan pribadi ke Admin adalah fitur khusus Pengguna Pro. Tingkatkan ke Pro untuk mengobrol.');
+      return;
+    }
 
     setSendingMessage(true);
     const targetReceiver = isAdmin ? (selectedChatUser || 'user@lumina.app') : ADMIN_EMAIL;
@@ -992,46 +1255,239 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                   {t.noMessages}
                 </div>
               ) : (
-                announcements.map((item) => (
-                  <div
-                    key={item.id || item.$id}
-                    className="p-4 bg-white border border-[#e2ddd5] rounded-xl shadow-sm text-xs leading-relaxed"
-                  >
-                    <div className="flex items-center justify-between border-b border-[#f0ece1] pb-2 mb-2.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-[#FF4F00]/10 text-[#FF4F00] flex items-center justify-center font-bold text-[10px]">
-                          📢
-                        </div>
-                        <span className="font-bold text-neutral-900 text-xs">
-                          {formatDisplayEmail(item.senderName) || t.adminLumina}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-neutral-400">
-                          {new Date(item.createdAt).toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                        {isAdmin && (
-                          <button
-                            onClick={() => handleDeleteAnnouncement(item.$id || item.id)}
-                            className="p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                            title={t.delete}
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                announcements.map((item) => {
+                  const annId = item.id || item.$id || '';
+                  const isExpanded = expandedComments[annId] !== false;
+                  const commentCount = getCommentCount(item);
 
-                    <div className="markdown-body text-neutral-800 space-y-1 font-sans break-words">
-                      <ReactMarkdown>{item.content}</ReactMarkdown>
+                  return (
+                    <div
+                      key={annId}
+                      className="p-4 bg-white border border-[#e2ddd5] rounded-xl shadow-xs text-xs leading-relaxed space-y-3"
+                    >
+                      {/* Post Header */}
+                      <div className="flex items-center justify-between border-b border-[#f0ece1] pb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-[#FF4F00]/10 text-[#FF4F00] flex items-center justify-center font-bold text-xs shrink-0">
+                            📢
+                          </div>
+                          <MaskedEmail email={item.senderName || item.senderEmail} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-neutral-400">
+                            {new Date(item.createdAt).toLocaleDateString('id-ID', {
+                              day: 'numeric',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDeleteAnnouncement(item.$id || item.id)}
+                              className="p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                              title={t.delete}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Post Content */}
+                      <div className="markdown-body text-neutral-800 space-y-1 font-sans break-words">
+                        <ReactMarkdown>{item.content}</ReactMarkdown>
+                      </div>
+
+                      {/* Facebook-style Action Bar */}
+                      <div className="pt-2 border-t border-[#f0ece1] flex items-center justify-between">
+                        <button
+                          onClick={() => toggleCommentsExpanded(annId)}
+                          className="flex items-center gap-1.5 text-xs font-semibold text-neutral-600 hover:text-[#FF4F00] transition-colors cursor-pointer"
+                        >
+                          <MessageCircle size={14} />
+                          <span>
+                            {commentCount} Komentar
+                          </span>
+                        </button>
+                      </div>
+
+                      {/* Comments Section */}
+                      {isExpanded && (
+                        <div className="pt-2.5 space-y-3 bg-[#faf8f5] p-3 rounded-xl border border-[#e2ddd5]">
+                          {/* Input New Top-Level Comment */}
+                          {!isProOrAdmin ? (
+                            <div className="p-2.5 bg-[#fff0eb] border border-[#ff4f00]/20 rounded-xl flex items-center justify-between text-xs text-neutral-700">
+                              <span className="flex items-center gap-1.5 font-medium text-neutral-800">
+                                <Crown size={15} className="text-[#ff4f00] shrink-0" />
+                                {t('toast.proLimitComment') || 'Komentar pada pengumuman adalah fitur khusus Pengguna Pro.'}
+                              </span>
+                              <span className="px-2 py-0.5 bg-[#ff4f00] text-white rounded-md font-bold text-[10px] uppercase shrink-0">Pro</span>
+                            </div>
+                          ) : (
+                            <form
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                const text = commentInputs[annId];
+                                if (text) {
+                                  handleAddComment(annId, text);
+                                  setCommentInputs((prev) => ({ ...prev, [annId]: '' }));
+                                }
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <input
+                                type="text"
+                                value={commentInputs[annId] || ''}
+                                onChange={(e) => setCommentInputs({ ...commentInputs, [annId]: e.target.value })}
+                                placeholder="Tulis komentar..."
+                                className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-[#e2ddd5] bg-white focus:outline-none focus:ring-1 focus:ring-[#FF4F00]"
+                              />
+                              <button
+                                type="submit"
+                                disabled={!commentInputs[annId]?.trim()}
+                                className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#FF4F00] text-white hover:bg-[#e04500] disabled:opacity-40 transition-all shrink-0 cursor-pointer"
+                              >
+                                <Send size={12} />
+                              </button>
+                            </form>
+                          )}
+
+                          {/* Comments List */}
+                          {item.comments && item.comments.length > 0 && (
+                            <div className="space-y-3 pt-1">
+                              {item.comments.map((comment) => (
+                                <div key={comment.id} className="space-y-2">
+                                  {/* Main Comment */}
+                                  <div className="p-2.5 bg-white border border-[#e2ddd5] rounded-xl text-xs space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-1.5">
+                                        <div className="w-5 h-5 rounded-full bg-neutral-200 text-neutral-700 flex items-center justify-center font-bold text-[9px] shrink-0">
+                                          <User size={10} />
+                                        </div>
+                                        <MaskedEmail email={comment.senderEmail} />
+                                      </div>
+                                      <div className="flex items-center gap-1.5 text-[10px] text-neutral-400">
+                                        <span>
+                                          {new Date(comment.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                        {(isAdmin || comment.senderEmail.toLowerCase().trim() === userEmail.toLowerCase().trim()) && (
+                                          <button
+                                            onClick={() => handleDeleteComment(annId, comment.id)}
+                                            className="p-1 hover:text-red-500 rounded transition-colors cursor-pointer"
+                                            title="Hapus komentar"
+                                          >
+                                            <Trash2 size={11} />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <p className="text-neutral-800 text-xs pl-6 leading-relaxed">
+                                      {comment.content}
+                                    </p>
+
+                                    {/* Action: Reply button */}
+                                    <div className="pl-6 pt-0.5 flex items-center gap-3 text-[10px]">
+                                      <button
+                                        onClick={() => {
+                                          if (!isProOrAdmin) {
+                                            alert(t('toast.proLimitComment') || 'Komentar pada pengumuman adalah fitur khusus Pengguna Pro.');
+                                            return;
+                                          }
+                                          setReplyingToCommentId(replyingToCommentId === comment.id ? null : comment.id);
+                                        }}
+                                        className="font-bold text-[#FF4F00] hover:underline flex items-center gap-1 cursor-pointer"
+                                      >
+                                        <Reply size={11} />
+                                        Balas
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Sub-comment Reply Form */}
+                                  {replyingToCommentId === comment.id && (
+                                    <form
+                                      onSubmit={(e) => {
+                                        e.preventDefault();
+                                        const text = replyInputs[comment.id];
+                                        if (text) {
+                                          handleAddComment(annId, text, comment.id);
+                                          setReplyInputs((prev) => ({ ...prev, [comment.id]: '' }));
+                                          setReplyingToCommentId(null);
+                                        }
+                                      }}
+                                      className="ml-5 flex items-center gap-2 pl-2 border-l-2 border-[#FF4F00]"
+                                    >
+                                      <input
+                                        type="text"
+                                        value={replyInputs[comment.id] || ''}
+                                        onChange={(e) => setReplyInputs({ ...replyInputs, [comment.id]: e.target.value })}
+                                        placeholder="Tulis balasan..."
+                                        className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-[#e2ddd5] bg-white focus:outline-none focus:ring-1 focus:ring-[#FF4F00]"
+                                        autoFocus
+                                      />
+                                      <button
+                                        type="submit"
+                                        disabled={!replyInputs[comment.id]?.trim()}
+                                        className="px-2.5 py-1.5 text-xs font-bold rounded-lg bg-[#FF4F00] text-white hover:bg-[#e04500] disabled:opacity-40 transition-all shrink-0 cursor-pointer"
+                                      >
+                                        <Send size={12} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setReplyingToCommentId(null)}
+                                        className="px-2 py-1.5 text-xs text-neutral-500 hover:text-neutral-700 cursor-pointer"
+                                      >
+                                        Batal
+                                      </button>
+                                    </form>
+                                  )}
+
+                                  {/* Sub-comments / Replies Tree */}
+                                  {comment.replies && comment.replies.length > 0 && (
+                                    <div className="ml-5 border-l-2 border-[#e2ddd5] pl-3 space-y-2 pt-1">
+                                      {comment.replies.map((reply) => (
+                                        <div key={reply.id} className="p-2 bg-white border border-[#e2ddd5] rounded-lg text-xs space-y-1">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5">
+                                              <CornerDownRight size={10} className="text-[#FF4F00] shrink-0" />
+                                              <div className="w-4 h-4 rounded-full bg-neutral-200 text-neutral-700 flex items-center justify-center font-bold text-[8px] shrink-0">
+                                                <User size={8} />
+                                              </div>
+                                              <MaskedEmail email={reply.senderEmail} />
+                                            </div>
+                                            <div className="flex items-center gap-1 text-[10px] text-neutral-400">
+                                              <span>
+                                                {new Date(reply.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                              </span>
+                                              {(isAdmin || reply.senderEmail.toLowerCase().trim() === userEmail.toLowerCase().trim()) && (
+                                                <button
+                                                  onClick={() => handleDeleteComment(annId, reply.id)}
+                                                  className="p-1 hover:text-red-500 rounded transition-colors cursor-pointer"
+                                                  title="Hapus balasan"
+                                                >
+                                                  <Trash2 size={10} />
+                                                </button>
+                                              )}
+                                            </div>
+                                          </div>
+                                          <p className="text-neutral-800 text-xs pl-5 leading-relaxed">
+                                            {reply.content}
+                                          </p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
@@ -1070,14 +1526,14 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                               className="flex-1 flex items-center gap-3 truncate text-left"
                             >
                               <div className="w-10 h-10 rounded-full bg-neutral-200 text-neutral-700 flex items-center justify-center font-bold text-sm shrink-0">
-                                {formatDisplayEmail(email)[0].toUpperCase()}
+                                {email[0]?.toUpperCase() || 'U'}
                               </div>
                               <div className="truncate">
                                 <div className="text-sm font-bold text-neutral-900 truncate">
-                                  {formatDisplayEmail(email)}
+                                  <MaskedEmail email={email} />
                                 </div>
                                 <div className="text-xs text-neutral-500 truncate mt-0.5">
-                                  {lastMsg ? lastMsg.content : '{t.message}'}
+                                  {lastMsg ? lastMsg.content : t.message}
                                 </div>
                               </div>
                             </button>
@@ -1119,7 +1575,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                     </button>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-neutral-800 truncate max-w-[180px]">
-                        {formatDisplayEmail(selectedChatUser)}
+                        <MaskedEmail email={selectedChatUser} />
                       </span>
                       <button
                         onClick={() => selectedChatUser && handleDeleteUserConversation(selectedChatUser)}

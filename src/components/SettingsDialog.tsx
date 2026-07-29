@@ -270,15 +270,6 @@ export const SettingsDialog = ({
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => handleFetchModels(endpoint, apiKey)}
-                  disabled={fetchingModels}
-                  title="Muat Ulang dari Sumber"
-                  className="p-2 text-neutral-500 hover:text-[#ff4f00] hover:bg-neutral-200/50 rounded-lg transition-colors cursor-pointer"
-                >
-                  <RefreshCw size={16} className={fetchingModels ? 'animate-spin text-[#ff4f00]' : ''} />
-                </button>
-                <button
-                  type="button"
                   onClick={() => setIsModelPickerOpen(false)}
                   className="p-2 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 rounded-lg transition-colors cursor-pointer"
                 >
@@ -669,7 +660,7 @@ export const SettingsDialog = ({
           >
             <img
               src="https://api.producthunt.com/widgets/embed-image/v1/product_review.svg?product_id=1277343&theme=light"
-              alt="Lumina - Product Hunt"
+              alt="Tautan Lumina - Product Hunt"
               className="h-8 w-auto shrink-0"
               referrerPolicy="no-referrer"
             />

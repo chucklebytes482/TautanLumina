@@ -37,13 +37,14 @@ Penyimpanan data tautan, profil, atau direktori umum.
 ---
 
 ### B. Koleksi 2: `announcements`
-Penyimpanan pesan pengumuman publik dari Admin.
+Penyimpanan pesan pengumuman publik dari Admin dan komentar pengumuman.
 
 | Nama Atribut | Tipe Data | Size | Required | Catatan |
 | :--- | :--- | :--- | :--- | :--- |
 | `content` | String | 5000 | Ya | Teks pengumuman / Data pesan |
 | `senderEmail` | String | 255 | Ya | Email pengirim (default Admin) |
 | `senderName` | String | 255 | Tidak | Nama tampilan pengirim |
+| `comments` | String | 100000 | Tidak | JSON String array daftar komentar & sub-komentar |
 | `createdAt` | Integer / String | - | Tidak | Timestamp pengumuman |
 
 **Indeks (Indexes)**:
