@@ -1,0 +1,254 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --bg: #faf8f5;
+  --panel: #ffffff;
+  --border: #e2ddd5;
+  --text: #131313;
+  --muted: #737373;
+  --accent: #ff4f00;
+  --accent-hover: #e04500;
+  --danger: #ef4444;
+  --hover: #fff0eb;
+  --selected: #fff0eb;
+  --selected-border: #ff4f00;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+/* Global class overrides for dimmed dark eye-comfort mode when .dark-theme is present */
+.dark-theme {
+  color-scheme: dark;
+  --bg: #161618;
+  --panel: #1e1e22;
+  --border: #2d2d35;
+  --text: #e4e4e7;
+  --muted: #9ca3af;
+  --accent: #ff5c1c;
+  --accent-hover: #ff7338;
+  --danger: #ef4444;
+  --hover: #26262d;
+  --selected: #2f201b;
+  --selected-border: #ff5c1c;
+}
+
+.dark-theme body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.dark-theme .bg-white, .dark-theme .modal-panel, .dark-theme .editor-root, .dark-theme [class*="bg-white"] {
+  background-color: var(--panel) !important;
+  color: var(--text) !important;
+}
+
+.dark-theme .bg-\[\#faf8f5\], .dark-theme [class*="bg-[#faf8f5]"], .dark-theme .bg-\[\#faf8f6\], .dark-theme [class*="bg-[#faf8f6]"], .dark-theme .bg-neutral-100, .dark-theme .bg-neutral-50 {
+  background-color: var(--bg) !important;
+}
+
+.dark-theme .border-\[\#e2ddd5\], .dark-theme [class*="border-[#e2ddd5]"], .dark-theme .border-neutral-200, .dark-theme .border-neutral-100 {
+  border-color: var(--border) !important;
+}
+
+.dark-theme .text-neutral-900, .dark-theme .text-neutral-800, .dark-theme .text-neutral-700, .dark-theme .text-\[\#131313\], .dark-theme [class*="text-[#131313]"] {
+  color: var(--text) !important;
+}
+
+.dark-theme .text-neutral-600, .dark-theme .text-neutral-500, .dark-theme .text-neutral-400 {
+  color: var(--muted) !important;
+}
+
+.dark-theme .hover\:bg-\[\#faf8f5\]:hover, .dark-theme [class*="hover:bg-[#faf8f5]"]:hover, .dark-theme .hover\:bg-\[\#faf8f6\]:hover, .dark-theme [class*="hover:bg-[#faf8f6]"]:hover, .dark-theme .hover\:bg-neutral-100:hover, .dark-theme .hover\:bg-neutral-50:hover, .dark-theme .hover\:bg-neutral-200:hover {
+  background-color: var(--hover) !important;
+}
+
+.dark-theme input, .dark-theme textarea, .dark-theme select {
+  color: var(--text) !important;
+}
+
+.dark-theme input::placeholder, .dark-theme textarea::placeholder {
+  color: #a1a1aa !important;
+}
+
+.dark-theme [class*="bg-[#faf8f5]"],
+.dark-theme [class*="bg-[#faf8f6]"] {
+  background-color: #141416 !important;
+}
+
+.dark-theme .focus-within\:bg-white {
+  background-color: #1c1c20 !important;
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Cegah callout/menu native saat long-press (iOS) dan seleksi teks tak sengaja */
+.no-select, .no-select * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* touch-action: allow vertical scroll, tapi cegah gesture ganda */
+li[data-testid^="item-row-"] {
+  touch-action: pan-y;
+}
+
+/* Utility: hide scrollbar but scrollable */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/* Kompakkan input */
+input, textarea, select, button { font: inherit; }
+
+/* Drag state */
+.dnd-over {
+  outline: 2px solid var(--selected-border);
+  outline-offset: -2px;
+  background: var(--selected);
+}
+
+.dnd-drag {
+  opacity: 0.4;
+}
+
+/* Modal container: top-anchored, keyboard-aware */
+.modal-root {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.modal-panel {
+  background: var(--panel);
+  width: 100%;
+  max-width: 560px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 16px);
+  overflow: hidden;
+}
+
+.modal-body {
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.editor-root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.no-select { user-select: none; -webkit-user-select: none; }
+
+input, textarea, select { font-size: 16px; }
+@media (min-width: 480px) {
+  input, textarea, select { font-size: 14px; }
+}
+
+button { cursor: pointer; }
+
+/* Dark theme style adaptations to prevent color clashes */
+.dark-theme [class*="bg-[#fff0eb]"] {
+  background: var(--selected) !important;
+  background-color: var(--selected) !important;
+}
+
+.dark-theme [class*="hover:bg-[#fff0eb]"]:hover {
+  background: var(--hover) !important;
+  background-color: var(--hover) !important;
+}
+
+.dark-theme [class*="bg-[#ff4f00]/"],
+.dark-theme [class*="bg-[#FF4F00]/"] {
+  background-color: rgba(255, 92, 28, 0.15) !important;
+}
+
+.dark-theme [class*="bg-[#faf8f5]/"],
+.dark-theme [class*="bg-[#faf8f6]/"] {
+  background-color: rgba(20, 20, 22, 0.8) !important;
+}
+
+.dark-theme .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  color: #fcd34d !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+.dark-theme .bg-indigo-50 {
+  background-color: rgba(99, 102, 241, 0.15) !important;
+  color: #a5b4fc !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+.dark-theme .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  color: #93c5fd !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+.dark-theme .bg-red-50 {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.dark-theme [class*="bg-neutral-200/50"] {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark-theme [class*="hover:bg-neutral-200/50"]:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.dark-theme [class*="text-[#FF4F00]"], 
+.dark-theme [class*="text-[#ff4f00]"] {
+  color: var(--accent) !important;
+}
+
+.dark-theme [class*="hover:text-[#FF4F00]"]:hover, 
+.dark-theme [class*="hover:text-[#ff4f00]"]:hover {
+  color: var(--accent-hover) !important;
+}
+
+.dark-theme [class*="hover:border-[#FF4F00]"]:hover, 
+.dark-theme [class*="hover:border-[#ff4f00]"]:hover {
+  border-color: var(--selected-border) !important;
+}
+
+.dark-theme [class*="border-[#ff4f00]"], 
+.dark-theme [class*="border-[#FF4F00]"] {
+  border-color: rgba(255, 92, 28, 0.3) !important;
+}
+
+.dark-theme [class*="from-[#fff0eb]"] {
+  --tw-gradient-from: var(--selected) !important;
+  background-image: linear-gradient(to bottom right, var(--selected), var(--hover)) !important;
+}
+
+.dark-theme [class*="to-orange-100"] {
+  --tw-gradient-to: var(--hover) !important;
+}
+
