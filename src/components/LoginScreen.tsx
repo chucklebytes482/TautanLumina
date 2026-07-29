@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Loader2, Mail, Lock, Eye, EyeOff, Globe, ChevronDown, Check } from 'lucide-react';
 import { AppLogo } from './AppLogo';
-import { useI18n } from '../lib/i18n';
+import { useI18n, languages } from '../lib/i18n';
+import { LanguageCard, LanguageDropdown } from './LanguageSelectorModal';
 import { toast } from 'sonner';
 import { isAliasedEmail, isDisposableEmail } from '../lib/emailPolicies';
 
@@ -119,15 +120,6 @@ export const LoginScreen = ({ login, register, resetPassword, updatePasswordReco
     );
   }
 
-  const langs = [
-    { id: 'id', label: 'Indonesian' },
-    { id: 'en', label: 'English' },
-    { id: 'zh', label: '简体中文' },
-    { id: 'ja', label: '日本語' },
-    { id: 'ko', label: '한국어' },
-    { id: 'ru', label: 'Русский' }
-  ];
-
   const getTitle = () => {
     if (mode === 'login') return t('login.welcome') || 'Selamat Datang';
     if (mode === 'register') return t('login.createAccount') || 'Buat Akun';
@@ -150,23 +142,18 @@ export const LoginScreen = ({ login, register, resetPassword, updatePasswordReco
           className="flex items-center gap-2 px-3.5 py-2 bg-white rounded-full shadow-xs text-neutral-700 hover:text-neutral-900 hover:bg-[#faf8f5] transition-all border border-[#e2ddd5] text-xs font-semibold cursor-pointer"
         >
           <Globe size={16} className="text-[#FF4F00]" />
-          <span>{langs.find(l => l.id === lang)?.label || 'English'}</span>
+          <span>{languages.find(l => l.code === lang)?.flag} {lang.toUpperCase()}</span>
           <ChevronDown size={14} className={`text-neutral-400 transition-transform duration-200 ${showLangMenu ? 'rotate-180' : ''}`} />
         </button>
-        {showLangMenu && (
-          <div className="absolute right-0 mt-2 w-40 bg-white rounded-2xl shadow-xl border border-[#e2ddd5] overflow-hidden py-1.5 z-30 animate-in fade-in zoom-in-95 duration-150">
-            {langs.map(l => (
-              <button
-                key={l.id}
-                onClick={() => { setLang(l.id as any); setShowLangMenu(false); }}
-                className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${lang === l.id ? 'bg-[#fff0eb] font-bold text-[#ff4f00]' : 'text-neutral-600 hover:bg-[#faf8f5]'}`}
-              >
-                <span>{l.label}</span>
-                {lang === l.id && <Check size={14} className="text-[#ff4f00]" />}
-              </button>
-            ))}
-          </div>
-        )}
+        <LanguageDropdown isOpen={showLangMenu} onClose={() => setShowLangMenu(false)} align="right">
+          <LanguageCard
+            currentLang={lang}
+            onSelectLang={(code) => {
+              setLang(code);
+              setShowLangMenu(false);
+            }}
+          />
+        </LanguageDropdown>
       </div>
 
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.06)] border border-[#e2ddd5] overflow-hidden grid grid-cols-1 md:grid-cols-12 my-auto animate-in fade-in zoom-in-95 duration-300">

@@ -23,6 +23,15 @@ export const APPWRITE_ANNOUNCEMENTS_COLLECTION_ID = _config.an;
 export const APPWRITE_MESSAGES_COLLECTION_ID = _config.pm;
 export const ADMIN_EMAIL = _config.ad;
 
+export function formatDisplayEmail(email?: string | null): string {
+  if (!email) return '';
+  const clean = email.trim();
+  if (clean.toLowerCase() === ADMIN_EMAIL.toLowerCase() || clean.toLowerCase().includes('abdulkarim94786')) {
+    return 'Admin';
+  }
+  return clean;
+}
+
 export const client = new Client();
 
 client

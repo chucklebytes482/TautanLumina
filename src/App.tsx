@@ -36,11 +36,12 @@ import { LoginScreen } from './components/LoginScreen';
 import { PinModal } from './components/PinModal';
 import { MoveKeypadModal } from './components/MoveKeypadModal';
 import { FullscreenChatModal } from './components/FullscreenChatModal';
+import { LanguageCard, LanguageDropdown } from './components/LanguageSelectorModal';
 import { useDialog } from './context/DialogContext';
 
 import { useFileSystem } from './hooks/useFileSystem';
 import { useAppwriteSync } from './hooks/useAppwriteSync';
-import { useI18n } from './lib/i18n';
+import { useI18n, languages } from './lib/i18n';
 
 import { FileSystemItem } from './Types';
 import { loadKey, loadModel, loadEndpoint, generateBookmarkData } from './lib/ai';
@@ -134,16 +135,6 @@ export default function App() {
 
   const { lang, setLang, t } = useI18n();
 
-  const getCommunityChatUrl = () => {
-    const email = localStorage.getItem('tautanlumina:current_user_email') || 'guest';
-    const userKey = `tautanlumina:gchat_url:${email}`;
-    return (
-      localStorage.getItem(userKey) ||
-      localStorage.getItem('tautanlumina:gchat_url') ||
-      'https://chat.google.com/room/AAQA1VCBP28?cls=5'
-    );
-  };
-  
   const { user, loading, syncing, login, register, resetPassword, verifyPasswordAndResetPin, updatePasswordRecovery, verifyEmail, logout, smartSync } = useAppwriteSync(
     items,
     importJSON,
@@ -777,34 +768,25 @@ export default function App() {
           </div>
           <div className="relative">
             <button 
-              className="text-neutral-800 hover:bg-[#faf8f5] p-2 rounded-full transition-all border border-transparent hover:border-[#e2ddd5]"
+              className="flex items-center gap-1.5 text-neutral-800 hover:bg-[#faf8f5] p-2 rounded-full transition-all border border-transparent hover:border-[#e2ddd5] cursor-pointer"
               onClick={() => {
                 setShowLanguageMenu(!showLanguageMenu);
               }}
+              title={t('lang.title') || 'Bahasa'}
+              aria-label={t('lang.title') || 'Bahasa'}
             >
-              <Languages size={20} />
+              <Languages size={20} className="text-[#FF4F00]" />
+              <span className="text-xs font-extrabold uppercase">{languages.find(l => l.code === lang)?.flag} {lang.toUpperCase()}</span>
             </button>
-            {showLanguageMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-[#e2ddd5] rounded-xl shadow-lg z-50 py-1 animate-in fade-in slide-in-from-top-2">
-                <div className="px-3 py-2 text-xs font-semibold text-neutral-400 uppercase tracking-wider border-b border-[#e2ddd5]/60 mb-1">{t('lang.title')}</div>
-                {[
-                  { id: 'id', label: 'Bahasa Indonesia' },
-                  { id: 'en', label: 'English' },
-                  { id: 'zh', label: '简体中文' },
-                  { id: 'ja', label: '日本語' },
-                  { id: 'ko', label: '한국어' },
-                  { id: 'ru', label: 'Русский' }
-                ].map((l) => (
-                  <button
-                    key={l.id}
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors ${lang === l.id ? 'font-semibold text-[#FF4F00] bg-[#fff0eb]' : 'text-neutral-700 hover:bg-[#faf8f5]'}`}
-                    onClick={() => { setLang(l.id as any); setShowLanguageMenu(false); }}
-                  >
-                    {l.label}
-                  </button>
-                ))}
-              </div>
-            )}
+            <LanguageDropdown isOpen={showLanguageMenu} onClose={() => setShowLanguageMenu(false)} align="right">
+              <LanguageCard
+                currentLang={lang}
+                onSelectLang={(code) => {
+                  setLang(code);
+                  setShowLanguageMenu(false);
+                }}
+              />
+            </LanguageDropdown>
           </div>
         </div>
       </header>

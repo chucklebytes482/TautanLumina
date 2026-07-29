@@ -59,6 +59,61 @@ export const loadModelHistory = (): string[] => {
   return [DEFAULT_MODEL];
 };
 
+export const fetchAvailableModels = async (endpoint: string, apiKey: string): Promise<string[]> => {
+  const finalEndpoint = endpoint || DEFAULT_ENDPOINT;
+  let modelsUrl = finalEndpoint.trim();
+  
+  if (modelsUrl.endsWith('/chat/completions')) {
+    modelsUrl = modelsUrl.replace(/\/chat\/completions$/, '/models');
+  } else if (modelsUrl.endsWith('/completions')) {
+    modelsUrl = modelsUrl.replace(/\/completions$/, '/models');
+  } else if (!modelsUrl.endsWith('/models')) {
+    modelsUrl = modelsUrl.replace(/\/+$/, '') + '/models';
+  }
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (typeof window !== 'undefined') {
+    headers['HTTP-Referer'] = window.location.origin;
+    headers['X-Title'] = 'tautanlumina';
+  }
+
+  if (apiKey && apiKey.trim()) {
+    headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+  }
+
+  const res = await fetch(modelsUrl, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`HTTP ${res.status}: ${errText.slice(0, 100) || res.statusText}`);
+  }
+
+  const data = await res.json();
+  let rawList: any[] = [];
+  if (Array.isArray(data?.data)) {
+    rawList = data.data;
+  } else if (Array.isArray(data)) {
+    rawList = data;
+  } else if (Array.isArray(data?.models)) {
+    rawList = data.models;
+  }
+
+  const models: string[] = rawList
+    .map((item: any) => {
+      if (typeof item === 'string') return item;
+      return item?.id || item?.name || '';
+    })
+    .filter((id: string) => Boolean(id) && typeof id === 'string');
+
+  return Array.from(new Set(models));
+};
+
 const stripCodeFence = (t: string): string => {
   const m = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
   return m ? m[1].trim() : t.trim();

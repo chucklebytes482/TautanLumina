@@ -1,3 +1,4 @@
+import { ADMIN_EMAIL } from '../lib/appwrite';
 import React, { useState } from 'react';
 import { Crown, CheckCircle2, Clock, Upload, ShieldCheck, Zap, Copy } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
@@ -13,7 +14,7 @@ export const SubscriptionCard = ({ user }: { user: any }) => {
   
   const prefs = user?.prefs || {};
   const proStatus = prefs.proStatus || 'free'; // 'free', 'pending', 'pro'
-  const isDeveloper = user?.email?.toLowerCase() === 'abdulkarim94786@gmail.com';
+  const isDeveloper = user?.email?.toLowerCase() === ADMIN_EMAIL;
 
   const handleDevSetStatus = async (status: 'pro' | 'free' | 'pending') => {
     setLoading(true);
@@ -207,7 +208,7 @@ export const SubscriptionCard = ({ user }: { user: any }) => {
             </div>
             <div className="flex items-start gap-2.5 text-sm text-neutral-700">
               <CheckCircle2 size={18} className="text-[#ff4f00] shrink-0 mt-0.5" />
-              <span>{t("sub.feat4")}</span>
+              <span dangerouslySetInnerHTML={{ __html: t("sub.feat4") }}></span>
             </div>
           </div>
           

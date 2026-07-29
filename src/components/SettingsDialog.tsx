@@ -1,7 +1,8 @@
+import { ADMIN_EMAIL, formatDisplayEmail } from '../lib/appwrite';
 import React, { useState, useEffect } from 'react';
 import { 
   Key, 
-  Wallet, 
+  Crown, 
   User, 
   LogOut, 
   RefreshCw, 
@@ -16,13 +17,17 @@ import {
   Lock, 
   Shield, 
   ChevronRight,
-  LayoutGrid
+  LayoutGrid,
+  Search,
+  Check,
+  ChevronDown,
+  Cpu
 } from 'lucide-react';
 import { SubscriptionCard } from './SubscriptionCard';
 import { FileSystemItem } from '../Types';
 import { toast } from 'sonner';
 
-import { loadKey, loadModel, loadEndpoint, loadModelHistory, saveKey, saveModel, saveEndpoint } from '../lib/ai';
+import { loadKey, loadModel, loadEndpoint, loadModelHistory, saveKey, saveModel, saveEndpoint, fetchAvailableModels } from '../lib/ai';
 import { useI18n } from '../lib/i18n';
 import { hasPinSet } from '../lib/pin';
 
@@ -54,40 +59,91 @@ export const SettingsDialog = ({
   initialTab
 }: Props) => {
   const { t } = useI18n();
-  const isDeveloper = user?.email?.toLowerCase() === 'abdulkarim94786@gmail.com';
+  const isDeveloper = user?.email?.toLowerCase() === ADMIN_EMAIL;
   const [activeTab, setActiveTab] = useState<TabType>(initialTab || null);
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState('');
   const [endpoint, setEndpoint] = useState('');
-  const [gchatUrl, setGchatUrl] = useState('');
-  const modelHistory = loadModelHistory();
+  const [fetchedModels, setFetchedModels] = useState<string[]>([]);
+  const [fetchingModels, setFetchingModels] = useState(false);
+  const getModelQualityScore = (m: string): number => {
+    const lower = m.toLowerCase();
+    let score = 0;
 
-  const getGchatStorageKey = () => {
-    const email = localStorage.getItem('tautanlumina:current_user_email') || 'guest';
-    return `tautanlumina:gchat_url:${email}`;
+    // Top tier models ranking
+    if (lower.includes('deepseek-r1')) score += 100;
+    else if (lower.includes('deepseek-v3') || lower.includes('deepseek/deepseek-chat')) score += 95;
+    else if (lower.includes('gemini-2.5') || lower.includes('gemini-2.0-flash-exp')) score += 92;
+    else if (lower.includes('claude-3.7') || lower.includes('claude-3-7')) score += 90;
+    else if (lower.includes('claude-3.5') || lower.includes('claude-3-5')) score += 88;
+    else if (lower.includes('gpt-4o') || lower.includes('o3-mini') || lower.includes('o1-')) score += 85;
+    else if (lower.includes('gemini-1.5-pro') || lower.includes('gemini-2.0')) score += 82;
+    else if (lower.includes('llama-3.3-70b')) score += 80;
+    else if (lower.includes('llama-3.1-405b') || lower.includes('llama-3.1-70b')) score += 78;
+    else if (lower.includes('qwen-2.5-72b') || lower.includes('qwen-2.5-coder') || lower.includes('qwen2.5-72b')) score += 75;
+    else if (lower.includes('mistral-large') || lower.includes('codestral')) score += 70;
+    else if (lower.includes('nemotron-4') || lower.includes('nemotron-3-ultra')) score += 65;
+    else if (lower.includes('llama-3') || lower.includes('qwen')) score += 50;
+    else if (lower.includes('gemma')) score += 40;
+
+    // Extra points for large parameter or instruct models
+    if (lower.includes('instruct') || lower.includes('chat')) score += 2;
+    if (lower.includes('free')) score += 1;
+
+    return score;
   };
 
+  const [modelFilter, setModelFilter] = useState<'free' | 'pro'>('free');
+  const [modelSearch, setModelSearch] = useState('');
+  const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
+  const modelHistory = loadModelHistory();
+
   useEffect(() => {
-    setApiKey(loadKey());
-    setModel(loadModel());
-    setEndpoint(loadEndpoint());
-    setGchatUrl(localStorage.getItem(getGchatStorageKey()) || localStorage.getItem('tautanlumina:gchat_url') || 'https://chat.google.com/room/AAQA1VCBP28?cls=5');
+    const loadedKey = loadKey();
+    const loadedModel = loadModel();
+    const loadedEndpoint = loadEndpoint();
+    setApiKey(loadedKey);
+    setModel(loadedModel);
+    setEndpoint(loadedEndpoint);
   }, []);
+
+  const handleFetchModels = async (ep?: string, key?: string, silent = false) => {
+    const targetEp = ep !== undefined ? ep : endpoint;
+    const targetKey = key !== undefined ? key : apiKey;
+
+    setFetchingModels(true);
+    try {
+      const list = await fetchAvailableModels(targetEp, targetKey);
+      if (list && list.length > 0) {
+        setFetchedModels(list);
+        if (!silent) {
+          toast.success(`Berhasil memuat ${list.length} model`);
+        }
+        if (!model) {
+          setModel(list[0]);
+        }
+      } else if (!silent) {
+        toast.error('Tidak ada model yang ditemukan.');
+      }
+    } catch (err: any) {
+      if (!silent) {
+        toast.error(err.message || 'Gagal memuat model dari sumber.');
+      }
+    } finally {
+      setFetchingModels(false);
+    }
+  };
+
+  const ensureModelsLoaded = () => {
+    if (fetchedModels.length === 0 && !fetchingModels) {
+      handleFetchModels(endpoint, apiKey, true);
+    }
+  };
 
   const handleSaveSettings = () => {
     saveKey(apiKey.trim());
     saveModel(model.trim());
     saveEndpoint(endpoint.trim());
-    if (isDeveloper) {
-      const gKey = getGchatStorageKey();
-      if (gchatUrl.trim()) {
-        localStorage.setItem(gKey, gchatUrl.trim());
-        localStorage.setItem('tautanlumina:gchat_url', gchatUrl.trim());
-      } else {
-        localStorage.removeItem(gKey);
-        localStorage.removeItem('tautanlumina:gchat_url');
-      }
-    }
     toast.success(t('toast.saved'));
     onClose();
   };
@@ -134,8 +190,10 @@ export const SettingsDialog = ({
               try {
                 const text = await navigator.clipboard.readText();
                 if (text && text.trim()) {
-                  setApiKey(text.trim());
+                  const pasted = text.trim();
+                  setApiKey(pasted);
                   toast.success(t('settings.apiKeyPasted'));
+                  handleFetchModels(endpoint, pasted);
                 } else {
                   toast.error(t('settings.clipboardEmpty'));
                 }
@@ -151,41 +209,35 @@ export const SettingsDialog = ({
       </div>
       <div className="space-y-1.5">
         <label className="text-sm font-medium text-neutral-700">{t('settings.model')}</label>
-        <input
-          type="text"
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          placeholder="nvidia/nemotron-3-ultra-550b-a55b:free"
-          list="settings-model-history"
-          autoComplete="off"
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck="false"
-          className="w-full border border-[#e2ddd5] rounded-xl px-3.5 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#ff4f00]/20 focus:border-[#ff4f00] transition-all bg-[#faf8f5] focus:bg-white"
-        />
-        <datalist id="settings-model-history">
-          {modelHistory.map((m) => (
-            <option key={m} value={m} />
-          ))}
-        </datalist>
-      </div>
 
-      {isDeveloper && (
-        <div className="space-y-1.5 pt-2 border-t border-neutral-200/80">
-          <label className="text-sm font-medium text-neutral-700">{t('chat.title') || 'Chat Komunitas'}</label>
-          <input
-            type="text"
-            value={gchatUrl}
-            onChange={(e) => setGchatUrl(e.target.value)}
-            placeholder="Tautan Chat Komunitas (WhatsApp, Telegram, dll)"
-            autoComplete="off"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck="false"
-            className="w-full border border-[#e2ddd5] rounded-xl px-3.5 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#ff4f00]/20 focus:border-[#ff4f00] transition-all bg-[#faf8f5] focus:bg-white"
-          />
-        </div>
-      )}
+        <button
+          type="button"
+          onClick={() => {
+            setModelFilter('free');
+            setIsModelPickerOpen(true);
+            ensureModelsLoaded();
+          }}
+          className="w-full flex items-center justify-between border border-[#e2ddd5] hover:border-[#ff4f00] rounded-xl px-3.5 py-3 bg-[#faf8f5] hover:bg-white transition-all text-left group cursor-pointer shadow-2xs"
+        >
+          <div className="flex items-center gap-2 overflow-hidden mr-2">
+            <span
+              className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md shrink-0 uppercase tracking-wider ${
+                model.toLowerCase().includes('free')
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                  : 'bg-purple-100 text-purple-800 border border-purple-200'
+              }`}
+            >
+              {model.toLowerCase().includes('free') ? '🎁 Free' : '⚡ Pro'}
+            </span>
+            <span className="text-xs font-mono font-semibold text-neutral-800 truncate">
+              {model || 'Pilih Model AI dari Sumber...'}
+            </span>
+          </div>
+          <div className="flex items-center gap-1 text-neutral-400 group-hover:text-[#ff4f00] shrink-0">
+            <ChevronDown size={18} />
+          </div>
+        </button>
+      </div>
 
       <button
         onClick={handleSaveSettings}
@@ -193,6 +245,201 @@ export const SettingsDialog = ({
       >
         <Save size={18} /> {t('settings.api.save')}
       </button>
+
+      {/* Jendela Modal Memuat Model dari Sumber */}
+      {isModelPickerOpen && (
+        <div className="fixed inset-0 bg-black/50 z-[120] flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl border border-[#e2ddd5] dark:border-neutral-800 overflow-hidden">
+            
+            {/* Header */}
+            <div className="p-4 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between bg-[#faf8f5] dark:bg-neutral-900/50">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#fff0eb] text-[#ff4f00] flex items-center justify-center shrink-0 border border-[#ff4f00]/20">
+                  <Cpu size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-neutral-900 dark:text-neutral-100 text-sm">Jendela Model AI</h3>
+                  <p className="text-[11px] text-neutral-500">
+                    {fetchedModels.length > 0
+                      ? `${fetchedModels.length} model termuat dari sumber`
+                      : 'Memuat daftar model dari provider...'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleFetchModels(endpoint, apiKey)}
+                  disabled={fetchingModels}
+                  title="Muat Ulang dari Sumber"
+                  className="p-2 text-neutral-500 hover:text-[#ff4f00] hover:bg-neutral-200/50 rounded-lg transition-colors cursor-pointer"
+                >
+                  <RefreshCw size={16} className={fetchingModels ? 'animate-spin text-[#ff4f00]' : ''} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsModelPickerOpen(false)}
+                  className="p-2 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Tabs & Search */}
+            <div className="p-3 border-b border-neutral-100 dark:border-neutral-800 space-y-2.5 bg-white dark:bg-neutral-900">
+              {/* Filter Buttons */}
+              <div className="flex items-center gap-2 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setModelFilter('free')}
+                  className={`flex-1 py-2 px-3 rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 ${
+                    modelFilter === 'free'
+                      ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                      : 'bg-emerald-100/70 text-emerald-800 hover:bg-emerald-200'
+                  }`}
+                >
+                  <span>🎁</span> Free ({fetchedModels.filter((m) => m.toLowerCase().includes('free')).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModelFilter('pro')}
+                  className={`flex-1 py-2 px-3 rounded-xl transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 ${
+                    modelFilter === 'pro'
+                      ? 'bg-purple-600 text-white shadow-xs font-bold'
+                      : 'bg-purple-100/70 text-purple-800 hover:bg-purple-200'
+                  }`}
+                >
+                  <span>⚡</span> Pro ({fetchedModels.filter((m) => !m.toLowerCase().includes('free')).length})
+                </button>
+              </div>
+
+              {/* Search Field */}
+              <div className="relative flex items-center">
+                <Search size={15} className="absolute left-3 text-neutral-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={modelSearch}
+                  onChange={(e) => setModelSearch(e.target.value)}
+                  placeholder="Cari model..."
+                  className="w-full pl-9 pr-8 py-2 text-xs border border-[#e2ddd5] dark:border-neutral-700 rounded-xl bg-[#faf8f5] dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#ff4f00]"
+                />
+                {modelSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setModelSearch('')}
+                    className="absolute right-2.5 text-neutral-400 hover:text-neutral-600 text-xs cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Model List Items */}
+            <div className="p-3 overflow-y-auto max-h-[50vh] space-y-1.5">
+              {fetchingModels && fetchedModels.length === 0 ? (
+                <div className="py-12 text-center text-xs text-neutral-500 space-y-2">
+                  <RefreshCw size={24} className="animate-spin text-[#ff4f00] mx-auto" />
+                  <p className="font-medium">Memuat model dari sumber provider...</p>
+                </div>
+              ) : (() => {
+                let list = fetchedModels.length > 0 ? fetchedModels : modelHistory;
+                if (fetchedModels.length > 0) {
+                  if (modelFilter === 'free') {
+                    list = list.filter((m) => m.toLowerCase().includes('free'));
+                  } else if (modelFilter === 'pro') {
+                    list = list.filter((m) => !m.toLowerCase().includes('free'));
+                  }
+                }
+                if (modelSearch.trim()) {
+                  const query = modelSearch.toLowerCase().trim();
+                  list = list.filter((m) => m.toLowerCase().includes(query));
+                }
+
+                // Automatically sort by best quality score
+                const sortedList = [...list].sort((a, b) => {
+                  const scoreA = getModelQualityScore(a);
+                  const scoreB = getModelQualityScore(b);
+                  if (scoreB !== scoreA) return scoreB - scoreA;
+                  return a.localeCompare(b);
+                });
+
+                if (sortedList.length === 0) {
+                  return (
+                    <div className="py-10 text-center text-xs text-neutral-500 space-y-2">
+                      <p className="font-medium">Model tidak ditemukan.</p>
+                      <button
+                        type="button"
+                        onClick={() => handleFetchModels(endpoint, apiKey)}
+                        className="px-3 py-1.5 bg-[#ff4f00] text-white rounded-lg text-xs font-semibold cursor-pointer"
+                      >
+                        Muat Ulang dari Sumber
+                      </button>
+                    </div>
+                  );
+                }
+
+                return sortedList.map((m) => {
+                  const isSelected = model === m;
+                  const isFree = m.toLowerCase().includes('free');
+
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => {
+                        setModel(m);
+                        setIsModelPickerOpen(false);
+                        toast.success(`Model terpilih: ${m}`);
+                      }}
+                      className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all cursor-pointer border ${
+                        isSelected
+                          ? 'border-[#ff4f00] bg-[#fff0eb]/80 dark:bg-[#ff4f00]/10 shadow-2xs font-semibold'
+                          : 'border-transparent hover:border-[#e2ddd5] hover:bg-[#faf8f5] dark:hover:bg-neutral-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0 pr-2">
+                        <span
+                          className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md shrink-0 uppercase tracking-wider ${
+                            isFree
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                              : 'bg-purple-100 text-purple-800 border border-purple-200'
+                          }`}
+                        >
+                          {isFree ? '🎁 Free' : '⚡ Pro'}
+                        </span>
+                        <span
+                          className={`text-xs font-mono truncate ${
+                            isSelected ? 'text-[#ff4f00]' : 'text-neutral-800 dark:text-neutral-200'
+                          }`}
+                        >
+                          {m}
+                        </span>
+                      </div>
+                      {isSelected && <Check size={16} className="text-[#ff4f00] shrink-0" />}
+                    </button>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 bg-[#faf8f5] dark:bg-neutral-900 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs text-neutral-500">
+              <span>Klik pada model untuk memilih</span>
+              <button
+                type="button"
+                onClick={() => setIsModelPickerOpen(false)}
+                className="px-3 py-1 bg-white border border-[#e2ddd5] dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg text-xs font-semibold hover:bg-neutral-100 cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -204,10 +451,10 @@ export const SettingsDialog = ({
       ) : user ? (
         <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-xs flex items-center gap-4 relative">
           <div className="w-12 h-12 bg-gradient-to-br from-[#FF4F00] to-amber-500 text-white rounded-full flex items-center justify-center font-bold text-xl flex-shrink-0 shadow-inner">
-            {user.email.charAt(0).toUpperCase()}
+            {formatDisplayEmail(user.email).charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0 pr-8">
-            <p className="font-medium text-neutral-900 truncate">{user.email}</p>
+            <p className="font-medium text-neutral-900 truncate">{formatDisplayEmail(user.email)}</p>
             <p className="text-xs text-neutral-500 font-mono truncate mt-0.5">ID: {user.$id}</p>
           </div>
           <button
@@ -293,18 +540,7 @@ export const SettingsDialog = ({
 
   const renderSyncTab = () => (
     <div className="space-y-4">
-      <h4 className="text-sm font-semibold text-neutral-800 border-b border-neutral-100 pb-2">{t('menu.sync') || 'Sync'}</h4>
-      {user ? (
-        <div className="space-y-3">
-          <p className="text-sm text-neutral-500">
-            Sinkronisasi manual cukup dengan memuat ulang halaman.
-          </p>
-        </div>
-      ) : (
-        <p className="text-sm text-neutral-500">{t('settings.profile.notLoggedIn')}</p>
-      )}
-
-      <div className="mt-6">
+      <div>
         <h4 className="text-sm font-semibold text-neutral-800 border-b border-neutral-100 pb-2">{t('sync.offline.title') || 'Offline File'}</h4>
         <div className="space-y-3 mt-4">
           <button
@@ -417,7 +653,7 @@ export const SettingsDialog = ({
           <div>
             <div className="px-3 mb-2 text-[11px] font-bold tracking-widest text-neutral-400 uppercase">{t('menu.personal')}</div>
             <div className="space-y-1">
-              <NavItem id="wallet" icon={Wallet} label={t('menu.wallet')} />
+              <NavItem id="wallet" icon={Crown} label={t('menu.wallet')} />
               <NavItem id="profile" icon={User} label={t('menu.profile')} />
             </div>
           </div>

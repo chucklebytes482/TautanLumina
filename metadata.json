@@ -1,6 +1,8 @@
 {
   "name": "Lumina",
   "description": "Lumina is an ultra-minimalist, AI-powered smart bookmark and note manager with auto-tagging, PIN folder locking, and cloud sync.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": [
+    "microphone"
+  ],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

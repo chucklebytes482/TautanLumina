@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { ID, Permission, Role } from 'appwrite';
-import { account, databases, storage, APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID, APPWRITE_BUCKET_ID } from '../lib/appwrite';
+import { account, databases, storage, APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID, APPWRITE_BUCKET_ID, ADMIN_EMAIL } from '../lib/appwrite';
 import { toast } from 'sonner';
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
@@ -88,7 +88,7 @@ export function useAppwriteSync(
     } catch (e: any) {
       toast.dismiss();
       let msg = t('toast.loginError');
-      const isDeveloper = email.toLowerCase() === 'abdulkarim94786@gmail.com';
+      const isDeveloper = email.toLowerCase() === ADMIN_EMAIL;
       if (e?.type === 'user_invalid_credentials' || e?.code === 401) {
         msg = `${t('toast.loginError')}: Email atau kata sandi salah.`;
       } else if (isDeveloper && e?.message) {
@@ -117,7 +117,7 @@ export function useAppwriteSync(
     } catch (e: any) {
       toast.dismiss();
       let msg = t('toast.signupError');
-      const isDeveloper = email.toLowerCase() === 'abdulkarim94786@gmail.com';
+      const isDeveloper = email.toLowerCase() === ADMIN_EMAIL;
       if (e?.type === 'user_already_exists' || e?.code === 409) {
         msg = `${t('toast.signupError')}: Email sudah terdaftar. Silakan masuk.`;
       } else if (isDeveloper && e?.message) {
@@ -147,7 +147,7 @@ export function useAppwriteSync(
       return true;
     } catch (e: any) {
       toast.dismiss();
-      const isDeveloper = email.toLowerCase() === 'abdulkarim94786@gmail.com';
+      const isDeveloper = email.toLowerCase() === ADMIN_EMAIL;
       const details = (isDeveloper && e?.message) ? `: ${e.message}` : '';
       toast.error(`${t('toast.resetLinkError')}${details}`, { duration: 1500 });
       return false;
@@ -441,7 +441,7 @@ export function useAppwriteSync(
           ? t('toast.syncOffline')
           : t('toast.syncError');
 
-        const isDeveloper = targetUser?.email?.toLowerCase() === 'abdulkarim94786@gmail.com';
+        const isDeveloper = targetUser?.email?.toLowerCase() === ADMIN_EMAIL;
         if (isDeveloper && e?.message && !isNetworkOrServerErr) {
           errorMsg = `${t('toast.syncError')}: ${e.message}`;
         }
