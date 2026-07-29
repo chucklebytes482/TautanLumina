@@ -594,6 +594,8 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder={!isAdmin && !isProOrAdmin ? `${placeholder} (${getUserPrivateMsgCountToday()}/3 per hari)` : placeholder}
+          autoComplete="new-password"
+          name="private_chat_input"
           className="flex-1 px-3.5 py-2.5 text-sm rounded-xl border border-[#e2ddd5] focus:outline-none focus:ring-2 focus:ring-[#FF4F00] bg-[#faf8f5]"
         />
         <button
@@ -1276,6 +1278,8 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                     onChange={(e) => setNewAnnouncement(e.target.value)}
                     placeholder={t.writeAnnouncement}
                     rows={4}
+                    autoComplete="new-password"
+                    name="announcement_textarea"
                     className="w-full p-3 text-sm rounded-xl border border-[#e2ddd5] focus:outline-none focus:ring-2 focus:ring-[#FF4F00] bg-[#faf8f5] resize-none"
                   />
                   <div className="flex justify-end gap-2 mt-1">
@@ -1393,6 +1397,8 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                                 value={commentInputs[annId] || ''}
                                 onChange={(e) => setCommentInputs({ ...commentInputs, [annId]: e.target.value })}
                                 placeholder="Tulis komentar..."
+                                autoComplete="new-password"
+                                name="comment_input"
                                 className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-[#e2ddd5] bg-white focus:outline-none focus:ring-1 focus:ring-[#FF4F00]"
                               />
                               <button

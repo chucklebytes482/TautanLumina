@@ -162,7 +162,8 @@ export const SettingsDialog = ({
           value={endpoint}
           onChange={(e) => setEndpoint(e.target.value)}
           placeholder="https://openrouter.ai/api/v1/chat/completions"
-          autoComplete="off"
+          autoComplete="new-password"
+          name="endpoint_input"
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck="false"
@@ -314,6 +315,8 @@ export const SettingsDialog = ({
                   value={modelSearch}
                   onChange={(e) => setModelSearch(e.target.value)}
                   placeholder="Cari model..."
+                  autoComplete="new-password"
+                  name="model_search_input"
                   className="w-full pl-9 pr-8 py-2 text-xs border border-[#e2ddd5] dark:border-neutral-700 rounded-xl bg-[#faf8f5] dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#ff4f00]"
                 />
                 {modelSearch && (

@@ -333,6 +333,7 @@ export const PinModal: React.FC<PinModalProps> = ({
                     onChange={(e) => setAccountPasswordInput(e.target.value)}
                     placeholder="••••••••"
                     autoComplete="new-password"
+                    name="reset_acc_pwd"
                     className="w-full border border-[#e2ddd5] rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4f00]/20 focus:border-[#ff4f00] bg-white text-neutral-900 shadow-2xs"
                     autoFocus
                     onKeyDown={(e) => {
