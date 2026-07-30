@@ -3,6 +3,7 @@ import { MoreVertical, Folder, Pin, Trash2, Lock, FileText, FolderHeart, FolderC
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
 import { toast } from 'sonner';
+import { usePinState } from '../lib/pin';
 
 interface Props {
   items: FileSystemItem[];
@@ -38,6 +39,7 @@ export const FileBrowser = ({
   currentFolderId,
 }: Props) => {
   const { t } = useI18n();
+  const pinActive = usePinState();
   const label = emptyLabel || t('empty.folder');
   if (items.length === 0) {
     return (
@@ -53,7 +55,7 @@ export const FileBrowser = ({
   let noteCounter = 0;
 
   return (
-    <ul data-testid="file-list" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 p-1">
+    <ul data-testid="file-list" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1.5 p-1">
       {items.map((it, index) => {
         const isNote = it.type === 'note';
         if (isNote) {
@@ -120,6 +122,7 @@ const Row = ({
   noteNumber,
 }: RowProps) => {
   const { t } = useI18n();
+  const pinActive = usePinState();
   const [dropZone, setDropZone] = useState<'over' | 'left' | 'right' | null>(null);
   const rowRef = useRef<HTMLLIElement>(null);
 
@@ -209,7 +212,7 @@ const Row = ({
       onDrop={handleDrop}
       onClick={handleClick}
       className={[
-        'flex items-center gap-2 px-2.5 py-2.5 border rounded-xl select-none no-select bg-white cursor-pointer transition-all hover:shadow-xs hover:border-[#ff4f00]/40',
+        'flex items-center gap-1.5 px-2 py-2 border rounded-xl select-none no-select bg-white cursor-pointer transition-all hover:shadow-xs hover:border-[#ff4f00]/40',
         selected ? 'bg-[#fff0eb] border-[#ff4f00]' : 'border-[#e2ddd5]',
         dropZone === 'over' ? 'ring-2 ring-[#ff4f00]' : '',
         dropZone === 'left' ? 'border-l-4 border-l-[#ff4f00]' : '',
@@ -237,59 +240,48 @@ const Row = ({
 
 
       {/* Icon / Favicon */}
-      <div className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg bg-[#faf8f5] border border-[#e2ddd5]/60 overflow-hidden relative">
+      <div className="shrink-0 w-6.5 h-6.5 flex items-center justify-center rounded-lg bg-[#faf8f5] border border-[#e2ddd5]/60 overflow-hidden relative">
         {item.type === 'folder' ? (
-          item.locked ? (
-            <Lock size={15} className="text-[#ff4f00]" strokeWidth={2.2} />
+          item.locked && pinActive ? (
+            <Lock size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
           ) : item.id === 'folder-catatan' ? (
-            <FolderHeart size={15} className="text-[#ff4f00]" strokeWidth={2.2} />
+            <FolderHeart size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
           ) : item.id === 'folder-hello-world' ? (
-            <FolderCode size={15} className="text-[#ff4f00]" strokeWidth={2.2} />
+            <FolderCode size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
           ) : (
-            <Folder size={15} className="text-[#ff4f00]" strokeWidth={2.2} />
+            <Folder size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
           )
         ) : item.type === 'note' ? (
-          <span className="text-xs font-bold text-[#ff4f00] font-mono select-none">
+          <span className="text-[11px] font-bold text-[#ff4f00] font-mono select-none">
             {noteNumber}
           </span>
         ) : isUrl && domain ? (
-          <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt="" className="w-4 h-4 object-contain" />
+          <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt="" className="w-3.5 h-3.5 object-contain" />
         ) : (
-          <div className="w-4 h-4 bg-neutral-200 rounded-sm" />
+          <div className="w-3.5 h-3.5 bg-neutral-200 rounded-sm" />
         )}
       </div>
 
       {/* Info */}
       <div className="min-w-0 flex-1">
         {item.type === 'folder' ? (
-          <div className="text-[13px] leading-snug font-medium text-neutral-900 line-clamp-2 break-words" title={item.name}>
+          <div className="text-[11.5px] leading-snug font-medium text-neutral-900 line-clamp-2 break-words" title={item.name}>
             {item.name || t('file.folder')}
           </div>
         ) : item.type === 'note' ? (
-          <div className="text-[13px] leading-snug font-medium text-neutral-900 line-clamp-2 break-words" title={item.content || item.name}>
+          <div className="text-[11.5px] leading-snug font-medium text-neutral-900 line-clamp-2 break-words" title={item.content || item.name}>
             {item.content || item.name || t('file.note')}
           </div>
         ) : (
-          <>
-            <div className="text-[13px] leading-tight font-medium text-neutral-900 truncate flex items-center gap-1" title={item.content || item.name}>
-              <span className="truncate">
-                {item.type === 'file' && item.name.length > 12 ? (
-                  item.name.substring(0, 12) + '...'
-                ) : (
-                  item.name || t('file.bookmark')
-                )}
-              </span>
-            </div>
-            <div className="text-[10px] text-neutral-500 truncate mt-0.5">
-               {item.category || (pathLabel && pathLabel !== '/' ? pathLabel : domain || 'Bookmark')}
-            </div>
-          </>
+          <div className="text-[11.5px] leading-snug font-medium text-neutral-900 line-clamp-2 break-words" title={item.name || item.content}>
+            {item.name || domain || t('file.bookmark')}
+          </div>
         )}
       </div>
 
       {/* Menu Button */}
       {!selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-hello-world' && (
-        <div className="flex items-center">
+        <div className="flex items-center shrink-0">
           <button
             data-testid={`item-menu-${item.id}`}
             data-no-press="1"
@@ -298,10 +290,10 @@ const Row = ({
               const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
               onMenu(rect);
             }}
-            className="p-1 shrink-0 rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
+            className="p-1.5 -mr-1 rounded-lg text-neutral-400 hover:text-neutral-700 active:text-neutral-900 hover:bg-neutral-100 active:bg-neutral-200 transition-colors touch-manipulation min-w-[28px] min-h-[28px] flex items-center justify-center"
             title={t('file.menu')}
           >
-            <MoreVertical size={14} />
+            <MoreVertical size={18} />
           </button>
         </div>
       )}

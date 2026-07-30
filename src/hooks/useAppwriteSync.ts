@@ -4,7 +4,7 @@ import { account, databases, storage, APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_
 import { toast } from 'sonner';
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
-import { removePin } from '../lib/pin';
+import { removePin, getStoredPinHash, getStoredPinUpdatedAt, setStoredPinHash } from '../lib/pin';
 import * as db from '../db/db';
 
 export function useAppwriteSync(
@@ -90,7 +90,7 @@ export function useAppwriteSync(
       let msg = t('toast.loginError');
       const isDeveloper = email.toLowerCase() === ADMIN_EMAIL;
       if (e?.type === 'user_invalid_credentials' || e?.code === 401) {
-        msg = `${t('toast.loginError')}: Email atau kata sandi salah.`;
+        msg = `${t('toast.loginError')}: ${t('toast.invalidCredentials')}`;
       } else if (isDeveloper && e?.message) {
         msg = `${t('toast.loginError')}: ${e.message}`;
       }
@@ -119,7 +119,7 @@ export function useAppwriteSync(
       let msg = t('toast.signupError');
       const isDeveloper = email.toLowerCase() === ADMIN_EMAIL;
       if (e?.type === 'user_already_exists' || e?.code === 409) {
-        msg = `${t('toast.signupError')}: Email sudah terdaftar. Silakan masuk.`;
+        msg = `${t('toast.signupError')}: ${t('toast.userAlreadyExists')}`;
       } else if (isDeveloper && e?.message) {
         msg = `${t('toast.signupError')}: ${e.message}`;
       }
@@ -170,16 +170,28 @@ export function useAppwriteSync(
 
   const verifyPasswordAndResetPin = async (password: string) => {
     if (!user?.email) {
-      toast.error('User email not found');
+      toast.error(t('toast.userEmailNotFound'));
       return false;
     }
     try {
-      await account.updatePassword(password, password);
+      try {
+        await account.createEmailPasswordSession(user.email, password);
+      } catch (err: any) {
+        if (err?.type === 'user_session_already_exists' || err?.code === 409) {
+          await account.deleteSession('current');
+          await account.createEmailPasswordSession(user.email, password);
+        } else {
+          throw err;
+        }
+      }
+      const acc = await account.get();
+      setUser(acc);
       removePin();
       toast.dismiss();
       toast.success(t('pin.pinResetSuccess') || 'PIN berhasil direset dengan verifikasi password akun');
       return true;
     } catch (e: any) {
+      console.error('Failed to verify password for PIN reset:', e);
       toast.dismiss();
       toast.error(t('pin.wrongAccountPassword') || 'Password akun salah. Silakan coba lagi.');
       return false;
@@ -232,6 +244,8 @@ export function useAppwriteSync(
 
       const localApiKey = localStorage.getItem('tautanlumina:ai-key') || '';
       const localModel = localStorage.getItem('tautanlumina:ai-model') || '';
+      const localPinHash = getStoredPinHash();
+      const localPinUpdatedAt = getStoredPinUpdatedAt();
 
       const localDeletedStored = localStorage.getItem('tautanlumina:deleted_ids');
       const localDeletedIds: string[] = localDeletedStored ? JSON.parse(localDeletedStored) : [];
@@ -243,7 +257,9 @@ export function useAppwriteSync(
           items: currentLocalItems,
           deletedIds: localDeletedIds,
           apiKey: localApiKey,
-          model: localModel
+          model: localModel,
+          pinHash: localPinHash,
+          pinUpdatedAt: localPinUpdatedAt
         });
 
         let dbDataValue = finalDataStr;
@@ -321,6 +337,28 @@ export function useAppwriteSync(
 
       const cloudApiKey = parsedCloud.apiKey || '';
       const cloudModel = parsedCloud.model || '';
+      const cloudPinHash = typeof parsedCloud.pinHash === 'string' ? parsedCloud.pinHash : '';
+      const cloudPinUpdatedAt = typeof parsedCloud.pinUpdatedAt === 'number' ? parsedCloud.pinUpdatedAt : 0;
+
+      let mergedPinHash = localPinHash;
+      let mergedPinUpdatedAt = localPinUpdatedAt;
+
+      if (cloudPinUpdatedAt > localPinUpdatedAt) {
+        mergedPinHash = cloudPinHash;
+        mergedPinUpdatedAt = cloudPinUpdatedAt;
+        setStoredPinHash(cloudPinHash, cloudPinUpdatedAt);
+      } else if (localPinHash && !cloudPinHash && cloudPinUpdatedAt === 0) {
+        mergedPinHash = localPinHash;
+        mergedPinUpdatedAt = localPinUpdatedAt || Date.now();
+        setStoredPinHash(localPinHash, mergedPinUpdatedAt);
+      } else if (!localPinHash && cloudPinHash && localPinUpdatedAt === 0) {
+        mergedPinHash = cloudPinHash;
+        mergedPinUpdatedAt = cloudPinUpdatedAt || Date.now();
+        setStoredPinHash(cloudPinHash, mergedPinUpdatedAt);
+      } else {
+        mergedPinHash = localPinHash;
+        mergedPinUpdatedAt = localPinUpdatedAt;
+      }
 
       const permanentlyDeletedSet = new Set([...localDeletedIds, ...cloudDeletedIds]);
 
@@ -342,6 +380,9 @@ export function useAppwriteSync(
       const mergedItems = Array.from(itemMap.values()).map(it => {
         if (it.type === 'folder' && !it.name?.trim()) {
           return { ...it, name: 'Folder' };
+        }
+        if (!mergedPinHash && it.type === 'folder' && it.locked) {
+          return { ...it, locked: false };
         }
         return it;
       });
@@ -376,7 +417,9 @@ export function useAppwriteSync(
         items: mergedItems,
         deletedIds: finalDeletedArray,
         apiKey: mergedApiKey,
-        model: mergedModel
+        model: mergedModel,
+        pinHash: mergedPinHash,
+        pinUpdatedAt: mergedPinUpdatedAt
       });
 
       // Optimization: Skip remote update if cloud and local data string is unchanged
@@ -484,6 +527,18 @@ export function useAppwriteSync(
       smartSync(user, true);
     }
   }, [loaded, user, smartSync]);
+
+  useEffect(() => {
+    const handlePinChange = () => {
+      if (user) {
+        smartSync(user, true);
+      }
+    };
+    window.addEventListener('tautanlumina:pin_changed', handlePinChange);
+    return () => {
+      window.removeEventListener('tautanlumina:pin_changed', handlePinChange);
+    };
+  }, [user, smartSync]);
 
   return {
     user,

@@ -36,6 +36,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { PinModal } from './components/PinModal';
 import { MoveKeypadModal } from './components/MoveKeypadModal';
 import { FullscreenChatModal } from './components/FullscreenChatModal';
+import { FullscreenGuideModal } from './components/FullscreenGuideModal';
 import { LanguageCard, LanguageDropdown } from './components/LanguageSelectorModal';
 import { useDialog } from './context/DialogContext';
 
@@ -46,7 +47,7 @@ import { ADMIN_EMAIL } from './lib/appwrite';
 
 import { FileSystemItem } from './Types';
 import { loadKey, loadModel, loadEndpoint, generateBookmarkData } from './lib/ai';
-import { hasPinSet, removePin } from './lib/pin';
+import { hasPinSet, removePin, usePinState } from './lib/pin';
 import { isNetscapeBookmarkHTML } from './lib/bookmarkParser';
 
 const FolderPicker = lazy(() =>
@@ -100,6 +101,7 @@ export default function App() {
   const [settingsInitialTab, setSettingsInitialTab] = useState<'api' | 'wallet' | 'profile' | 'sync' | null>(null);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showChatPopup, setShowChatPopup] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
@@ -125,7 +127,8 @@ export default function App() {
   }, [isDarkTheme]);
 
   // PIN security states
-  const [pinModalMode, setPinModalMode] = useState<'setup' | 'unlock' | 'manage' | 'reset_password' | null>(null);
+  const pinActive = usePinState();
+  const [pinModalMode, setPinModalMode] = useState<'setup' | 'unlock' | 'manage' | 'reset_password' | 'unlock_folder_lock' | null>(null);
   const [folderPendingUnlock, setFolderPendingUnlock] = useState<FileSystemItem | null>(null);
   const [unlockedFolderIds, setUnlockedFolderIds] = useState<Set<string>>(new Set());
 
@@ -159,6 +162,7 @@ export default function App() {
 
   const isItemLocked = useCallback(
     (item: FileSystemItem): boolean => {
+      if (!hasPinSet()) return false;
       if (item.type === 'folder' && item.locked && !unlockedFolderIds.has(item.id)) {
         return true;
       }
@@ -171,7 +175,7 @@ export default function App() {
       }
       return false;
     },
-    [items, unlockedFolderIds],
+    [items, unlockedFolderIds, pinActive],
   );
 
   const isNoteFolderOrSubfolder = useCallback(
@@ -213,7 +217,7 @@ export default function App() {
   }, [currentFolderId, searchMode]);
 
   const navigateTo = (id: string | null) => {
-    if (id) {
+    if (id && hasPinSet()) {
       let cur = items.find((i) => i.id === id);
       let lockedTarget: FileSystemItem | null = null;
       while (cur) {
@@ -253,23 +257,23 @@ export default function App() {
     setSelectedIds(new Set());
   };
 
-  const handleToggleFolderLock = async (folderId: string) => {
+  const handleToggleFolderLock = async (folderId: string, skipPinCheck?: boolean) => {
     const f = items.find((i) => i.id === folderId);
     if (!f) return;
 
     if (folderId === 'folder-catatan' || folderId === 'folder-hello-world') {
-      showToast('Folder ini tidak dapat dikunci');
-      return;
-    }
-
-    if (f.parentId !== null) {
-      showToast(t('pin.subfolderCannotLock') || 'Sub folder tidak bisa dikunci');
+      showToast(t('toast.folderSystemCannotLock'));
       return;
     }
 
     if (!hasPinSet()) {
+      showToast(t('settings.pinNotSet') || 'PIN belum diatur. Silakan atur PIN di Pengaturan');
+      return;
+    }
+
+    if (f.locked && !skipPinCheck) {
       setFolderPendingUnlock(f);
-      setPinModalMode('setup');
+      setPinModalMode('unlock_folder_lock');
       return;
     }
 
@@ -295,8 +299,25 @@ export default function App() {
       });
       showToast(t('toast.folderLocked') + ` "${f.name}"`);
     } else {
+      setUnlockedFolderIds((prev) => {
+        const next = new Set(prev);
+        next.add(folderId);
+        return next;
+      });
       showToast(t('toast.folderUnlocked') + ` "${f.name}"`);
     }
+  };
+
+  const handleVerifyPasswordAndReset = async (password: string) => {
+    const ok = await verifyPasswordAndResetPin(password);
+    if (ok) {
+      const lockedFolders = items.filter((i) => i.type === 'folder' && i.locked);
+      for (const f of lockedFolders) {
+        await fs.updateItem(f.id, { locked: false });
+      }
+      setUnlockedFolderIds(new Set());
+    }
+    return ok;
   };
 
   const handleOpenPinMenu = () => {
@@ -335,7 +356,7 @@ export default function App() {
           const apiKey = loadKey();
           const model = loadModel();
           const endpoint = loadEndpoint();
-          const { title, category } = await generateBookmarkData(
+          const { title } = await generateBookmarkData(
             apiKey,
             model,
             endpoint,
@@ -343,18 +364,15 @@ export default function App() {
             t('ai.bookmarkPrompt'),
             domain
           );
-          if (title || category) {
-            await updateItem(newItem.id, {
-              ...(title ? { name: title } : {}),
-              ...(category ? { category } : {}),
-            });
+          if (title) {
+            await updateItem(newItem.id, { name: title });
           }
         } catch {
           // Keep domain name on AI failure
         }
       })();
     } catch (e: any) {
-      showToast(e?.message || 'Gagal menyimpan bookmark');
+      showToast(e?.message || t('toast.bookmarkSaveFailed'));
     }
   };
 
@@ -362,7 +380,8 @@ export default function App() {
     const text = await customPrompt(t('modal.noteText'), '', { textarea: true, maxWidth: 'max-w-xl' });
     if (!text || !text.trim()) return;
     
-    await createItem('', 'note', currentFolderId, text.trim());
+    const targetFolder = currentFolderId || 'folder-catatan';
+    await createItem('', 'note', targetFolder, text.trim());
     showToast(t('toast.noteSaved'));
   };
 
@@ -438,7 +457,7 @@ export default function App() {
   ) => {
     const filteredIds = ids.filter(id => id !== 'folder-catatan' && id !== 'folder-hello-world');
     if (filteredIds.length < ids.length && ids.length === 1) {
-      showToast('Folder sistem tidak dapat dihapus');
+      showToast(t('toast.folderSystemCannotDelete'));
       return;
     }
     if (filteredIds.length === 0) return;
@@ -541,15 +560,16 @@ export default function App() {
         if (!content) return;
         try {
           const isBookmark = isNetscapeBookmarkHTML(content) || file.name.endsWith('.html') || file.name.endsWith('.htm');
+          const targetFolder = 'folder-hello-world';
           if (isBookmark) {
-            const count = await importHTML(content, false, currentFolderId);
-            showToast(`${count} bookmark ${t('settings.import.success') || 'berhasil diimpor'}`);
+            const count = await importHTML(content, false, targetFolder);
+            showToast(t('toast.importBookmarksSuccess').replace('{count}', count.toString()));
           } else {
-            await importJSON(content, false);
+            await importJSON(content, false, targetFolder);
             showToast(t('settings.import.success') || 'Imported successfully');
           }
         } catch (err: any) {
-          showToast(err?.message || 'Format file tidak valid');
+          showToast(err?.message || t('toast.invalidFileFormat'));
         }
       };
       reader.readAsText(file);
@@ -627,11 +647,11 @@ export default function App() {
     }
 
     const folderName = targetFolder?.name || 'folder ini';
-    const confirmMessage = `Generate ulang judul & tag AI untuk ${folderBookmarks.length} bookmark di "${folderName}"?`;
+    const confirmMessage = `Generate ulang judul AI untuk ${folderBookmarks.length} bookmark di "${folderName}"?`;
     const confirmed = await customConfirm(confirmMessage);
     if (!confirmed) return;
 
-    const toastId = sonnerToast.loading(t('toast.regenerating') || 'Regenerasi judul & tag bookmark...');
+    const toastId = sonnerToast.loading(t('toast.regenerating') || 'Regenerasi judul bookmark...');
     try {
       const apiKey = loadKey();
       const model = loadModel();
@@ -652,7 +672,7 @@ export default function App() {
             } catch {}
 
             try {
-              const { title, category } = await generateBookmarkData(
+              const { title } = await generateBookmarkData(
                 apiKey,
                 model,
                 endpoint,
@@ -662,7 +682,7 @@ export default function App() {
               );
               updates.push({
                 id: bm.id,
-                updates: { name: title || fallbackDomain, category: category || undefined },
+                updates: { name: title || fallbackDomain },
               });
             } catch {
               updates.push({
@@ -685,7 +705,7 @@ export default function App() {
         localStorage.setItem(countKey, (currentCount + 1).toString());
       }
 
-      sonnerToast.success(t('toast.regenerated') || 'Judul & tag berhasil diperbarui!', { id: toastId, duration: 2000 });
+      sonnerToast.success(t('toast.regenerated') || 'Judul berhasil diperbarui!', { id: toastId, duration: 2000 });
     } catch (e) {
       sonnerToast.error(t('toast.syncError') || 'Gagal memperbarui', { id: toastId, duration: 2000 });
     }
@@ -716,6 +736,12 @@ export default function App() {
     list.push({ key: 'move', label: t('action.moveToFolder'), onClick: () => openMovePicker([item.id]) });
     if (item.type === 'folder') {
       list.push({
+        key: 'lock',
+        label: (item.locked && hasPinSet()) ? (t('pin.unlockPin') || 'Buka PIN') : (t('pin.lockPin') || 'Kunci PIN'),
+        onClick: () => handleToggleFolderLock(item.id),
+      });
+
+      list.push({
         key: 'rename',
         label: t('action.rename'),
         onClick: async () => {
@@ -725,13 +751,26 @@ export default function App() {
           }
         },
       });
+
       if (!isNoteFolderOrSubfolder(item)) {
         list.push({
           key: 'regenerate',
-          label: t('action.regenerate') || 'Generate ulang judul dan tag',
+          label: t('action.regenerate') || 'Generate ulang judul',
           onClick: () => handleRegenerateFolder(item.id),
         });
       }
+    }
+    if (item.type === 'file') {
+      list.push({
+        key: 'editTitle',
+        label: t('action.editTitle') || 'Edit Judul',
+        onClick: async () => {
+          const n = await customPrompt(t('modal.newName') || 'Judul Baru', item.name);
+          if (n !== null && n.trim()) {
+            await renameItem(item.id, n.trim());
+          }
+        },
+      });
     }
     if (item.type === 'note') {
       list.push({
@@ -836,6 +875,11 @@ export default function App() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t('search.placeholder')}
                 autoComplete="off"
+                data-1p-ignore="true"
+                data-lpignore="true"
+                data-bwignore="true"
+                data-form-type="other"
+                name="no_autofill_search"
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck="false"
@@ -1027,6 +1071,7 @@ export default function App() {
             onResetPinPassword={() => setPinModalMode('reset_password')}
             onExport={handleExport}
             onImport={handleImport}
+            onOpenGuide={() => setShowGuideModal(true)}
           />
         )}
 
@@ -1034,7 +1079,7 @@ export default function App() {
           <PinModal
             mode={pinModalMode}
             folderToUnlock={folderPendingUnlock || undefined}
-            folders={items.filter((i) => i.type === 'folder' && i.parentId === null && i.id !== 'folder-catatan' && i.id !== 'folder-hello-world')}
+            folders={items.filter((i) => i.type === 'folder' && i.id !== 'folder-catatan' && i.id !== 'folder-hello-world')}
             onClose={() => {
               setPinModalMode(null);
               setFolderPendingUnlock(null);
@@ -1046,13 +1091,17 @@ export default function App() {
                 setCurrentFolderId(fId);
                 setQuery('');
                 setSelectedIds(new Set());
-                showToast(`Folder "${folderPendingUnlock.name}" dibuka`);
+                showToast(t('toast.folderOpened').replace('{name}', folderPendingUnlock.name));
+              } else if (pinModalMode === 'unlock_folder_lock' && folderPendingUnlock) {
+                handleToggleFolderLock(folderPendingUnlock.id, true);
+              } else if (pinModalMode === 'setup' && folderPendingUnlock) {
+                handleToggleFolderLock(folderPendingUnlock.id, true);
               } else if (pinModalMode === 'reset_password') {
                 setPinModalMode('setup');
               }
             }}
             onToggleFolderLock={handleToggleFolderLock}
-            onVerifyPasswordAndReset={verifyPasswordAndResetPin}
+            onVerifyPasswordAndReset={handleVerifyPasswordAndReset}
           />
         )}
 
@@ -1073,6 +1122,11 @@ export default function App() {
           isOpen={showChatPopup}
           onClose={() => setShowChatPopup(false)}
           currentUserEmail={user?.email}
+        />
+
+        <FullscreenGuideModal
+          isOpen={showGuideModal}
+          onClose={() => setShowGuideModal(false)}
         />
 
 

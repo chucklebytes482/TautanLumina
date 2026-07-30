@@ -121,7 +121,6 @@ const stripCodeFence = (t: string): string => {
 
 export interface BookmarkData {
   title: string;
-  category?: string;
 }
 
 export const generateBookmarkData = async (apiKey: string, model: string, endpoint: string, url: string, promptTemplate: string, fallbackTitle: string): Promise<BookmarkData> => {
@@ -134,7 +133,7 @@ export const generateBookmarkData = async (apiKey: string, model: string, endpoi
     return { title: fallbackDomain };
   }
   
-  const prompt = promptTemplate.replace('{url}', url) + '\n\nIMPORTANT: Respond ONLY with a valid JSON object in this exact format, with no other text, markdown, or explanation:\n{"title": "title here (max 12 chars)", "category": "short category or tag here"}';
+  const prompt = promptTemplate.replace('{url}', url) + '\n\nIMPORTANT: Respond ONLY with a valid JSON object in this exact format, with no other text, markdown, or explanation:\n{"title": "title here (max 15 chars)"}';
   
   const parseResponse = (res: string) => {
     try {
@@ -149,14 +148,14 @@ export const generateBookmarkData = async (apiKey: string, model: string, endpoi
         }
       }
       if (parsed && typeof parsed === 'object') {
-        let title = parsed.title || parsed.name || fallbackDomain;
-        if (title.length > 12) title = title.substring(0, 12);
-        return { title, category: parsed.category || parsed.tag };
+        let title = (parsed.title || parsed.name || fallbackDomain).trim();
+        if (title.length > 15) title = title.substring(0, 15).trim();
+        return { title };
       }
       throw new Error('Invalid JSON');
     } catch {
       let title = stripCodeFence(res).trim().replace(/^["']|["']$/g, '');
-      if (title.length > 12) title = title.substring(0, 12);
+      if (title.length > 15) title = title.substring(0, 15).trim();
       return { title };
     }
   };

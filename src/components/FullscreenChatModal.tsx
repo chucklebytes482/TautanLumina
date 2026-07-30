@@ -73,7 +73,7 @@ export interface PrivateMessageItem {
   createdAt: number;
 }
 
-export const MaskedEmail: React.FC<{ email?: string; className?: string }> = ({ email, className = '' }) => {
+export const MaskedEmail: React.FC<{ email?: string; className?: string; isViewerAdmin?: boolean }> = ({ email, className = '', isViewerAdmin = false }) => {
   const { t } = useI18n();
   if (!email) return null;
 
@@ -96,6 +96,10 @@ export const MaskedEmail: React.FC<{ email?: string; className?: string }> = ({ 
         </span>
       </span>
     );
+  }
+
+  if (isViewerAdmin) {
+    return <span className={`font-medium text-xs text-neutral-800 ${className}`}>{clean}</span>;
   }
 
   const atIndex = clean.indexOf('@');
@@ -594,8 +598,12 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder={!isAdmin && !isProOrAdmin ? `${placeholder} (${getUserPrivateMsgCountToday()}/3 per hari)` : placeholder}
-          autoComplete="new-password"
-          name="private_chat_input"
+          autoComplete="off"
+          data-1p-ignore="true"
+          data-lpignore="true"
+          data-bwignore="true"
+          data-form-type="other"
+          name="no_autofill_chat"
           className="flex-1 px-3.5 py-2.5 text-sm rounded-xl border border-[#e2ddd5] focus:outline-none focus:ring-2 focus:ring-[#FF4F00] bg-[#faf8f5]"
         />
         <button
@@ -1278,8 +1286,12 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                     onChange={(e) => setNewAnnouncement(e.target.value)}
                     placeholder={t.writeAnnouncement}
                     rows={4}
-                    autoComplete="new-password"
-                    name="announcement_textarea"
+                    autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-bwignore="true"
+                    data-form-type="other"
+                    name="no_autofill_announcement"
                     className="w-full p-3 text-sm rounded-xl border border-[#e2ddd5] focus:outline-none focus:ring-2 focus:ring-[#FF4F00] bg-[#faf8f5] resize-none"
                   />
                   <div className="flex justify-end gap-2 mt-1">
@@ -1327,7 +1339,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                           <div className="w-6 h-6 rounded-full bg-[#FF4F00]/10 text-[#FF4F00] flex items-center justify-center font-bold text-xs shrink-0">
                             📢
                           </div>
-                          <MaskedEmail email={item.senderName || item.senderEmail} />
+                          <MaskedEmail email={item.senderName || item.senderEmail} isViewerAdmin={isAdmin} />
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] text-neutral-400">
@@ -1397,8 +1409,12 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                                 value={commentInputs[annId] || ''}
                                 onChange={(e) => setCommentInputs({ ...commentInputs, [annId]: e.target.value })}
                                 placeholder="Tulis komentar..."
-                                autoComplete="new-password"
-                                name="comment_input"
+                                autoComplete="off"
+                                data-1p-ignore="true"
+                                data-lpignore="true"
+                                data-bwignore="true"
+                                data-form-type="other"
+                                name="no_autofill_comment"
                                 className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-[#e2ddd5] bg-white focus:outline-none focus:ring-1 focus:ring-[#FF4F00]"
                               />
                               <button
@@ -1423,7 +1439,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                                         <div className="w-5 h-5 rounded-full bg-neutral-200 text-neutral-700 flex items-center justify-center font-bold text-[9px] shrink-0">
                                           <User size={10} />
                                         </div>
-                                        <MaskedEmail email={comment.senderEmail} />
+                                        <MaskedEmail email={comment.senderEmail} isViewerAdmin={isAdmin} />
                                       </div>
                                       <div className="flex items-center gap-1.5 text-[10px] text-neutral-400">
                                         <span>
@@ -1482,6 +1498,12 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                                         value={replyInputs[comment.id] || ''}
                                         onChange={(e) => setReplyInputs({ ...replyInputs, [comment.id]: e.target.value })}
                                         placeholder="Tulis balasan..."
+                                        autoComplete="off"
+                                        data-1p-ignore="true"
+                                        data-lpignore="true"
+                                        data-bwignore="true"
+                                        data-form-type="other"
+                                        name="no_autofill_reply"
                                         className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-[#e2ddd5] bg-white focus:outline-none focus:ring-1 focus:ring-[#FF4F00]"
                                         autoFocus
                                       />
@@ -1513,7 +1535,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                                               <div className="w-4 h-4 rounded-full bg-neutral-200 text-neutral-700 flex items-center justify-center font-bold text-[8px] shrink-0">
                                                 <User size={8} />
                                               </div>
-                                              <MaskedEmail email={reply.senderEmail} />
+                                              <MaskedEmail email={reply.senderEmail} isViewerAdmin={isAdmin} />
                                             </div>
                                             <div className="flex items-center gap-1 text-[10px] text-neutral-400">
                                               <span>
@@ -1588,7 +1610,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                               </div>
                               <div className="truncate">
                                 <div className="text-sm font-bold text-neutral-900 truncate">
-                                  <MaskedEmail email={email} />
+                                  <MaskedEmail email={email} isViewerAdmin={isAdmin} />
                                 </div>
                                 <div className="text-xs text-neutral-500 truncate mt-0.5">
                                   {lastMsg ? lastMsg.content : t.message}
@@ -1633,7 +1655,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                     </button>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-neutral-800 truncate max-w-[180px]">
-                        <MaskedEmail email={selectedChatUser} />
+                        <MaskedEmail email={selectedChatUser} isViewerAdmin={isAdmin} />
                       </span>
                       <button
                         onClick={() => selectedChatUser && handleDeleteUserConversation(selectedChatUser)}

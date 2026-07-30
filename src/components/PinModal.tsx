@@ -6,12 +6,12 @@ import { verifyPin, savePin, hasPinSet } from '../lib/pin';
 import { FileSystemItem } from '../Types';
 
 interface PinModalProps {
-  mode: 'setup' | 'unlock' | 'manage' | 'reset_password';
+  mode: 'setup' | 'unlock' | 'manage' | 'reset_password' | 'unlock_folder_lock';
   folderToUnlock?: FileSystemItem;
   folders?: FileSystemItem[];
   onClose: () => void;
   onSuccess?: () => void;
-  onToggleFolderLock?: (folderId: string) => void;
+  onToggleFolderLock?: (folderId: string, skipPinCheck?: boolean) => void;
   onVerifyPasswordAndReset?: (password: string) => Promise<boolean>;
 }
 
@@ -26,6 +26,12 @@ export const PinModal: React.FC<PinModalProps> = ({
 }) => {
   const { t } = useI18n();
   const [pin, setPin] = useState<string[]>(['', '', '', '']);
+
+  const [currentMode, setCurrentMode] = useState<'setup' | 'unlock' | 'manage' | 'reset_password' | 'unlock_folder_lock'>(initialMode);
+
+  useEffect(() => {
+    setCurrentMode(initialMode);
+  }, [initialMode]);
 
   // Folder Unlock Confirmation State
   const [selectedFolderToUnlock, setSelectedFolderToUnlock] = useState<FileSystemItem | null>(null);
@@ -50,13 +56,13 @@ export const PinModal: React.FC<PinModalProps> = ({
     setState: React.Dispatch<React.SetStateAction<string[]>>;
     onSubmit?: (overridePin?: string[]) => void;
   } => {
-    if (initialMode === 'setup') {
+    if (currentMode === 'setup') {
       return { state: pin, setState: setPin, onSubmit: handleFinishSetup };
     }
-    if (initialMode === 'unlock') {
+    if (currentMode === 'unlock' || currentMode === 'unlock_folder_lock') {
       return { state: pin, setState: setPin, onSubmit: handleUnlock };
     }
-    if (initialMode === 'manage') {
+    if (currentMode === 'manage') {
       if (selectedFolderToUnlock) {
         return { state: unlockFolderPin, setState: setUnlockFolderPin, onSubmit: handleConfirmUnlockFolder };
       }
@@ -127,7 +133,7 @@ export const PinModal: React.FC<PinModalProps> = ({
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [initialMode, pin, unlockFolderPin, selectedFolderToUnlock]);
+  }, [currentMode, pin, unlockFolderPin, selectedFolderToUnlock]);
 
   // Process PIN Setup
   const handleFinishSetup = async (overridePin?: string[]) => {
@@ -170,7 +176,7 @@ export const PinModal: React.FC<PinModalProps> = ({
     const ok = await verifyPin(entered);
     if (ok) {
       if (onToggleFolderLock) {
-        onToggleFolderLock(selectedFolderToUnlock.id);
+        onToggleFolderLock(selectedFolderToUnlock.id, true);
       }
       toast.success(t('pin.folderUnlockedSuccess').replace('{name}', selectedFolderToUnlock.name));
       setSelectedFolderToUnlock(null);
@@ -228,7 +234,12 @@ export const PinModal: React.FC<PinModalProps> = ({
               readOnly={true}
               value={digit}
               tabIndex={-1}
-              autoComplete="new-password"
+              autoComplete="off"
+              data-1p-ignore="true"
+              data-lpignore="true"
+              data-bwignore="true"
+              data-form-type="other"
+              name={`pin_slot_${idx}`}
               className={`w-12 h-14 text-center text-xl font-bold rounded-xl border-2 outline-none transition-all bg-white text-neutral-900 shadow-xs cursor-pointer select-none pointer-events-none ${
                 isSlotActive
                   ? 'border-[#ff4f00] ring-2 ring-[#ff4f00]/20 scale-105'
@@ -288,11 +299,11 @@ export const PinModal: React.FC<PinModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-neutral-900">
-                {initialMode === 'unlock'
-                  ? t('pin.unlockTitle')
-                  : initialMode === 'setup'
+                {currentMode === 'unlock' || currentMode === 'unlock_folder_lock'
+                  ? (t('pin.unlockPin') || 'Buka PIN')
+                  : currentMode === 'setup'
                   ? t('pin.setupTitle')
-                  : initialMode === 'reset_password'
+                  : currentMode === 'reset_password'
                   ? (t('pin.verifyAccountPassword') || 'Verifikasi Password Akun')
                   : t('pin.manageTitle')}
               </h3>
@@ -316,7 +327,7 @@ export const PinModal: React.FC<PinModalProps> = ({
         {/* Modal Body */}
         <div className="p-5 max-h-[85vh] overflow-y-auto">
           {/* RESET PASSWORD MODE */}
-          {initialMode === 'reset_password' && (
+          {currentMode === 'reset_password' && (
             <div>
               <p className="text-sm text-neutral-600 text-center font-medium mb-4">
                 {t('pin.resetPinDesc') || 'Masukkan password akun untuk mereset PIN keamanan dan membuka kunci seluruh folder'}
@@ -332,8 +343,12 @@ export const PinModal: React.FC<PinModalProps> = ({
                     value={accountPasswordInput}
                     onChange={(e) => setAccountPasswordInput(e.target.value)}
                     placeholder="••••••••"
-                    autoComplete="new-password"
-                    name="reset_acc_pwd"
+                    autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-bwignore="true"
+                    data-form-type="other"
+                    name="no_autofill_pwd_reset"
                     className="w-full border border-[#e2ddd5] rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4f00]/20 focus:border-[#ff4f00] bg-white text-neutral-900 shadow-2xs"
                     autoFocus
                     onKeyDown={(e) => {
@@ -375,68 +390,68 @@ export const PinModal: React.FC<PinModalProps> = ({
           )}
 
           {/* SETUP MODE */}
-          {initialMode === 'setup' && (
-                <div>
-                  <p className="text-sm text-neutral-600 text-center font-medium">
-                    {t('pin.enterPin')}
-                  </p>
+          {currentMode === 'setup' && (
+            <div>
+              <p className="text-sm text-neutral-600 text-center font-medium">
+                {t('pin.enterPin')}
+              </p>
 
-                  {renderPinInputs(pin)}
-                  {renderVirtualKeypad(pin, setPin, handleFinishSetup)}
+              {renderPinInputs(pin)}
+              {renderVirtualKeypad(pin, setPin, handleFinishSetup)}
 
-                  {errorMsg && (
-                    <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-red-500 mt-2">
-                      <AlertCircle size={14} />
-                      <span>{errorMsg}</span>
-                    </div>
-                  )}
-
-                  <div className="flex justify-end items-center mt-4">
-                    <button
-                      type="button"
-                      onClick={() => handleFinishSetup()}
-                      className="px-5 py-2.5 text-xs font-semibold text-white bg-[#ff4f00] hover:bg-[#e04500] rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1.5 ml-auto"
-                    >
-                      <Check size={16} />
-                      <span>{t('pin.savePin')}</span>
-                    </button>
-                  </div>
+              {errorMsg && (
+                <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-red-500 mt-2">
+                  <AlertCircle size={14} />
+                  <span>{errorMsg}</span>
                 </div>
               )}
 
-              {/* UNLOCK MODE */}
-              {initialMode === 'unlock' && (
-                <div>
-                  <p className="text-sm text-neutral-600 text-center font-medium">
-                    Folder <span className="font-bold text-neutral-900">"{targetFolder?.name}"</span> {t('pin.folderLocked')}
-                    <br />
-                    {t('pin.enterPin')}
-                  </p>
+              <div className="flex justify-end items-center mt-4">
+                <button
+                  type="button"
+                  onClick={() => handleFinishSetup()}
+                  className="px-5 py-2.5 text-xs font-semibold text-white bg-[#ff4f00] hover:bg-[#e04500] rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1.5 ml-auto"
+                >
+                  <Check size={16} />
+                  <span>{t('pin.savePin')}</span>
+                </button>
+              </div>
+            </div>
+          )}
 
-                  {renderPinInputs(pin)}
-                  {renderVirtualKeypad(pin, setPin, handleUnlock)}
+          {/* UNLOCK MODE */}
+          {(currentMode === 'unlock' || currentMode === 'unlock_folder_lock') && (
+            <div>
+              <p className="text-sm text-neutral-600 text-center font-medium">
+                Folder <span className="font-bold text-neutral-900">"{targetFolder?.name}"</span> {t('pin.folderLocked')}
+                <br />
+                {t('pin.enterPin')}
+              </p>
 
-                  {errorMsg && (
-                    <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-red-500 mt-2">
-                      <AlertCircle size={14} />
-                      <span>{errorMsg}</span>
-                    </div>
-                  )}
+              {renderPinInputs(pin)}
+              {renderVirtualKeypad(pin, setPin, handleUnlock)}
 
-                  <div className="flex justify-end items-center mt-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="px-4 py-2 text-xs font-semibold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 rounded-xl transition-colors cursor-pointer"
-                    >
-                      {t('modal.cancel')}
-                    </button>
-                  </div>
+              {errorMsg && (
+                <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-red-500 mt-2">
+                  <AlertCircle size={14} />
+                  <span>{errorMsg}</span>
                 </div>
               )}
 
-              {/* MANAGE MODE */}
-              {initialMode === 'manage' && (
+              <div className="flex justify-end items-center mt-3 pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 text-xs font-semibold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 rounded-xl transition-colors cursor-pointer"
+                >
+                  {t('modal.cancel')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* MANAGE MODE */}
+          {currentMode === 'manage' && (
                 <div>
                   {/* TAB 1: MANAGE FOLDER LOCKS */}
                   {selectedFolderToUnlock ? (
@@ -496,21 +511,30 @@ export const PinModal: React.FC<PinModalProps> = ({
                         </div>
                       ) : (
                         <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
-                          {folders.map((f) => (
-                            <div
-                              key={f.id}
-                              className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                                f.locked
-                                  ? 'bg-[#fff0eb]/60 border-[#ff4f00]/40'
-                                  : 'bg-white border-[#e2ddd5] hover:border-neutral-300'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                                <Folder size={16} className={f.locked ? 'text-[#ff4f00]' : 'text-neutral-400'} />
-                                <span className="text-xs font-semibold text-neutral-800 truncate">
-                                  {f.name}
-                                </span>
-                              </div>
+                          {folders.map((f) => {
+                            const parentFolder = f.parentId ? folders.find((p) => p.id === f.parentId) : null;
+                            return (
+                              <div
+                                key={f.id}
+                                className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                                  f.locked
+                                    ? 'bg-[#fff0eb]/60 border-[#ff4f00]/40'
+                                    : 'bg-white border-[#e2ddd5] hover:border-neutral-300'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                                  <Folder size={16} className={`shrink-0 ${f.locked ? 'text-[#ff4f00]' : 'text-neutral-400'}`} />
+                                  <div className="truncate min-w-0">
+                                    <span className="text-xs font-semibold text-neutral-800 truncate block">
+                                      {f.name}
+                                    </span>
+                                    {parentFolder && (
+                                      <span className="text-[10px] text-neutral-400 block truncate">
+                                        📁 {parentFolder.name}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
 
                               <button
                                 type="button"
@@ -542,7 +566,8 @@ export const PinModal: React.FC<PinModalProps> = ({
                                 )}
                               </button>
                             </div>
-                          ))}
+                          );
+                          })}
                         </div>
                       )}
 

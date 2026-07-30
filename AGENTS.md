@@ -78,9 +78,16 @@ Dokumen ini dibaca secara otomatis oleh AI System Instructions pada setiap sesi 
 
 ---
 
-## 8. Aturan Perbaikan Kalimat & Lokalisasi Multi-Bahasa
+## 8. Aturan Lokalisasi & Terjemahan Multi-Bahasa
 
-- Setiap kali pengguna meminta untuk memperbaiki, mengubah, atau memperbarui suatu kalimat, teks, atau label UI, AI **WAJIB** secara otomatis memperbarui dan menyesuaikan teks tersebut di **seluruh 6 bahasa** yang didukung (Bahasa Indonesia, Inggris, Mandarin, Jepang, Korea, dan Rusia) pada file `src/lib/i18n-missing.ts` atau file lokalisasi terkait tanpa harus diminta berulang kali.
+- **Bahasa Utama Pengembang**: **Bahasa Indonesia (ID)** adalah bahasa utama pengembang dan basis utama aplikasi.
+- **5 Bahasa Terjemahan Pendukung**:
+  1. 🇬🇧 **Inggris (EN)**
+  2. 🇨🇳 **Mandarin / Cina (ZH)**
+  3. 🇯🇵 **Jepang (JA)**
+  4. 🇰🇷 **Korea (KO)**
+  5. 🇷🇺 **Rusia (RU)**
+- **Kewajiban Otomatis AI**: Setiap kali pengguna meminta untuk menambah, memperbaiki, mengubah, atau memperbarui teks, kalimat, petunjuk, panduan, atau label UI apapun, AI **WAJIB** secara otomatis menyediakan dan menyesuaikan terjemahan lengkap di **Bahasa Indonesia serta 5 bahasa terjemahan pendukung** (EN, ZH, JA, KO, RU) pada file `src/lib/i18n-missing.ts` atau file lokalisasi terkait tanpa harus diminta berulang kali.
 
 ---
 
@@ -92,5 +99,15 @@ Dokumen ini dibaca secara otomatis oleh AI System Instructions pada setiap sesi 
   2. **Pesan Pribadi Admin**: Akun Free dibatasi maksimal **3 kali kirim pesan** pribadi ke Admin per hari (kuota di-reset setiap hari), sedangkan akun Pro/Admin tanpa batas.
   3. **Generate Ulang AI**: Akun Free dibatasi maksimal **2 kali per hari** (kuota di-reset setiap hari), sedangkan akun Pro/Admin tanpa batas.
   4. **Kunci Folder**: Akun Free dibatasi maksimal **1 folder terkunci**, sedangkan akun Pro/Admin dapat mengunci folder tanpa batas.
+
+---
+
+## 10. Aturan Pembaruan Otomatis Metadata, Landing Page, Keterangan & Panduan Penggunaan
+
+- **Kewajiban Sinkronisasi Setiap Perubahan**: Setiap kali terdapat penambahan, perubahan, pembaruan, atau perbaikan fitur pada aplikasi, AI **WAJIB** secara otomatis memperbarui komponen dan dokumen terkait agar selalu selaras dan akurat:
+  1. **`metadata.json`**: Perbarui deskripsi (`description`) aplikasi jika terdapat perubahan atau penambahan kapabilitas utama.
+  2. **Landing Page / Halaman Utama**: Sesuaikan seluruh teks promosi, instruksi singkat, dan keterangan fitur di antarmuka utama.
+  3. **Keterangan & Label UI (Lokalisasi)**: Perbarui penjelasan, tooltip, dan teks petunjuk UI di `src/lib/i18n-missing.ts` untuk Bahasa Indonesia serta 5 bahasa terjemahan pendukung (EN, ZH, JA, KO, RU).
+  4. **Panduan Penggunaan (`GuideTabContent.tsx`)**: Tambahkan atau perbarui langkah-langkah penggunaan fitur terbaru di dalam modul panduan penggunaan secara lengkap untuk Bahasa Indonesia dan 5 bahasa terjemahan pendukung.
 
 

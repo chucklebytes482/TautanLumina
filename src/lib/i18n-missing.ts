@@ -1,18 +1,19 @@
 export const missingTranslations = {
   "en": {
     "ai": {
-      "bookmarkPrompt": "Analyze this URL and return a concise, clean title (maximum 12 characters) and a short category tag for the following URL: {url}"
+      "bookmarkPrompt": "Analyze this URL and return a concise, clean title (maximum 15 characters) for the following URL: {url}"
     },
     "action": {
       "cancel": "Cancel",
       "delete": "Delete",
+      "editTitle": "Edit Title",
       "itemsSelected": "items selected",
       "move": "Move",
       "moveItems": "Move Items",
       "moveToFolder": "Move to folder",
       "moveToNum": "Move to position",
       "paste": "Paste",
-      "regenerate": "Regenerate title and tags",
+      "regenerate": "Regenerate title",
       "rename": "Rename",
       "selected": "Selected"
     },
@@ -22,7 +23,7 @@ export const missingTranslations = {
     },
     "btn": {
       "exportJSON": "Export JSON",
-      "importJSON": "Import JSON",
+      "importJSON": "Import JSON or HTML",
       "newFolder": "New Folder",
       "newNote": "New Note",
       "selectAll": "Select All"
@@ -33,6 +34,11 @@ export const missingTranslations = {
     "empty": {
       "folder": "This folder is empty",
       "search": "No results found"
+    },
+    "guide": {
+      "title": "User Guide",
+      "subtitle": "Quick guide to TautanLumina features",
+      "searchPlaceholder": "Search guide topics..."
     },
     "feature": {
       "aiTagging": {
@@ -117,7 +123,10 @@ export const missingTranslations = {
       "reload": "Reload from Source",
       "selected": "Selected model: {model}",
       "clickToSelect": "Click on a model to select",
-      "close": "Close"
+      "close": "Close",
+      "fetchSuccess": "Successfully loaded {count} models",
+      "fetchEmpty": "No models found.",
+      "fetchError": "Failed to load models from source."
     },
     "picker": {
       "empty": "Empty",
@@ -128,6 +137,7 @@ export const missingTranslations = {
       "enterAccountPassword": "Enter Account Password",
       "enterPin": "Enter PIN",
       "folderLocked": "Folder Locked",
+      "forgotPin": "Forgot PIN? Reset with password",
       "folderUnlockedSuccess": "Folder Unlocked",
       "lock": "Lock",
       "lockedBadge": "Locked",
@@ -142,7 +152,8 @@ export const missingTranslations = {
       "subfolderCannotLock": "Subfolders cannot be locked",
       "unlockFolderDesc": "Unlock to view contents",
       "unlockingTitle": "Unlocking",
-      "unlockPin": "Unlock",
+      "unlockPin": "Unlock PIN",
+      "lockPin": "Lock PIN",
       "unlockTitle": "Unlock",
       "verifyAccountPassword": "Verify Account Password",
       "verifyResetPin": "Verify to Reset PIN",
@@ -242,6 +253,16 @@ export const missingTranslations = {
       "emptyClipboard": "Empty clipboard",
       "folderLocked": "Folder locked",
       "folderUnlocked": "Folder unlocked",
+      "folderSystemCannotDelete": "System folders cannot be deleted",
+      "folderSystemCannotRename": "System folders cannot be renamed",
+      "folderSystemCannotLock": "System folders cannot be locked",
+      "invalidFileFormat": "Invalid file format",
+      "bookmarkSaveFailed": "Failed to save bookmark",
+      "importBookmarksSuccess": "{count} bookmarks imported successfully",
+      "folderOpened": "Folder \"{name}\" opened",
+      "invalidCredentials": "Email or password incorrect.",
+      "userAlreadyExists": "Email already registered. Please login.",
+      "userEmailNotFound": "User email not found.",
       "invalidUrl": "Invalid URL",
       "lockedItem": "Locked item",
       "loggedOut": "Logged out",
@@ -282,18 +303,19 @@ export const missingTranslations = {
   },
   "id": {
     "ai": {
-      "bookmarkPrompt": "Analisis URL ini dan berikan judul yang singkat, bersih (maksimal 12 karakter) serta tag kategori pendek untuk URL berikut: {url}"
+      "bookmarkPrompt": "Analisis URL ini dan berikan judul yang ringkas dan jelas (maksimal 15 karakter) untuk URL berikut: {url}"
     },
     "action": {
       "cancel": "Batal",
       "delete": "Hapus",
+      "editTitle": "Edit Judul",
       "itemsSelected": "item terpilih",
       "move": "Pindah",
       "moveItems": "Pindah Item",
       "moveToFolder": "Pindah ke folder",
       "moveToNum": "Pindah ke posisi",
       "paste": "Tempel",
-      "regenerate": "Generate ulang judul dan tag",
+      "regenerate": "Generate ulang judul",
       "rename": "Ganti Nama",
       "selected": "Terpilih"
     },
@@ -303,7 +325,7 @@ export const missingTranslations = {
     },
     "btn": {
       "exportJSON": "Ekspor JSON",
-      "importJSON": "Impor JSON",
+      "importJSON": "Impor JSON atau HTML",
       "newFolder": "Folder Baru",
       "newNote": "Catatan Baru",
       "selectAll": "Pilih Semua"
@@ -314,6 +336,11 @@ export const missingTranslations = {
     "empty": {
       "folder": "Folder ini kosong",
       "search": "Tidak ada hasil"
+    },
+    "guide": {
+      "title": "Panduan Penggunaan",
+      "subtitle": "Panduan ringkas fitur-fitur TautanLumina",
+      "searchPlaceholder": "Cari topik panduan..."
     },
     "feature": {
       "aiTagging": {
@@ -398,7 +425,10 @@ export const missingTranslations = {
       "reload": "Muat Ulang dari Sumber",
       "selected": "Model terpilih: {model}",
       "clickToSelect": "Klik pada model untuk memilih",
-      "close": "Tutup"
+      "close": "Tutup",
+      "fetchSuccess": "Berhasil memuat {count} model",
+      "fetchEmpty": "Tidak ada model yang ditemukan.",
+      "fetchError": "Gagal memuat model dari sumber."
     },
     "picker": {
       "empty": "Kosong",
@@ -409,6 +439,7 @@ export const missingTranslations = {
       "enterAccountPassword": "Kata Sandi Akun",
       "enterPin": "Masukkan PIN",
       "folderLocked": "Folder Terkunci",
+      "forgotPin": "Lupa PIN? Reset dengan password",
       "folderUnlockedSuccess": "Folder Terbuka",
       "lock": "Kunci",
       "lockedBadge": "Terkunci",
@@ -423,7 +454,8 @@ export const missingTranslations = {
       "subfolderCannotLock": "Subfolder tak dapat dikunci",
       "unlockFolderDesc": "Buka kunci untuk melihat konten",
       "unlockingTitle": "Membuka kunci",
-      "unlockPin": "Buka Kunci",
+      "unlockPin": "Buka PIN",
+      "lockPin": "Kunci PIN",
       "unlockTitle": "Buka Kunci",
       "verifyAccountPassword": "Verifikasi Kata Sandi Akun",
       "verifyResetPin": "Verifikasi Reset PIN",
@@ -523,6 +555,16 @@ export const missingTranslations = {
       "emptyClipboard": "Papan klip kosong",
       "folderLocked": "Folder terkunci",
       "folderUnlocked": "Folder dibuka",
+      "folderSystemCannotDelete": "Folder sistem tidak dapat dihapus",
+      "folderSystemCannotRename": "Folder sistem tidak dapat diubah namanya",
+      "folderSystemCannotLock": "Folder ini tidak dapat dikunci",
+      "invalidFileFormat": "Format file tidak valid",
+      "bookmarkSaveFailed": "Gagal menyimpan bookmark",
+      "importBookmarksSuccess": "{count} bookmark berhasil diimpor",
+      "folderOpened": "Folder \"{name}\" dibuka",
+      "invalidCredentials": "Email atau kata sandi salah.",
+      "userAlreadyExists": "Email sudah terdaftar. Silakan masuk.",
+      "userEmailNotFound": "Email pengguna tidak ditemukan.",
       "invalidUrl": "URL tidak valid",
       "lockedItem": "Item terkunci",
       "loggedOut": "Keluar",
@@ -563,18 +605,19 @@ export const missingTranslations = {
   },
   "zh": {
     "ai": {
-      "bookmarkPrompt": "分析此URL，并为以下URL返回简洁干净的标题（最多12个字符）和简短的分类标签：{url}"
+      "bookmarkPrompt": "分析此URL，并为以下URL返回简洁清晰的标题（最多15个字符）：{url}"
     },
     "action": {
       "cancel": "取消",
       "delete": "删除",
+      "editTitle": "编辑标题",
       "itemsSelected": "已选项目",
       "move": "移动",
       "moveItems": "移动项目",
       "moveToFolder": "移动到文件夹",
       "moveToNum": "移动到位置",
       "paste": "粘贴",
-      "regenerate": "重新生成标题和标签",
+      "regenerate": "重新生成标题",
       "rename": "重命名",
       "selected": "已选"
     },
@@ -584,7 +627,7 @@ export const missingTranslations = {
     },
     "btn": {
       "exportJSON": "导出 JSON",
-      "importJSON": "导入 JSON",
+      "importJSON": "导入 JSON 或 HTML",
       "newFolder": "新文件夹",
       "newNote": "新笔记",
       "selectAll": "全选"
@@ -595,6 +638,11 @@ export const missingTranslations = {
     "empty": {
       "folder": "文件夹为空",
       "search": "未找到结果"
+    },
+    "guide": {
+      "title": "使用指南",
+      "subtitle": "TautanLumina 功能快速指南",
+      "searchPlaceholder": "搜索指南主题..."
     },
     "feature": {
       "aiTagging": {
@@ -679,7 +727,10 @@ export const missingTranslations = {
       "reload": "从源重新加载",
       "selected": "已选模型: {model}",
       "clickToSelect": "点击模型进行选择",
-      "close": "关闭"
+      "close": "关闭",
+      "fetchSuccess": "成功加载了 {count} 个模型",
+      "fetchEmpty": "未找到模型。",
+      "fetchError": "从源加载模型失败。"
     },
     "picker": {
       "empty": "空",
@@ -690,6 +741,7 @@ export const missingTranslations = {
       "enterAccountPassword": "输入账户密码",
       "enterPin": "输入 PIN",
       "folderLocked": "文件夹已锁定",
+      "forgotPin": "忘记 PIN？用密码重置",
       "folderUnlockedSuccess": "文件夹已解锁",
       "lock": "锁定",
       "lockedBadge": "已锁定",
@@ -704,7 +756,8 @@ export const missingTranslations = {
       "subfolderCannotLock": "子文件夹无法锁定",
       "unlockFolderDesc": "解锁以查看内容",
       "unlockingTitle": "正在解锁",
-      "unlockPin": "解锁",
+      "unlockPin": "解锁 PIN",
+      "lockPin": "锁定 PIN",
       "unlockTitle": "解锁",
       "verifyAccountPassword": "验证账户密码",
       "verifyResetPin": "验证以重置 PIN",
@@ -804,6 +857,16 @@ export const missingTranslations = {
       "emptyClipboard": "剪贴板为空",
       "folderLocked": "文件夹已锁定",
       "folderUnlocked": "文件夹已解锁",
+      "folderSystemCannotDelete": "系统文件夹无法删除",
+      "folderSystemCannotRename": "系统文件夹无法重命名",
+      "folderSystemCannotLock": "系统文件夹无法锁定",
+      "invalidFileFormat": "文件格式无效",
+      "bookmarkSaveFailed": "无法保存书签",
+      "importBookmarksSuccess": "成功导入 {count} 个书签",
+      "folderOpened": "文件夹 \"{name}\" 已打开",
+      "invalidCredentials": "邮箱或密码错误。",
+      "userAlreadyExists": "邮箱已注册。请登录。",
+      "userEmailNotFound": "找不到用户邮箱。",
       "invalidUrl": "无效网址",
       "lockedItem": "锁定项目",
       "loggedOut": "已登出",
@@ -844,18 +907,19 @@ export const missingTranslations = {
   },
   "ja": {
     "ai": {
-      "bookmarkPrompt": "このURLを分析し、簡潔でクリーンなタイトル（最大12文字）と短いカテゴリタグを返してください：{url}"
+      "bookmarkPrompt": "このURLを分析し、以下のURLの簡潔で明確なタイトル（最大15文字）を返してください：{url}"
     },
     "action": {
       "cancel": "キャンセル",
       "delete": "削除",
+      "editTitle": "タイトル編集",
       "itemsSelected": "個のアイテムを選択",
       "move": "移動",
       "moveItems": "アイテムを移動",
       "moveToFolder": "フォルダーへ移動",
       "moveToNum": "指定位置へ移動",
       "paste": "貼り付け",
-      "regenerate": "タイトルとタグを再生成",
+      "regenerate": "タイトルを再生成",
       "rename": "名前変更",
       "selected": "選択済み"
     },
@@ -865,7 +929,7 @@ export const missingTranslations = {
     },
     "btn": {
       "exportJSON": "JSON エクスポート",
-      "importJSON": "JSON インポート",
+      "importJSON": "JSON または HTML インポート",
       "newFolder": "新規フォルダー",
       "newNote": "新規メモ",
       "selectAll": "すべて選択"
@@ -876,6 +940,11 @@ export const missingTranslations = {
     "empty": {
       "folder": "このフォルダーは空です",
       "search": "結果が見つかりません"
+    },
+    "guide": {
+      "title": "利用ガイド",
+      "subtitle": "TautanLumina 機能のクイックガイド",
+      "searchPlaceholder": "ガイドを検索..."
     },
     "feature": {
       "aiTagging": {
@@ -960,7 +1029,10 @@ export const missingTranslations = {
       "reload": "ソースから再読み込み",
       "selected": "選択されたモデル: {model}",
       "clickToSelect": "クリックしてモデルを選択",
-      "close": "閉じる"
+      "close": "閉じる",
+      "fetchSuccess": "{count} 個のモデルの読み込みに成功しました",
+      "fetchEmpty": "モデルが見つかりません。",
+      "fetchError": "ソースからのモデルの読み込みに失敗しました。"
     },
     "picker": {
       "empty": "空",
@@ -971,6 +1043,7 @@ export const missingTranslations = {
       "enterAccountPassword": "アカウントパスワードを入力",
       "enterPin": "PINを入力",
       "folderLocked": "フォルダーがロックされています",
+      "forgotPin": "PINをお忘れですか？パスワードでリセット",
       "folderUnlockedSuccess": "フォルダーがロック解除されました",
       "lock": "ロック",
       "lockedBadge": "ロック済み",
@@ -985,7 +1058,8 @@ export const missingTranslations = {
       "subfolderCannotLock": "サブフォルダーはロックできません",
       "unlockFolderDesc": "コンテンツを表示するにはロック解除",
       "unlockingTitle": "ロック解除中",
-      "unlockPin": "ロック解除",
+      "unlockPin": "PINを解除",
+      "lockPin": "PINでロック",
       "unlockTitle": "ロック解除",
       "verifyAccountPassword": "アカウントパスワードの確認",
       "verifyResetPin": "PINリセットの確認",
@@ -1085,6 +1159,16 @@ export const missingTranslations = {
       "emptyClipboard": "クリップボードが空です",
       "folderLocked": "フォルダーロック",
       "folderUnlocked": "フォルダーロック解除",
+      "folderSystemCannotDelete": "システムフォルダは削除できません",
+      "folderSystemCannotRename": "システムフォルダの名前は変更できません",
+      "folderSystemCannotLock": "システムフォルダはロックできません",
+      "invalidFileFormat": "無効なファイル形式",
+      "bookmarkSaveFailed": "ブックマークの保存に失敗しました",
+      "importBookmarksSuccess": "{count} 個のブックマークがインポートされました",
+      "folderOpened": "フォルダ「{name}」を開きました",
+      "invalidCredentials": "メールアドレスまたはパスワードが間違っています。",
+      "userAlreadyExists": "メールアドレスは既に登録されています。ログインしてください。",
+      "userEmailNotFound": "ユーザーのメールアドレスが見つかりません。",
       "invalidUrl": "無効なURL",
       "lockedItem": "ロックされたアイテム",
       "loggedOut": "ログアウト済み",
@@ -1125,18 +1209,19 @@ export const missingTranslations = {
   },
   "ko": {
     "ai": {
-      "bookmarkPrompt": "이 URL을 분석하여 간결하고 깔끔한 제목(최대 12자)과 짧은 카테고리 태그를 반환하세요: {url}"
+      "bookmarkPrompt": "이 URL을 분석하여 다음 URL에 대한 간결하고 명확한 제목(최대 15자)을 반환하세요: {url}"
     },
     "action": {
       "cancel": "취소",
       "delete": "삭제",
+      "editTitle": "제목 편집",
       "itemsSelected": "개 항목 선택됨",
       "move": "이동",
       "moveItems": "항목 이동",
       "moveToFolder": "폴더로 이동",
       "moveToNum": "위치로 이동",
       "paste": "붙여넣기",
-      "regenerate": "제목 및 태그 재생성",
+      "regenerate": "제목 재생성",
       "rename": "이름 바꾸기",
       "selected": "선택됨"
     },
@@ -1146,7 +1231,7 @@ export const missingTranslations = {
     },
     "btn": {
       "exportJSON": "JSON 내보내기",
-      "importJSON": "JSON 가져오기",
+      "importJSON": "JSON 또는 HTML 가져오기",
       "newFolder": "새 폴더",
       "newNote": "새 노트",
       "selectAll": "모두 선택"
@@ -1157,6 +1242,11 @@ export const missingTranslations = {
     "empty": {
       "folder": "이 폴더는 비어 있습니다",
       "search": "결과가 없습니다"
+    },
+    "guide": {
+      "title": "사용 가이드",
+      "subtitle": "TautanLumina 기능 빠른 가이드",
+      "searchPlaceholder": "가이드 주제 검색..."
     },
     "feature": {
       "aiTagging": {
@@ -1241,7 +1331,10 @@ export const missingTranslations = {
       "reload": "소스에서 다시 로드",
       "selected": "선택된 모델: {model}",
       "clickToSelect": "모델을 클릭하여 선택하세요",
-      "close": "닫기"
+      "close": "닫기",
+      "fetchSuccess": "{count}개의 모델을 성공적으로 로드했습니다",
+      "fetchEmpty": "모델을 찾을 수 없습니다.",
+      "fetchError": "소스에서 모델을 로드하지 못했습니다."
     },
     "picker": {
       "empty": "비어 있음",
@@ -1266,7 +1359,8 @@ export const missingTranslations = {
       "subfolderCannotLock": "하위 폴더는 잠글 수 없습니다",
       "unlockFolderDesc": "내용을 보려면 잠금 해제",
       "unlockingTitle": "잠금 해제 중",
-      "unlockPin": "잠금 해제",
+      "unlockPin": "PIN 잠금 해제",
+      "lockPin": "PIN 잠금",
       "unlockTitle": "잠금 해제",
       "verifyAccountPassword": "계정 비밀번호 확인",
       "verifyResetPin": "재설정할 PIN 확인",
@@ -1365,7 +1459,18 @@ export const missingTranslations = {
       "emailNotVerified": "이메일 확인되지 않음",
       "emptyClipboard": "클립보드 비어 있음",
       "folderLocked": "폴더 잠김",
+      "forgotPin": "PIN을 잊으셨나요? 비밀번호로 재설정",
       "folderUnlocked": "폴더 잠금 해제됨",
+      "folderSystemCannotDelete": "시스템 폴더는 삭제할 수 없습니다",
+      "folderSystemCannotRename": "시스템 폴더의 이름을 바꿀 수 없습니다",
+      "folderSystemCannotLock": "시스템 폴더는 잠글 수 없습니다",
+      "invalidFileFormat": "잘못된 파일 형식",
+      "bookmarkSaveFailed": "북마크를 저장하지 못했습니다",
+      "importBookmarksSuccess": "{count}개의 북마크를 성공적으로 가져왔습니다",
+      "folderOpened": "폴더 \"{name}\" 열림",
+      "invalidCredentials": "이메일 또는 비밀번호가 잘못되었습니다.",
+      "userAlreadyExists": "이미 등록된 이메일입니다. 로그인해 주세요.",
+      "userEmailNotFound": "사용자 이메일을 찾을 수 없습니다.",
       "invalidUrl": "잘못된 URL",
       "lockedItem": "잠긴 항목",
       "loggedOut": "로그아웃됨",
@@ -1406,18 +1511,19 @@ export const missingTranslations = {
   },
   "ru": {
     "ai": {
-      "bookmarkPrompt": "Проанализируйте этот URL и верните краткое, чистое название (максимум 12 символов) и короткий тег категории для следующего URL: {url}"
+      "bookmarkPrompt": "Проанализируйте этот URL и верните понятный заголовок (максимум 15 символов) для следующего URL: {url}"
     },
     "action": {
       "cancel": "Отмена",
       "delete": "Удалить",
+      "editTitle": "Редактировать заголовок",
       "itemsSelected": "выбрано элементов",
       "move": "Переместить",
       "moveItems": "Переместить элементы",
       "moveToFolder": "В папку",
       "moveToNum": "На позицию",
       "paste": "Вставить",
-      "regenerate": "Сгенерировать заново заголовок и теги",
+      "regenerate": "Сгенерировать заново заголовок",
       "rename": "Переименовать",
       "selected": "Выбрано"
     },
@@ -1427,7 +1533,7 @@ export const missingTranslations = {
     },
     "btn": {
       "exportJSON": "Экспорт JSON",
-      "importJSON": "Импорт JSON",
+      "importJSON": "Импорт JSON или HTML",
       "newFolder": "Новая папка",
       "newNote": "Новая заметка",
       "selectAll": "Выбрать все"
@@ -1438,6 +1544,11 @@ export const missingTranslations = {
     "empty": {
       "folder": "Эта папка пуста",
       "search": "Ничего не найдено"
+    },
+    "guide": {
+      "title": "Руководство пользователя",
+      "subtitle": "Краткое руководство по функциям TautanLumina",
+      "searchPlaceholder": "Поиск по руководству..."
     },
     "feature": {
       "aiTagging": {
@@ -1522,7 +1633,10 @@ export const missingTranslations = {
       "reload": "Перезагрузить из источника",
       "selected": "Выбранная модель: {model}",
       "clickToSelect": "Нажмите на модель для выбора",
-      "close": "Закрыть"
+      "close": "Закрыть",
+      "fetchSuccess": "Успешно загружено {count} моделей",
+      "fetchEmpty": "Модели не найдены.",
+      "fetchError": "Не удалось загрузить модели из источника."
     },
     "picker": {
       "empty": "Пусто",
@@ -1533,6 +1647,7 @@ export const missingTranslations = {
       "enterAccountPassword": "Ввести пароль аккаунта",
       "enterPin": "Ввести PIN",
       "folderLocked": "Папка заблокирована",
+      "forgotPin": "Забыли PIN? Сбросить с помощью пароля",
       "folderUnlockedSuccess": "Папка разблокирована",
       "lock": "Заблокировать",
       "lockedBadge": "Заблокировано",
@@ -1547,7 +1662,8 @@ export const missingTranslations = {
       "subfolderCannotLock": "Вложенные папки нельзя блокировать",
       "unlockFolderDesc": "Разблокируйте для просмотра",
       "unlockingTitle": "Разблокировка",
-      "unlockPin": "Разблокировать",
+      "unlockPin": "Разблокировать PIN",
+      "lockPin": "Заблокировать PIN",
       "unlockTitle": "Разблокировать",
       "verifyAccountPassword": "Подтвердите пароль аккаунта",
       "verifyResetPin": "Подтвердите для сброса PIN",
@@ -1647,6 +1763,16 @@ export const missingTranslations = {
       "emptyClipboard": "Буфер обмена пуст",
       "folderLocked": "Папка заблокирована",
       "folderUnlocked": "Папка разблокирована",
+      "folderSystemCannotDelete": "Системные папки нельзя удалить",
+      "folderSystemCannotRename": "Системные папки нельзя переименовать",
+      "folderSystemCannotLock": "Системные папки нельзя заблокировать",
+      "invalidFileFormat": "Неверный формат файла",
+      "bookmarkSaveFailed": "Не удалось сохранить закладку",
+      "importBookmarksSuccess": "Успешно импортировано закладок: {count}",
+      "folderOpened": "Папка \"{name}\" открыта",
+      "invalidCredentials": "Неверный email или пароль.",
+      "userAlreadyExists": "Email уже зарегистрирован. Пожалуйста, войдите.",
+      "userEmailNotFound": "Email пользователя не найден.",
       "invalidUrl": "Неверный URL",
       "lockedItem": "Заблокировано",
       "loggedOut": "Выход выполнен",

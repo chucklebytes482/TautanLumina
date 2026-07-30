@@ -112,6 +112,11 @@ export const DialogProvider = ({ children }: { children: ReactNode }) => {
                     onChange={(e) => setInputValue(e.target.value)}
                     onFocus={handleFocus}
                     autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-bwignore="true"
+                    data-form-type="other"
+                    name="no_autofill_dialog_area"
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck="false"
@@ -136,6 +141,11 @@ export const DialogProvider = ({ children }: { children: ReactNode }) => {
                     onChange={(e) => setInputValue(e.target.value)}
                     onFocus={handleFocus}
                     autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-bwignore="true"
+                    data-form-type="other"
+                    name="no_autofill_dialog_input"
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck="false"

@@ -21,7 +21,8 @@ import {
   Search,
   Check,
   ChevronDown,
-  Cpu
+  Cpu,
+  BookOpen
 } from 'lucide-react';
 import { SubscriptionCard } from './SubscriptionCard';
 import { FileSystemItem } from '../Types';
@@ -29,7 +30,7 @@ import { toast } from 'sonner';
 
 import { loadKey, loadModel, loadEndpoint, loadModelHistory, saveKey, saveModel, saveEndpoint, fetchAvailableModels } from '../lib/ai';
 import { useI18n } from '../lib/i18n';
-import { hasPinSet } from '../lib/pin';
+import { usePinState } from '../lib/pin';
 
 interface Props {
   user: any;
@@ -41,6 +42,7 @@ interface Props {
   onResetPinPassword?: () => void;
   onExport?: () => void;
   onImport?: () => void;
+  onOpenGuide?: () => void;
   initialTab?: TabType;
 }
 
@@ -56,9 +58,11 @@ export const SettingsDialog = ({
   onResetPinPassword,
   onExport, 
   onImport, 
+  onOpenGuide,
   initialTab
 }: Props) => {
   const { t } = useI18n();
+  const pinActive = usePinState();
   const isDeveloper = user?.email?.toLowerCase() === ADMIN_EMAIL;
   const [activeTab, setActiveTab] = useState<TabType>(initialTab || null);
   const [apiKey, setApiKey] = useState('');
@@ -117,17 +121,17 @@ export const SettingsDialog = ({
       if (list && list.length > 0) {
         setFetchedModels(list);
         if (!silent) {
-          toast.success(`Berhasil memuat ${list.length} model`);
+          toast.success(t('modelPicker.fetchSuccess').replace('{count}', list.length.toString()));
         }
         if (!model) {
           setModel(list[0]);
         }
       } else if (!silent) {
-        toast.error('Tidak ada model yang ditemukan.');
+        toast.error(t('modelPicker.fetchEmpty'));
       }
     } catch (err: any) {
       if (!silent) {
-        toast.error(err.message || 'Gagal memuat model dari sumber.');
+        toast.error(err.message || t('modelPicker.fetchError'));
       }
     } finally {
       setFetchingModels(false);
@@ -162,8 +166,12 @@ export const SettingsDialog = ({
           value={endpoint}
           onChange={(e) => setEndpoint(e.target.value)}
           placeholder="https://openrouter.ai/api/v1/chat/completions"
-          autoComplete="new-password"
-          name="endpoint_input"
+          autoComplete="off"
+          data-1p-ignore="true"
+          data-lpignore="true"
+          data-bwignore="true"
+          data-form-type="other"
+          name="no_autofill_endpoint"
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck="false"
@@ -178,6 +186,11 @@ export const SettingsDialog = ({
             readOnly
             tabIndex={-1}
             autoComplete="off"
+            data-1p-ignore="true"
+            data-lpignore="true"
+            data-bwignore="true"
+            data-form-type="other"
+            name="no_autofill_key"
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck="false"
@@ -315,8 +328,12 @@ export const SettingsDialog = ({
                   value={modelSearch}
                   onChange={(e) => setModelSearch(e.target.value)}
                   placeholder={t('modelPicker.search')}
-                  autoComplete="new-password"
-                  name="model_search_input"
+                  autoComplete="off"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  data-bwignore="true"
+                  data-form-type="other"
+                  name="no_autofill_model_search"
                   className="w-full pl-9 pr-8 py-2 text-xs border border-[#e2ddd5] dark:border-neutral-700 rounded-xl bg-[#faf8f5] dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#ff4f00]"
                 />
                 {modelSearch && (
@@ -463,14 +480,14 @@ export const SettingsDialog = ({
         <p className="text-sm text-neutral-500">{t('settings.profile.notLoggedIn')}</p>
       )}
 
-      {/* PIN Security Option */}
+      {/* PIN Security Section */}
       <div className="mt-6 pt-4 border-t border-neutral-200/80">
         <div className="flex items-center justify-between mb-2">
           <h5 className="text-sm font-semibold text-neutral-800 flex items-center gap-2">
             <Shield size={16} className="text-[#ff4f00]" />
             {t('settings.pinSecurity')}
           </h5>
-          {hasPinSet() ? (
+          {pinActive ? (
             <span className="px-2 py-0.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 rounded-full border border-emerald-200">
               {t('settings.pinActive')}
             </span>
@@ -483,34 +500,37 @@ export const SettingsDialog = ({
         <p className="text-xs text-neutral-500 mb-3">
           {t('settings.pinDesc')}
         </p>
-        <button
-          onClick={() => {
-            if (onOpenPinMenu) onOpenPinMenu();
-          }}
-          className="w-full flex items-center justify-between p-3.5 bg-[#faf8f5] hover:bg-[#fff0eb] border border-[#e2ddd5] hover:border-[#ff4f00]/40 rounded-xl transition-all text-left cursor-pointer group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[#fff0eb] text-[#ff4f00] group-hover:scale-105 transition-transform">
-              <Lock size={18} />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-neutral-900">
-                {hasPinSet() ? t('settings.managePin') : t('settings.setNewPin')}
-              </div>
-              <div className="text-[11px] text-neutral-500">
-                {hasPinSet() ? t('settings.managePinDesc') : t('pin.setupTitle')}
-              </div>
-            </div>
-          </div>
-          <ChevronRight size={16} className="text-neutral-400 group-hover:text-[#ff4f00] transition-colors" />
-        </button>
 
-        {hasPinSet() && user?.email && (
+        {pinActive ? (
+          user?.email && (
+            <button
+              onClick={() => {
+                if (onResetPinPassword) onResetPinPassword();
+              }}
+              className="w-full flex items-center justify-between p-3.5 bg-[#faf8f5] hover:bg-[#fff0eb] border border-[#e2ddd5] hover:border-[#ff4f00]/40 rounded-xl transition-all text-left cursor-pointer group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-[#fff0eb] text-[#ff4f00] group-hover:scale-105 transition-transform">
+                  <Lock size={18} />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-neutral-900">
+                    {t('pin.verifyResetPin') || 'Reset PIN dengan Password'}
+                  </div>
+                  <div className="text-[11px] text-neutral-500">
+                    {t('pin.resetPinDesc') || 'Masukkan password akun untuk mereset PIN keamanan'}
+                  </div>
+                </div>
+              </div>
+              <ChevronRight size={16} className="text-neutral-400 group-hover:text-[#ff4f00] transition-colors" />
+            </button>
+          )
+        ) : (
           <button
             onClick={() => {
-              if (onResetPinPassword) onResetPinPassword();
+              if (onOpenPinMenu) onOpenPinMenu();
             }}
-            className="w-full flex items-center justify-between p-3.5 mt-2.5 bg-[#faf8f5] hover:bg-[#fff0eb] border border-[#e2ddd5] hover:border-[#ff4f00]/40 rounded-xl transition-all text-left cursor-pointer group"
+            className="w-full flex items-center justify-between p-3.5 bg-[#faf8f5] hover:bg-[#fff0eb] border border-[#e2ddd5] hover:border-[#ff4f00]/40 rounded-xl transition-all text-left cursor-pointer group"
           >
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-[#fff0eb] text-[#ff4f00] group-hover:scale-105 transition-transform">
@@ -518,10 +538,10 @@ export const SettingsDialog = ({
               </div>
               <div>
                 <div className="text-xs font-bold text-neutral-900">
-                  {t('pin.verifyResetPin') || 'Reset PIN dengan Password'}
+                  {t('settings.setNewPin') || 'Atur PIN Keamanan'}
                 </div>
                 <div className="text-[11px] text-neutral-500">
-                  {t('pin.resetPinDesc') || 'Masukkan password akun untuk mereset PIN keamanan'}
+                  {t('pin.setupTitle') || 'Buat PIN 4 digit baru'}
                 </div>
               </div>
             </div>
@@ -557,7 +577,7 @@ export const SettingsDialog = ({
               <Upload size={20} />
             </div>
             <div>
-              <p className="font-medium text-sm text-neutral-900">{t('btn.importJSON') || 'Import JSON'}</p>
+              <p className="font-medium text-sm text-neutral-900">{t('btn.importJSON') || 'Import JSON or HTML'}</p>
               <p className="text-xs text-neutral-500 mt-0.5">{t('sync.import.desc') || 'Restore data from JSON file'}</p>
             </div>
           </button>
@@ -641,6 +661,18 @@ export const SettingsDialog = ({
             <div className="space-y-1">
               <NavItem id="api" icon={Key} label={t('menu.api')} />
               <NavItem id="sync" icon={RefreshCw} label={t('menu.sync') || 'Sync'} />
+              {onOpenGuide && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenGuide();
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 hover:bg-[#fff0eb] hover:text-[#ff4f00] transition-colors cursor-pointer"
+                >
+                  <BookOpen size={18} className="text-[#ff4f00]" />
+                  {t('guide.title') || 'Panduan Penggunaan'}
+                </button>
+              )}
             </div>
           </div>
 

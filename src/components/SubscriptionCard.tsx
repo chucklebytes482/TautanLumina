@@ -303,8 +303,12 @@ export const SubscriptionCard = ({ user }: { user: any }) => {
                 value={pastedUrl}
                 onChange={(e) => setPastedUrl(e.target.value)}
                 placeholder="https://explorer.solana.com/tx/..."
-                autoComplete="new-password"
-                name="sub_url_input"
+                autoComplete="off"
+                data-1p-ignore="true"
+                data-lpignore="true"
+                data-bwignore="true"
+                data-form-type="other"
+                name="no_autofill_sub_url"
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck="false"

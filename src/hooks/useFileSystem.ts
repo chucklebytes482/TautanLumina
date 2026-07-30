@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { FileSystemItem, FileSystemItemType } from '../Types';
 import * as db from '../db/db';
 import { parseNetscapeBookmarks, isNetscapeBookmarkHTML } from '../lib/bookmarkParser';
+import { useI18n } from '../lib/i18n';
 
 const uid = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -9,6 +10,7 @@ const uid = () =>
     : Math.random().toString(36).slice(2) + Date.now().toString(36);
 
 export const useFileSystem = () => {
+  const { t } = useI18n();
   const [items, setItems] = useState<FileSystemItem[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -114,15 +116,16 @@ export const useFileSystem = () => {
     if (type === 'file' && !content.trim()) {
       throw new Error('URL tidak boleh kosong');
     }
+    const targetParentId = (type === 'note' && !parentId) ? 'folder-catatan' : parentId;
     const itemName = type === 'note' ? content.trim() : (name.trim() || (type === 'folder' ? 'Folder' : 'Untitled'));
     const item: FileSystemItem = {
       id: uid(),
-      parentId,
+      parentId: targetParentId,
       name: itemName,
       type,
       content: type === 'folder' ? undefined : content,
       category,
-      order: nextOrder(parentId),
+      order: nextOrder(targetParentId),
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -144,7 +147,7 @@ export const useFileSystem = () => {
 
   const renameItem = async (id: string, name: string) => {
     if (id === 'folder-catatan' || id === 'folder-hello-world') {
-      throw new Error('Folder sistem tidak dapat diubah namanya');
+      throw new Error(t('toast.folderSystemCannotRename'));
     }
     const it = items.find((i) => i.id === id);
     if (!it) return;
@@ -343,7 +346,7 @@ export const useFileSystem = () => {
     return JSON.stringify({ app: 'plaintxtai', version: 1, items, apiKey: aiKey, model: aiModel }, null, 2);
   };
 
-  const importJSON = async (json: string, replace: boolean) => {
+  const importJSON = async (json: string, replace: boolean, targetParentId?: string | null) => {
     const data = JSON.parse(json);
     const incoming: FileSystemItem[] = Array.isArray(data) ? data : data.items || [];
     
@@ -358,7 +361,7 @@ export const useFileSystem = () => {
       }
     }
 
-    await importItems(incoming, replace);
+    await importItems(incoming, replace, targetParentId);
   };
 
   const importHTML = async (htmlContent: string, replace: boolean, targetParentId?: string | null) => {
@@ -371,46 +374,22 @@ export const useFileSystem = () => {
   };
 
   const importItems = async (incoming: FileSystemItem[], replace: boolean, targetParentId?: string | null) => {
-    const incomingIds = new Set(incoming.map((it) => it.id));
-    const defaultParentId = targetParentId ? targetParentId : null;
+    const defaultParentId = targetParentId ? targetParentId : 'folder-hello-world';
 
     if (replace) {
       await db.clearItems();
-      const updatedIncoming = incoming.map((it) => {
-        if (it.id === 'folder-catatan' || it.id === 'folder-hello-world') {
-          return it;
-        }
-        
-        if (!it.parentId) {
-          return {
-            ...it,
-            parentId: null,
-          };
-        }
-
-        const isSystemParent = it.parentId === 'folder-catatan' || it.parentId === 'folder-hello-world';
-        const hasParentInIncoming = incomingIds.has(it.parentId) || isSystemParent;
-
-        return {
-          ...it,
-          parentId: hasParentInIncoming ? it.parentId : defaultParentId,
-        };
-      });
-      await db.saveItems(updatedIncoming);
+      await db.saveItems(incoming);
     } else {
+      const nonSystemIncoming = incoming.filter((it) => it.id !== 'folder-catatan' && it.id !== 'folder-hello-world');
+      const nonSystemIds = new Set(nonSystemIncoming.map((it) => it.id));
+
       const map: Record<string, string> = {};
-      incoming.forEach((it) => {
-        if (it.id === 'folder-catatan' || it.id === 'folder-hello-world') {
-          map[it.id] = it.id;
-        } else {
-          map[it.id] = uid();
-        }
+      nonSystemIncoming.forEach((it) => {
+        map[it.id] = uid();
       });
-      const remapped = incoming.map((it) => {
-        if (it.id === 'folder-catatan' || it.id === 'folder-hello-world') {
-          return it;
-        }
-        const hasParentInIncoming = it.parentId && incomingIds.has(it.parentId);
+
+      const remapped = nonSystemIncoming.map((it) => {
+        const hasParentInIncoming = it.parentId && nonSystemIds.has(it.parentId);
         return {
           ...it,
           id: map[it.id],

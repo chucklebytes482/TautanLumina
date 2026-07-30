@@ -225,6 +225,8 @@ export const LoginScreen = ({ login, register, resetPassword, updatePasswordReco
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
                     <input
                       type="email"
+                      name="email"
+                      autoComplete="username"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -244,6 +246,8 @@ export const LoginScreen = ({ login, register, resetPassword, updatePasswordReco
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
                     <input
                       type={showPass ? 'text' : 'password'}
+                      name="password"
+                      autoComplete={mode === 'register' || mode === 'reset' ? 'new-password' : 'current-password'}
                       required
                       minLength={8}
                       value={pass}
