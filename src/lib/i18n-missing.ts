@@ -108,6 +108,17 @@ export const missingTranslations = {
       "maxPositionError": "Max position error",
       "rangeError": "Range error"
     },
+    "modelPicker": {
+      "title": "AI Model Window",
+      "modelsLoaded": "{count} models loaded from source",
+      "loadingProvider": "Loading model list from provider...",
+      "search": "Search model...",
+      "notFound": "Model not found.",
+      "reload": "Reload from Source",
+      "selected": "Selected model: {model}",
+      "clickToSelect": "Click on a model to select",
+      "close": "Close"
+    },
     "picker": {
       "empty": "Empty",
       "newFolder": "New Folder",
@@ -377,6 +388,17 @@ export const missingTranslations = {
       "example": "Contoh",
       "maxPositionError": "Kesalahan posisi maks",
       "rangeError": "Kesalahan jangkauan"
+    },
+    "modelPicker": {
+      "title": "Jendela Model AI",
+      "modelsLoaded": "{count} model termuat dari sumber",
+      "loadingProvider": "Memuat daftar model dari provider...",
+      "search": "Cari model...",
+      "notFound": "Model tidak ditemukan.",
+      "reload": "Muat Ulang dari Sumber",
+      "selected": "Model terpilih: {model}",
+      "clickToSelect": "Klik pada model untuk memilih",
+      "close": "Tutup"
     },
     "picker": {
       "empty": "Kosong",
@@ -648,6 +670,17 @@ export const missingTranslations = {
       "maxPositionError": "最大位置错误",
       "rangeError": "范围错误"
     },
+    "modelPicker": {
+      "title": "AI模型窗口",
+      "modelsLoaded": "已从源加载 {count} 个模型",
+      "loadingProvider": "正在从提供商加载模型列表...",
+      "search": "搜索模型...",
+      "notFound": "未找到模型。",
+      "reload": "从源重新加载",
+      "selected": "已选模型: {model}",
+      "clickToSelect": "点击模型进行选择",
+      "close": "关闭"
+    },
     "picker": {
       "empty": "空",
       "newFolder": "新文件夹",
@@ -917,6 +950,17 @@ export const missingTranslations = {
       "example": "例",
       "maxPositionError": "最大位置エラー",
       "rangeError": "範囲エラー"
+    },
+    "modelPicker": {
+      "title": "AIモデルウィンドウ",
+      "modelsLoaded": "ソースから {count} 個のモデルが読み込まれました",
+      "loadingProvider": "プロバイダーからモデルリストを読み込んでいます...",
+      "search": "モデルを検索...",
+      "notFound": "モデルが見つかりません。",
+      "reload": "ソースから再読み込み",
+      "selected": "選択されたモデル: {model}",
+      "clickToSelect": "クリックしてモデルを選択",
+      "close": "閉じる"
     },
     "picker": {
       "empty": "空",
@@ -1188,6 +1232,17 @@ export const missingTranslations = {
       "maxPositionError": "최대 위치 오류",
       "rangeError": "범위 오류"
     },
+    "modelPicker": {
+      "title": "AI 모델 창",
+      "modelsLoaded": "소스에서 {count}개의 모델을 로드했습니다",
+      "loadingProvider": "제공업체에서 모델 목록을 로드하는 중...",
+      "search": "모델 검색...",
+      "notFound": "모델을 찾을 수 없습니다.",
+      "reload": "소스에서 다시 로드",
+      "selected": "선택된 모델: {model}",
+      "clickToSelect": "모델을 클릭하여 선택하세요",
+      "close": "닫기"
+    },
     "picker": {
       "empty": "비어 있음",
       "newFolder": "새 폴더",
@@ -1457,6 +1512,17 @@ export const missingTranslations = {
       "example": "Пример",
       "maxPositionError": "Ошибка макс. позиции",
       "rangeError": "Ошибка диапазона"
+    },
+    "modelPicker": {
+      "title": "Окно моделей AI",
+      "modelsLoaded": "{count} моделей загружено из источника",
+      "loadingProvider": "Загрузка списка моделей от провайдера...",
+      "search": "Поиск моделей...",
+      "notFound": "Модель не найдена.",
+      "reload": "Перезагрузить из источника",
+      "selected": "Выбранная модель: {model}",
+      "clickToSelect": "Нажмите на модель для выбора",
+      "close": "Закрыть"
     },
     "picker": {
       "empty": "Пусто",

@@ -259,11 +259,11 @@ export const SettingsDialog = ({
                   <Cpu size={18} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-neutral-900 dark:text-neutral-100 text-sm">Jendela Model AI</h3>
+                  <h3 className="font-bold text-neutral-900 dark:text-neutral-100 text-sm">{t('modelPicker.title')}</h3>
                   <p className="text-[11px] text-neutral-500">
                     {fetchedModels.length > 0
-                      ? `${fetchedModels.length} model termuat dari sumber`
-                      : 'Memuat daftar model dari provider...'}
+                      ? t('modelPicker.modelsLoaded').replace('{count}', fetchedModels.length.toString())
+                      : t('modelPicker.loadingProvider')}
                   </p>
                 </div>
               </div>
@@ -314,7 +314,7 @@ export const SettingsDialog = ({
                   type="text"
                   value={modelSearch}
                   onChange={(e) => setModelSearch(e.target.value)}
-                  placeholder="Cari model..."
+                  placeholder={t('modelPicker.search')}
                   autoComplete="new-password"
                   name="model_search_input"
                   className="w-full pl-9 pr-8 py-2 text-xs border border-[#e2ddd5] dark:border-neutral-700 rounded-xl bg-[#faf8f5] dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#ff4f00]"
@@ -336,7 +336,7 @@ export const SettingsDialog = ({
               {fetchingModels && fetchedModels.length === 0 ? (
                 <div className="py-12 text-center text-xs text-neutral-500 space-y-2">
                   <RefreshCw size={24} className="animate-spin text-[#ff4f00] mx-auto" />
-                  <p className="font-medium">Memuat model dari sumber provider...</p>
+                  <p className="font-medium">{t('modelPicker.loadingProvider')}</p>
                 </div>
               ) : (() => {
                 let list = fetchedModels.length > 0 ? fetchedModels : modelHistory;
@@ -363,13 +363,13 @@ export const SettingsDialog = ({
                 if (sortedList.length === 0) {
                   return (
                     <div className="py-10 text-center text-xs text-neutral-500 space-y-2">
-                      <p className="font-medium">Model tidak ditemukan.</p>
+                      <p className="font-medium">{t('modelPicker.notFound')}</p>
                       <button
                         type="button"
                         onClick={() => handleFetchModels(endpoint, apiKey)}
                         className="px-3 py-1.5 bg-[#ff4f00] text-white rounded-lg text-xs font-semibold cursor-pointer"
                       >
-                        Muat Ulang dari Sumber
+                        {t('modelPicker.reload')}
                       </button>
                     </div>
                   );
@@ -386,7 +386,7 @@ export const SettingsDialog = ({
                       onClick={() => {
                         setModel(m);
                         setIsModelPickerOpen(false);
-                        toast.success(`Model terpilih: ${m}`);
+                        toast.success(t('modelPicker.selected').replace('{model}', m));
                       }}
                       className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all cursor-pointer border ${
                         isSelected
@@ -421,13 +421,13 @@ export const SettingsDialog = ({
 
             {/* Modal Footer */}
             <div className="p-3 bg-[#faf8f5] dark:bg-neutral-900 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs text-neutral-500">
-              <span>Klik pada model untuk memilih</span>
+              <span>{t('modelPicker.clickToSelect')}</span>
               <button
                 type="button"
                 onClick={() => setIsModelPickerOpen(false)}
                 className="px-3 py-1 bg-white border border-[#e2ddd5] dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg text-xs font-semibold hover:bg-neutral-100 cursor-pointer"
               >
-                Tutup
+                {t('modelPicker.close')}
               </button>
             </div>
 
