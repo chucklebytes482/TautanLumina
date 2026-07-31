@@ -33,23 +33,31 @@ try {
   /* ignore */
 }
 
-mobileDndPolyfill({
-  holdToDrag: 300,
-  dragImageTranslateOverride: undefined as unknown as never,
-});
-window.addEventListener('touchmove', () => {}, { passive: false });
+try {
+  mobileDndPolyfill({
+    holdToDrag: 300,
+    dragImageTranslateOverride: undefined as unknown as never,
+  });
+  window.addEventListener('touchmove', () => {}, { passive: false });
+} catch (err) {
+  console.warn('Polyfill init skipped:', err);
+}
 
 // Register Service Worker for PWA Offline Access
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
-  window.addEventListener('load', () => {
+try {
+  if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.warn('SW registration failed:', err);
+      });
+    });
+  } else if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch((err) => {
       console.warn('SW registration failed:', err);
     });
-  });
-} else if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch((err) => {
-    console.warn('SW registration failed:', err);
-  });
+  }
+} catch (err) {
+  console.warn('SW init skipped:', err);
 }
 
 createRoot(document.getElementById('root')!).render(
