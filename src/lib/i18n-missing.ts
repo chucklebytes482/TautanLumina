@@ -6,7 +6,7 @@ export const missingTranslations = {
     "action": {
       "cancel": "Cancel",
       "delete": "Delete",
-      "editTitle": "Edit Title",
+      "editTitle": "Edit Title & URL",
       "itemsSelected": "items selected",
       "move": "Move",
       "moveItems": "Move Items",
@@ -105,6 +105,7 @@ export const missingTranslations = {
       "done": "Done",
       "folderName": "Folder Name",
       "newName": "New Name",
+      "newUrl": "New URL",
       "noteText": "Note Content"
     },
     "move": {
@@ -308,7 +309,7 @@ export const missingTranslations = {
     "action": {
       "cancel": "Batal",
       "delete": "Hapus",
-      "editTitle": "Edit Judul",
+      "editTitle": "Edit Judul & URL",
       "itemsSelected": "item terpilih",
       "move": "Pindah",
       "moveItems": "Pindah Item",
@@ -407,6 +408,7 @@ export const missingTranslations = {
       "done": "Selesai",
       "folderName": "Nama Folder",
       "newName": "Nama Baru",
+      "newUrl": "URL Baru",
       "noteText": "Konten Catatan"
     },
     "move": {
@@ -610,7 +612,7 @@ export const missingTranslations = {
     "action": {
       "cancel": "取消",
       "delete": "删除",
-      "editTitle": "编辑标题",
+      "editTitle": "编辑标题与 URL",
       "itemsSelected": "已选项目",
       "move": "移动",
       "moveItems": "移动项目",
@@ -709,6 +711,7 @@ export const missingTranslations = {
       "done": "完成",
       "folderName": "文件夹名称",
       "newName": "新名称",
+      "newUrl": "新 URL",
       "noteText": "笔记内容"
     },
     "move": {
@@ -912,7 +915,7 @@ export const missingTranslations = {
     "action": {
       "cancel": "キャンセル",
       "delete": "削除",
-      "editTitle": "タイトル編集",
+      "editTitle": "タイトルと URL の編集",
       "itemsSelected": "個のアイテムを選択",
       "move": "移動",
       "moveItems": "アイテムを移動",
@@ -1011,6 +1014,7 @@ export const missingTranslations = {
       "done": "完了",
       "folderName": "フォルダー名",
       "newName": "新しい名前",
+      "newUrl": "新しい URL",
       "noteText": "メモのコンテンツ"
     },
     "move": {
@@ -1214,7 +1218,7 @@ export const missingTranslations = {
     "action": {
       "cancel": "취소",
       "delete": "삭제",
-      "editTitle": "제목 편집",
+      "editTitle": "제목 및 URL 편집",
       "itemsSelected": "개 항목 선택됨",
       "move": "이동",
       "moveItems": "항목 이동",
@@ -1313,6 +1317,7 @@ export const missingTranslations = {
       "done": "완료",
       "folderName": "폴더 이름",
       "newName": "새 이름",
+      "newUrl": "새 URL",
       "noteText": "노트 내용"
     },
     "move": {
@@ -1516,7 +1521,7 @@ export const missingTranslations = {
     "action": {
       "cancel": "Отмена",
       "delete": "Удалить",
-      "editTitle": "Редактировать заголовок",
+      "editTitle": "Редактировать заголовок и URL",
       "itemsSelected": "выбрано элементов",
       "move": "Переместить",
       "moveItems": "Переместить элементы",
@@ -1615,6 +1620,7 @@ export const missingTranslations = {
       "done": "Готово",
       "folderName": "Имя папки",
       "newName": "Новое имя",
+      "newUrl": "Новый URL",
       "noteText": "Текст заметки"
     },
     "move": {

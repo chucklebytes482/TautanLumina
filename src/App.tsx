@@ -35,6 +35,7 @@ import { SettingsDialog } from './components/SettingsDialog';
 import { LoginScreen } from './components/LoginScreen';
 import { PinModal } from './components/PinModal';
 import { MoveKeypadModal } from './components/MoveKeypadModal';
+import { EditBookmarkModal } from './components/EditBookmarkModal';
 import { FullscreenChatModal } from './components/FullscreenChatModal';
 import { FullscreenGuideModal } from './components/FullscreenGuideModal';
 import { LanguageCard, LanguageDropdown } from './components/LanguageSelectorModal';
@@ -138,6 +139,9 @@ export default function App() {
     isBulk?: boolean;
     maxNum: number;
   } | null>(null);
+
+  // Edit Bookmark modal state
+  const [editingBookmarkItem, setEditingBookmarkItem] = useState<FileSystemItem | null>(null);
 
   const { lang, setLang, t } = useI18n();
 
@@ -763,12 +767,9 @@ export default function App() {
     if (item.type === 'file') {
       list.push({
         key: 'editTitle',
-        label: t('action.editTitle') || 'Edit Judul',
-        onClick: async () => {
-          const n = await customPrompt(t('modal.newName') || 'Judul Baru', item.name);
-          if (n !== null && n.trim()) {
-            await renameItem(item.id, n.trim());
-          }
+        label: t('action.editTitle') || 'Edit Judul & URL',
+        onClick: () => {
+          setEditingBookmarkItem(item);
         },
       });
     }
@@ -1128,6 +1129,17 @@ export default function App() {
           isOpen={showGuideModal}
           onClose={() => setShowGuideModal(false)}
         />
+
+        {editingBookmarkItem && (
+          <EditBookmarkModal
+            item={editingBookmarkItem}
+            onClose={() => setEditingBookmarkItem(null)}
+            onSave={async (id, name, url) => {
+              await updateItem(id, { name, content: url });
+              showToast(t('toast.bookmarkSaved') || 'Bookmark berhasil disimpan');
+            }}
+          />
+        )}
 
 
       </Suspense>

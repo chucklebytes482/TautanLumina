@@ -49,10 +49,10 @@ export const GuideTabContent: React.FC = () => {
    * Tempelkan tautan URL langsung ke kolom pencarian / input utama di bagian atas.
    * Tekan tombol **+ Bookmark**. AI secara otomatis menganalisis URL dan membuat judul ringkas (maksimal 15 karakter).
 
-2. **Generate Ulang & Edit Judul**:
+2. **Generate Ulang & Edit Judul & URL**:
    * Klik tombol **Titik Tiga (\`...\`)** pada kartu bookmark.
    * Pilih **Generate Ulang Judul** untuk meminta AI membuat judul baru.
-   * Pilih **Edit Judul** untuk mengubah nama bookmark secara manual sesuai keinginan Anda.
+   * Pilih **Edit Judul & URL** untuk mengubah nama atau URL bookmark secara manual.
 
 💡 *Tips: Kolom pencarian utama mendukung penyaringan cepat judul bookmark dan nama catatan.*
         `
@@ -125,6 +125,10 @@ export const GuideTabContent: React.FC = () => {
    * Buka menu **Pengaturan** -> bagian **Data & Cadangan**.
    * Pilih **Ekspor JSON** untuk menyimpan cadangan semua bookmark & catatan.
    * Pilih **Impor JSON atau HTML** untuk memulihkan atau mengimpor bookmark dari browser lain.
+
+3. **Langganan Pro**:
+   * Buka menu **Pengaturan** -> **Langganan**.
+   * Dapatkan akses ke fitur Pro tanpa batas seperti pesan pribadi ke admin, komentar pengumuman, dan kunci folder.
         `
       }
     },
@@ -155,10 +159,10 @@ export const GuideTabContent: React.FC = () => {
    * Paste any URL directly into the top search/input field.
    * Click **+ Bookmark**. AI will automatically analyze the URL and generate a short title (maximum 15 characters).
 
-2. **Regenerate & Edit Title**:
+2. **Regenerate & Edit Title & URL**:
    * Click the **Three Dots (\`...\`)** button on any bookmark card.
    * Select **Regenerate Title** to request a new AI-generated title.
-   * Select **Edit Title** to manually rename the bookmark to your preference.
+   * Select **Edit Title & URL** to manually update the name or URL of a bookmark.
 
 💡 *Tip: The main search field allows quick real-time filtering of bookmark titles and note contents.*
         `
@@ -231,6 +235,10 @@ export const GuideTabContent: React.FC = () => {
    * Open **Settings** -> **Data & Backup** section.
    * Click **Export JSON** to save a full backup of all bookmarks & notes.
    * Click **Import JSON or HTML** to restore or import bookmarks from other browsers.
+
+3. **Pro Subscription**:
+   * Go to **Settings** -> **Subscription**.
+   * Unlock unlimited Pro features such as private messages to admin, announcement comments, and folder locks.
         `
       }
     },
@@ -261,10 +269,10 @@ export const GuideTabContent: React.FC = () => {
    * 将 URL 链接直接粘贴至顶部搜索/输入框。
    * 点击 **+ 书签**，AI 将自动分析网址并生成精简标题（最多 15 个字符）。
 
-2. **重新生成与编辑标题**：
+2. **重新生成与编辑标题及 URL**：
    * 点击书签卡片上的 **三点菜单 (\`...\`)**。
    * 选择 **重新生成标题** 以请求 AI 重新生成标题。
-   * 选择 **编辑标题** 手动修改为自定义名称。
+   * 选择 **编辑标题与 URL** 手动更改书签的名称或 URL。
 
 💡 *提示：顶部主搜索框支持实时快速筛选书签标题和笔记内容。*
         `
@@ -337,6 +345,10 @@ export const GuideTabContent: React.FC = () => {
    * 打开 **设置** -> **数据与备份** 页面。
    * 选择 **导出 JSON** 保存所有书签和笔记的完整备份。
    * 选择 **导入 JSON 或 HTML** 恢复备份或导入其他浏览器的书签。
+
+3. **Pro 订阅**：
+   * 打开 **设置** -> **订阅** 页面。
+   * 解锁无限 Pro 会员特权，如管理员私信、公告评论与文件夹解锁等。
         `
       }
     },
@@ -367,10 +379,10 @@ export const GuideTabContent: React.FC = () => {
    * 上部の検索/入力欄に URL を直接貼り付けます。
    * **+ ブックマーク** ボタンを押すと、AI が自動で URL を解析し、短いタイトル（最大 15 文字）を生成します。
 
-2. **タイトルの再生成・手動編集**:
+2. **タイトルの再生成・URL 手動編集**:
    * ブックマークカードの **三点メニュー (\`...\`)** をクリック。
    * **タイトルを再生成** を選ぶと AI が新しいタイトルを作成します。
-   * **タイトルを編集** を選ぶと手動でお好みの名称に変更できます。
+   * **タイトルと URL の編集** を選ぶと手動でお好みの名称や URL に変更できます。
 
 💡 *ヒント: 上部メイン検索バーでブックマークタイトルやノート内容をリアルタイム検索できます。*
         `
@@ -443,6 +455,10 @@ export const GuideTabContent: React.FC = () => {
    * **設定** -> **データとバックアップ** を開きます。
    * **JSON エクスポート** で全ブックマークとノートのバックアップを保存。
    * **JSON / HTML インポート** で復元や他ブラウザのブックマークを取り込めます。
+
+3. **Pro サブスクリプション**:
+   * **設定** -> **サブスクリプション** を開きます。
+   * 管理者へのプライベートメッセージや無制限のフォルダロックなどの Pro 機能を解放します。
         `
       }
     },
@@ -473,10 +489,10 @@ export const GuideTabContent: React.FC = () => {
    * 상단 검색/입력창에 URL을 직접 붙여넣습니다.
    * **+ 북마크** 버튼을 누르면 AI가 URL을 분석하여 짧은 제목(최대 15자)을 자동으로 생성합니다.
 
-2. **제목 재생성 및 편집**:
+2. **제목 재생성 및 URL 편집**:
    * 북마크 카드의 **점 3개 메뉴 (\`...\`)** 를 클릭합니다.
    * **제목 재생성**을 선택하여 새 AI 제목을 생성하거나,
-   * **제목 편집**을 선택하여 원하는 이름으로 직접 변경할 수 있습니다.
+   * **제목 및 URL 편집**을 선택하여 원하는 이름이나 URL을 직접 변경할 수 있습니다.
 
 💡 *팁: 상단 메인 검색창을 통해 북마크 제목과 메모 내용을 실시간으로 필터링할 수 있습니다.*
         `
@@ -549,6 +565,10 @@ export const GuideTabContent: React.FC = () => {
    * **설정** -> **데이터 & 백업** 메뉴를 엽니다.
    * **JSON 내보내기**로 모든 북마크 및 메모의 전체 백업을 저장합니다.
    * **JSON 또는 HTML 가져오기**로 복원하거나 타 브라우저의 북마크를 가져올 수 있습니다.
+
+3. **Pro 구독**:
+   * **설정** -> **구독** 메뉴를 엽니다.
+   * 관리자 개인 메시지 및 무제한 폴더 잠금 등 Pro 전용 기능을 잠금 해제합니다.
         `
       }
     },
@@ -579,10 +599,10 @@ export const GuideTabContent: React.FC = () => {
    * Вставьте ссылку URL непосредственно в верхнюю строку поиска/ввода.
    * Нажмите **+ Закладка**. ИИ проанализирует URL и автоматически создаст короткий заголовок (макс. 15 символов).
 
-2. **Перегенерация и редактирование**:
+2. **Перегенерация и редактирование заголовка и URL**:
    * Нажмите кнопку **Три точки (\`...\`)** на карточке закладки.
    * Выберите **Перегенерировать заголовок** для запроса нового заголовка ИИ.
-   * Выберите **Редактировать заголовок** для ручного изменения названия.
+   * Выберите **Редактировать заголовок и URL** для ручного изменения названия или URL.
 
 💡 *Совет: Главная строка поиска позволяет мгновенно фильтровать закладки и заметки в реальном времени.*
         `
@@ -655,6 +675,10 @@ export const GuideTabContent: React.FC = () => {
    * Перейдите в **Настройки** -> **Данные и бэкап**.
    * Выберите **Экспорт JSON** для сохранения полной копии всех закладок и заметок.
    * Выберите **Импорт JSON / HTML** для восстановления или импорта закладок из других браузеров.
+
+3. **Подписка Pro**:
+   * Перейдите в **Настройки** -> **Подписка**.
+   * Разблокируйте доступ к функциям Pro, таким как личные сообщения администратору и снятие ограничений.
         `
       }
     }

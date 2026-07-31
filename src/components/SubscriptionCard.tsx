@@ -140,23 +140,6 @@ export const SubscriptionCard = ({ user }: { user: any }) => {
     );
   }
 
-  if (proStatus === 'pending') {
-    return (
-      <div className="space-y-4">
-        {devPanel}
-        <div className="bg-[#fff0eb] text-[#ff4f00] p-6 rounded-2xl border border-[#ff4f00]/30 flex flex-col items-center text-center shadow-xs">
-          <div className="bg-[#ff4f00]/10 p-3 rounded-2xl mb-3 text-[#ff4f00]">
-            <Clock size={32} />
-          </div>
-          <h3 className="font-bold text-lg mb-1">{t("sub.wait")}</h3>
-          <p className="text-sm opacity-90 text-neutral-700">
-            {t("sub.pendingDesc")}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   if (proStatus === 'pro') {
     return (
       <div className="space-y-4">
