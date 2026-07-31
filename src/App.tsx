@@ -25,19 +25,14 @@ import {
   Mail,
   Languages,
   Aperture,
-  FileText
+  FileText,
+  WifiOff
 } from 'lucide-react';
 import { AppLogo } from './components/AppLogo';
 
 import { FileBrowser } from './components/FileBrowser';
 import { ItemMenu, MenuAction } from './components/ItemMenu';
-import { SettingsDialog } from './components/SettingsDialog';
 import { LoginScreen } from './components/LoginScreen';
-import { PinModal } from './components/PinModal';
-import { MoveKeypadModal } from './components/MoveKeypadModal';
-import { EditBookmarkModal } from './components/EditBookmarkModal';
-import { FullscreenChatModal } from './components/FullscreenChatModal';
-import { FullscreenGuideModal } from './components/FullscreenGuideModal';
 import { LanguageCard, LanguageDropdown } from './components/LanguageSelectorModal';
 import { useDialog } from './context/DialogContext';
 
@@ -51,9 +46,13 @@ import { loadKey, loadModel, loadEndpoint, generateBookmarkData } from './lib/ai
 import { hasPinSet, removePin, usePinState } from './lib/pin';
 import { isNetscapeBookmarkHTML } from './lib/bookmarkParser';
 
-const FolderPicker = lazy(() =>
-  import('./components/FolderPicker').then((m) => ({ default: m.FolderPicker })),
-);
+const FolderPicker = lazy(() => import('./components/FolderPicker').then((m) => ({ default: m.FolderPicker })));
+const SettingsDialog = lazy(() => import('./components/SettingsDialog').then((m) => ({ default: m.SettingsDialog })));
+const PinModal = lazy(() => import('./components/PinModal').then((m) => ({ default: m.PinModal })));
+const MoveKeypadModal = lazy(() => import('./components/MoveKeypadModal').then((m) => ({ default: m.MoveKeypadModal })));
+const EditBookmarkModal = lazy(() => import('./components/EditBookmarkModal').then((m) => ({ default: m.EditBookmarkModal })));
+const FullscreenChatModal = lazy(() => import('./components/FullscreenChatModal').then((m) => ({ default: m.FullscreenChatModal })));
+const FullscreenGuideModal = lazy(() => import('./components/FullscreenGuideModal').then((m) => ({ default: m.FullscreenGuideModal })));
 
 export default function App() {
   const fs = useFileSystem();
@@ -145,12 +144,34 @@ export default function App() {
 
   const { lang, setLang, t } = useI18n();
 
+  const [isOffline, setIsOffline] = useState<boolean>(() => typeof navigator !== 'undefined' ? !navigator.onLine : false);
+
   const { user, loading, syncing, login, register, resetPassword, verifyPasswordAndResetPin, updatePasswordRecovery, verifyEmail, logout, smartSync } = useAppwriteSync(
     items,
     importJSON,
     exportJSON,
     loaded
   );
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      sonnerToast.success(t('toast.onlineBack') || 'Koneksi terhubung kembali. Memulai sinkronisasi otomatis...', { duration: 2500 });
+      smartSync(true);
+    };
+    const handleOffline = () => {
+      setIsOffline(true);
+      sonnerToast.info(t('toast.offlineModeNotice') || 'Mode Luring: Catatan & markah Anda tetap tersimpan dan dapat diakses lokal.', { duration: 3500 });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [smartSync, t]);
 
   const handleLogout = async () => {
     await logout();
@@ -810,7 +831,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-[#faf8f5] text-[#131313] flex flex-col">
+    <div className="min-h-[100dvh] bg-transparent text-[#131313] flex flex-col">
       <header className="sticky top-0 z-40 bg-white border-b border-[#e2ddd5] px-4 py-3 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3">
           <button
@@ -828,6 +849,12 @@ export default function App() {
           </a>
         </div>
         <div className="flex items-center gap-2 sm:gap-4 relative">
+          {isOffline && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 text-amber-700 rounded-full border border-amber-500/25 text-xs font-semibold" title={t('sync.offline.title') || 'Mode Luring (Tersimpan Lokal)'}>
+              <WifiOff size={14} className="text-amber-600 shrink-0" />
+              <span className="hidden sm:inline">Offline Mode</span>
+            </div>
+          )}
           <div className="relative">
             <button 
               onClick={() => setShowChatPopup(true)}

@@ -695,7 +695,7 @@ export const SettingsDialog = ({
           >
             <img
               src="https://api.producthunt.com/widgets/embed-image/v1/product_review.svg?product_id=1277343&theme=light"
-              alt="Tautan Lumina - Product Hunt"
+              alt="TautanLumina - Product Hunt"
               className="h-8 w-auto shrink-0"
               referrerPolicy="no-referrer"
             />
@@ -704,7 +704,7 @@ export const SettingsDialog = ({
       </div>
 
       {/* Content Area Desktop */}
-      <div className="relative flex-1 bg-white h-full shadow-2xl flex flex-col animate-in fade-in slide-in-from-left-8 duration-300 delay-100 max-w-md hidden sm:flex">
+      <div className="relative flex-1 bg-\[#faf8f5\] dark:bg-\[#161618\] bg-doodle h-full shadow-2xl flex flex-col animate-in fade-in slide-in-from-left-8 duration-300 delay-100 max-w-md hidden sm:flex">
         <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
           <h2 className="text-xl font-semibold capitalize">{activeTab ? activeTab.replace('-', ' ') : t('menu.all')}</h2>
           <button onClick={onClose} className="sm:hidden p-2 text-neutral-400 hover:text-neutral-700 cursor-pointer">
@@ -717,9 +717,9 @@ export const SettingsDialog = ({
       </div>
 
       {/* Mobile Content Area Overlay */}
-      <div className={`sm:hidden fixed inset-0 z-50 bg-white transition-transform duration-300 ${activeTab ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`sm:hidden fixed inset-0 z-50 bg-\[#faf8f5\] dark:bg-\[#161618\] bg-doodle transition-transform duration-300 ${activeTab ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex flex-col h-full">
-          <div className="p-4 border-b border-neutral-100 flex items-center bg-white gap-3">
+          <div className="p-4 border-b border-neutral-100 flex items-center bg-transparent gap-3">
             <button onClick={() => setActiveTab(null as any)} className="p-1.5 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-full cursor-pointer">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </button>
@@ -728,7 +728,7 @@ export const SettingsDialog = ({
               <X size={20} />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 bg-white">
+          <div className="flex-1 overflow-y-auto p-4 bg-transparent">
             {renderTabContent(activeTab)}
           </div>
         </div>

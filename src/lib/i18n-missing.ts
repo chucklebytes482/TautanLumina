@@ -18,8 +18,8 @@ export const missingTranslations = {
       "selected": "Selected"
     },
     "app": {
-      "heroDesc": "A minimalist application for your links and notes",
-      "tagline": "Your Links, Luminous."
+      "heroDesc": "TautanLumina is an ultra-minimalist, AI-powered smart bookmark & note manager. Auto-generate concise titles (max 15 chars), lock folders with a 4-digit PIN, record 30s voice notes with audio preview, reorder items with Keypad Move, and sync with Appwrite Cloud.",
+      "tagline": "Your Links, Smart & Luminous."
     },
     "btn": {
       "exportJSON": "Export JSON",
@@ -42,20 +42,24 @@ export const missingTranslations = {
     },
     "feature": {
       "aiTagging": {
-        "desc": "Automatically tag your links",
-        "title": "AI Tagging"
+        "desc": "Auto-generate titles (max 15 chars)",
+        "title": "AI Title & Tagging"
       },
       "cloudSync": {
-        "desc": "Sync your data securely",
+        "desc": "Appwrite Cloud & local storage",
         "title": "Cloud Sync"
       },
       "htmlImport": {
-        "desc": "Import from bookmarks",
-        "title": "HTML Import"
+        "desc": "HTML bookmarks & JSON backup",
+        "title": "Import & Export"
       },
       "pinLock": {
-        "desc": "Lock sensitive folders",
-        "title": "PIN Lock"
+        "desc": "Lock sensitive folders safely",
+        "title": "4-Digit PIN Security"
+      },
+      "voiceChat": {
+        "desc": "Audio preview before sending message",
+        "title": "Voice Chat ≤30s"
       }
     },
     "file": {
@@ -75,7 +79,9 @@ export const missingTranslations = {
       "forgotLink": "Forgot password?",
       "forgotTitle": "Reset Password",
       "hasAccount": "Already have an account?",
-      "min8": "Min 8 chars",
+      "expandFeatures": "App Features",
+      "collapseFeatures": "Collapse",
+      "min8": "Minimum 8 characters",
       "min8Alert": "Password must be at least 8 characters",
       "newPassword": "New Password",
       "noAccount": "No account?",
@@ -205,9 +211,9 @@ export const missingTranslations = {
       "loginRequired": "Please log in to your account first to access Pro Subscription.",
       "wait": "Payment Proof Processing",
       "pendingDesc": "Your transaction proof has been submitted and is currently being verified by admin. Pro features will activate automatically once approved.",
-      "active": "Tautan Lumina Pro Active",
-      "activeDesc": "Congratulations! Your account is enjoying all premium Tautan Lumina Pro features lifetime.",
-      "upgrade": "Upgrade to Tautan Lumina Pro",
+      "active": "TautanLumina Pro Active",
+      "activeDesc": "Congratulations! Your account is enjoying all premium TautanLumina Pro features unlimited.",
+      "upgrade": "Upgrade to TautanLumina Pro",
       "price": "$0.31 USD / Week",
       "freeCoreNote": "Core Features (Cloud Sync, AI Tagging, PIN Security) are always FREE for all users!",
       "feat1": "<strong>Unlimited Comments & Discussion</strong> on Announcements (Free: 1x/day)",
@@ -280,6 +286,8 @@ export const missingTranslations = {
       "moved": "Moved",
       "noBookmarksInFolder": "No bookmarks",
       "noteSaved": "Note saved",
+      "offlineModeNotice": "Offline Mode: Your notes & bookmarks remain stored and accessible locally.",
+      "onlineBack": "Reconnected! Starting automatic cloud sync...",
       "otpWait": "Please wait",
       "passwordChanged": "Password changed",
       "passwordChangeError": "Password change failed",
@@ -328,8 +336,8 @@ export const missingTranslations = {
       "selected": "Terpilih"
     },
     "app": {
-      "heroDesc": "Aplikasi minimalis untuk tautan dan catatan Anda",
-      "tagline": "Tautan Anda, Bercahaya."
+      "heroDesc": "TautanLumina adalah pengelola bookmark & catatan cerdas berbasis AI yang ultra-minimalis. Penamaan judul otomatis (maks 15 karakter), kunci folder PIN 4-digit, voice note 30 detik dengan pratinjau audio, urutan posisi Keypad Move, serta sinkronisasi Awan Appwrite.",
+      "tagline": "Tautan Anda, Cerdas & Bercahaya."
     },
     "btn": {
       "exportJSON": "Ekspor JSON",
@@ -352,20 +360,24 @@ export const missingTranslations = {
     },
     "feature": {
       "aiTagging": {
-        "desc": "Beri tag otomatis tautan Anda",
-        "title": "Tagging AI"
+        "desc": "Generate judul otomatis maks 15 karakter",
+        "title": "Judul & Tag AI"
       },
       "cloudSync": {
-        "desc": "Sinkronisasi data aman",
+        "desc": "Appwrite Cloud & penyimpanan lokal",
         "title": "Sinkronisasi Awan"
       },
       "htmlImport": {
-        "desc": "Impor dari markah",
-        "title": "Impor HTML"
+        "desc": "Cadangan HTML markah & JSON",
+        "title": "Impor & Ekspor"
       },
       "pinLock": {
-        "desc": "Kunci folder sensitif",
-        "title": "Kunci PIN"
+        "desc": "Lindungi folder sensitif secara aman",
+        "title": "Kunci PIN 4-Digit"
+      },
+      "voiceChat": {
+        "desc": "Pratinjau audio sebelum pesan dikirim",
+        "title": "Obrolan Suara ≤30s"
       }
     },
     "file": {
@@ -385,8 +397,10 @@ export const missingTranslations = {
       "forgotLink": "Lupa kata sandi?",
       "forgotTitle": "Reset Kata Sandi",
       "hasAccount": "Sudah punya akun?",
-      "min8": "Min 8 kar",
-      "min8Alert": "Kata sandi min 8 karakter",
+      "expandFeatures": "Fitur App",
+      "collapseFeatures": "Ciutkan",
+      "min8": "Minimal 8 karakter",
+      "min8Alert": "Kata sandi minimal 8 karakter",
       "newPassword": "Kata Sandi Baru",
       "noAccount": "Belum punya akun?",
       "password": "Kata Sandi",
@@ -515,9 +529,9 @@ export const missingTranslations = {
       "loginRequired": "Silakan masuk ke akun Anda terlebih dahulu untuk mengakses menu Langganan Pro.",
       "wait": "Bukti Pembayaran Sedang Diproses",
       "pendingDesc": "Bukti transaksi Anda telah berhasil dikirim dan sedang diverifikasi oleh admin. Fitur Pro akan aktif secara otomatis setelah disetujui.",
-      "active": "Tautan Lumina Pro Aktif",
-      "activeDesc": "Selamat! Akun Anda telah menikmati semua fitur premium Tautan Lumina Pro tanpa batas.",
-      "upgrade": "Tingkatkan ke Tautan Lumina Pro",
+      "active": "TautanLumina Pro Aktif",
+      "activeDesc": "Selamat! Akun Anda telah menikmati semua fitur premium TautanLumina Pro tanpa batas.",
+      "upgrade": "Tingkatkan ke TautanLumina Pro",
       "price": "Rp 5.000 / Minggu",
       "freeCoreNote": "Fitur Utama (Sinkronisasi Awan, Tagging AI, Keamanan PIN) selalu GRATIS untuk semua pengguna!",
       "feat1": "<strong>Komen & Berdiskusi</strong> pada Pengumuman Tanpa Batas (Free: 1x/hari)",
@@ -590,6 +604,8 @@ export const missingTranslations = {
       "moved": "Dipindahkan",
       "noBookmarksInFolder": "Tidak ada markah",
       "noteSaved": "Catatan disimpan",
+      "offlineModeNotice": "Mode Luring: Catatan & markah Anda tetap tersimpan dan dapat diakses secara lokal.",
+      "onlineBack": "Koneksi terhubung kembali. Memulai sinkronisasi otomatis...",
       "otpWait": "Mohon tunggu",
       "passwordChanged": "Kata sandi diubah",
       "passwordChangeError": "Gagal ubah kata sandi",
@@ -638,8 +654,8 @@ export const missingTranslations = {
       "selected": "已选"
     },
     "app": {
-      "heroDesc": "极简的链接和笔记应用",
-      "tagline": "你的链接，闪耀。"
+      "heroDesc": "TautanLumina 是一款极简智能 AI 书签与笔记管理器。支持自动生成标题（最多 15 个字符）、4 位数 PIN 码文件夹加密、30 秒语音录制及播放预览、数字键盘精准排序和 Appwrite 云端同步。",
+      "tagline": "智能书签，亮彩呈现"
     },
     "btn": {
       "exportJSON": "导出 JSON",
@@ -662,20 +678,24 @@ export const missingTranslations = {
     },
     "feature": {
       "aiTagging": {
-        "desc": "自动标记链接",
-        "title": "AI 标签"
+        "desc": "自动生成精简标题（最多15字符）",
+        "title": "AI 自动命名"
       },
       "cloudSync": {
-        "desc": "安全同步数据",
-        "title": "云同步"
+        "desc": "Appwrite 云端与本地离线存储",
+        "title": "云端同步"
       },
       "htmlImport": {
-        "desc": "从书签导入",
-        "title": "HTML 导入"
+        "desc": "支持 HTML 书签与 JSON 备份",
+        "title": "导入与导出"
       },
       "pinLock": {
-        "desc": "锁定敏感文件夹",
-        "title": "PIN 锁"
+        "desc": "安全锁定隐私文件夹",
+        "title": "4位数 PIN 加密"
+      },
+      "voiceChat": {
+        "desc": "发送消息前提供音频试听",
+        "title": "语音聊天 ≤30秒"
       }
     },
     "file": {
@@ -695,8 +715,10 @@ export const missingTranslations = {
       "forgotLink": "忘记密码？",
       "forgotTitle": "重置密码",
       "hasAccount": "已有账户？",
-      "min8": "最少8个字符",
-      "min8Alert": "密码必须至少8个字符",
+      "expandFeatures": "应用功能",
+      "collapseFeatures": "折叠",
+      "min8": "至少 8 个字符",
+      "min8Alert": "密码必须至少 8 个字符",
       "newPassword": "新密码",
       "noAccount": "没有账户？",
       "password": "密码",
@@ -825,9 +847,9 @@ export const missingTranslations = {
       "loginRequired": "请先登录您的账户以访问 Pro 订阅菜单。",
       "wait": "支付凭证处理中",
       "pendingDesc": "您的交易凭证已提交，管理员正在审核中。批准后 Pro 功能将自动激活。",
-      "active": "Lumina Pro 已激活",
-      "activeDesc": "恭喜！您的账户已享有 Lumina Pro 终身所有高级功能。",
-      "upgrade": "升级到 Lumina Pro",
+      "active": "TautanLumina Pro 已激活",
+      "activeDesc": "恭喜！您的账户已享用 TautanLumina Pro 的所有无限制高级功能。",
+      "upgrade": "升级到 TautanLumina Pro",
       "price": "¥2.25 人民币 / 周",
       "freeCoreNote": "核心功能（云同步、AI标签、PIN码安全）对所有用户永久免费！",
       "feat1": "<strong>无限制评论与讨论</strong> 公告内容（免费版：1次/天）",
@@ -900,6 +922,8 @@ export const missingTranslations = {
       "moved": "已移动",
       "noBookmarksInFolder": "无书签",
       "noteSaved": "笔记已保存",
+      "offlineModeNotice": "离线模式：您的笔记与书签保持在本地安全存储与访问。",
+      "onlineBack": "网络已恢复！正在启动自动云端同步...",
       "otpWait": "请稍候",
       "passwordChanged": "密码已更改",
       "passwordChangeError": "密码更改失败",
@@ -948,8 +972,8 @@ export const missingTranslations = {
       "selected": "選択済み"
     },
     "app": {
-      "heroDesc": "リンクとメモのミニマリストアプリ",
-      "tagline": "あなたのリンク、輝く。"
+      "heroDesc": "TautanLumina は、高速でミニマルな AI ブックマーク＆ノート管理ツールです。自動タイトル作成（最大15文字）、4桁PINフォルダロック、30秒音声ノート＆プレビュー試聴、キーパッド移動、Appwrite クラウド同期を搭載。",
+      "tagline": "あなたのリンクを、スマートに美しく"
     },
     "btn": {
       "exportJSON": "JSON エクスポート",
@@ -972,20 +996,24 @@ export const missingTranslations = {
     },
     "feature": {
       "aiTagging": {
-        "desc": "リンクを自動でタグ付け",
-        "title": "AIタグ付け"
+        "desc": "15文字以内のタイトルを自動生成",
+        "title": "AI 自動命名"
       },
       "cloudSync": {
-        "desc": "データを安全に同期",
+        "desc": "Appwrite クラウド＆ローカル保存",
         "title": "クラウド同期"
       },
       "htmlImport": {
-        "desc": "ブックマークからインポート",
-        "title": "HTMLインポート"
+        "desc": "HTML ブックマーク＆ JSON バックアップ",
+        "title": "インポート/エクスポート"
       },
       "pinLock": {
-        "desc": "機密フォルダーをロック",
-        "title": "PINロック"
+        "desc": "大切なフォルダを安全に保護",
+        "title": "4桁 PIN ロック"
+      },
+      "voiceChat": {
+        "desc": "送信前に音声メッセージを試聴",
+        "title": "ボイスチャット ≤30秒"
       }
     },
     "file": {
@@ -1005,7 +1033,9 @@ export const missingTranslations = {
       "forgotLink": "パスワードを忘れた？",
       "forgotTitle": "パスワードのリセット",
       "hasAccount": "すでにアカウントをお持ちですか？",
-      "min8": "最小8文字",
+      "expandFeatures": "機能一覧",
+      "collapseFeatures": "折りたたむ",
+      "min8": "8文字以上",
       "min8Alert": "パスワードは8文字以上にする必要があります",
       "newPassword": "新しいパスワード",
       "noAccount": "アカウントがありませんか？",
@@ -1135,9 +1165,9 @@ export const missingTranslations = {
       "loginRequired": "Proサブスクリプションメニューにアクセスするには、まずログインしてください。",
       "wait": "支払い証明を処理中",
       "pendingDesc": "取引証明書が送信され、管理者によって確認中です。承認されると、Pro機能が自動的に有効になります。",
-      "active": "Lumina Pro アクティブ",
-      "activeDesc": "おめでとうございます！アカウントはLumina Proのすべてのプレミアム機能を生涯利用できます。",
-      "upgrade": "Lumina Pro にアップグレード",
+      "active": "TautanLumina Pro アクティブ",
+      "activeDesc": "おめでとうございます！アカウントは TautanLumina Pro のすべてのプレミアム機能を無制限に利用できます。",
+      "upgrade": "TautanLumina Pro にアップグレード",
       "price": "¥48 JPY / 週",
       "freeCoreNote": "基本機能（クラウド同期、AIタグ付け、PINアクセス）は全ユーザー永久無料です！",
       "feat1": "お知らせへの<strong>無制限コメント・議論</strong>（Free版：1日1回）",
@@ -1210,6 +1240,8 @@ export const missingTranslations = {
       "moved": "移動済み",
       "noBookmarksInFolder": "ブックマークなし",
       "noteSaved": "メモが保存されました",
+      "offlineModeNotice": "オフラインモード：メモやブックマークはローカルに保存され、オフラインでもアクセス可能です。",
+      "onlineBack": "オンラインに復帰しました！自動クラウド同期を開始します...",
       "otpWait": "お待ちください",
       "passwordChanged": "パスワードが変更されました",
       "passwordChangeError": "パスワード変更失敗",
@@ -1258,8 +1290,8 @@ export const missingTranslations = {
       "selected": "선택됨"
     },
     "app": {
-      "heroDesc": "링크와 노트를 위한 미니멀리스트 앱",
-      "tagline": "당신의 링크, 빛나다."
+      "heroDesc": "TautanLumina는 초미니멀 AI 기반 스마트 북마크 및 메모 관리자입니다. AI 자동 제목 생성(최대 15자), 4자리 PIN 폴더 잠금, 30초 음성 메모 및 미리듣기, 키패드 위치 이동, Appwrite 클라우드 동기화를 지원합니다.",
+      "tagline": "당신의 링크, 스마트하게 빛나다"
     },
     "btn": {
       "exportJSON": "JSON 내보내기",
@@ -1282,20 +1314,24 @@ export const missingTranslations = {
     },
     "feature": {
       "aiTagging": {
-        "desc": "링크 자동 태그 지정",
-        "title": "AI 태깅"
+        "desc": "최대 15자의 명확한 제목 생성",
+        "title": "AI 제목 자동 생성"
       },
       "cloudSync": {
-        "desc": "안전하게 데이터 동기화",
+        "desc": "Appwrite 클라우드 및 로컬 저장",
         "title": "클라우드 동기화"
       },
       "htmlImport": {
-        "desc": "북마크에서 가져오기",
-        "title": "HTML 가져오기"
+        "desc": "HTML 북마크 및 JSON 백업",
+        "title": "가져오기 & 내보내기"
       },
       "pinLock": {
-        "desc": "민감한 폴더 잠금",
-        "title": "PIN 잠금"
+        "desc": "중요한 폴더를 안전하게 보호",
+        "title": "4자리 PIN 잠금"
+      },
+      "voiceChat": {
+        "desc": "메시지 전송 전 오디오 미리듣기",
+        "title": "음성 채팅 ≤30초"
       }
     },
     "file": {
@@ -1315,7 +1351,9 @@ export const missingTranslations = {
       "forgotLink": "비밀번호를 잊으셨나요?",
       "forgotTitle": "비밀번호 재설정",
       "hasAccount": "이미 계정이 있으신가요?",
-      "min8": "최소 8자",
+      "expandFeatures": "앱 기능",
+      "collapseFeatures": "접기",
+      "min8": "최소 8자 이상",
       "min8Alert": "비밀번호는 최소 8자 이상이어야 합니다",
       "newPassword": "새 비밀번호",
       "noAccount": "계정이 없으신가요?",
@@ -1444,9 +1482,9 @@ export const missingTranslations = {
       "loginRequired": "Pro 구독 메뉴에 접근하려면 먼저 로그인해 주세요.",
       "wait": "결제 증빙 처리 중",
       "pendingDesc": "거래 증빙이 제출되었으며 현재 관리자가 확인 중입니다. 승인되면 Pro 기능이 자동으로 활성화됩니다.",
-      "active": "Lumina Pro 활성화됨",
-      "activeDesc": "축하합니다! 귀하의 계정은 Lumina Pro의 모든 프리미엄 기능을 평생 이용할 수 있습니다.",
-      "upgrade": "Lumina Pro로 업그레이드",
+      "active": "TautanLumina Pro 활성화됨",
+      "activeDesc": "축하합니다! 귀하의 계정은 TautanLumina Pro의 모든 프리미엄 기능을 무제한으로 이용하고 있습니다.",
+      "upgrade": "TautanLumina Pro로 업그레이드",
       "price": "₩430 KRW / 주",
       "freeCoreNote": "핵심 기능(클라우드 동기화, AI 태깅, PIN 보안)은 모든 사용자에게 평생 무료입니다!",
       "feat1": "공지사항 <strong>무제한 댓글 및 토론</strong> (Free: 일 1회)",
@@ -1520,6 +1558,8 @@ export const missingTranslations = {
       "moved": "이동됨",
       "noBookmarksInFolder": "북마크 없음",
       "noteSaved": "노트 저장됨",
+      "offlineModeNotice": "오프라인 모드: 노트와 북마크가 기기에 안전하게 저장되어 오프라인에서도 이용 가능합니다.",
+      "onlineBack": "인터넷이 다시 연결되었습니다! 자동 클라우드 동기화를 시작합니다...",
       "otpWait": "기다려 주세요",
       "passwordChanged": "비밀번호 변경됨",
       "passwordChangeError": "비밀번호 변경 실패",
@@ -1568,8 +1608,8 @@ export const missingTranslations = {
       "selected": "Выбрано"
     },
     "app": {
-      "heroDesc": "Минималистичное приложение для ваших ссылок и заметок",
-      "tagline": "Ваши ссылки, сияют."
+      "heroDesc": "TautanLumina — это ультраминималистичный умный менеджер закладок и заметок с ИИ. Авто-заголовки (до 15 символов), защита папок 4-значным PIN-кодом, голосовые заметки до 30с с предпрослушиванием, точная сортировка по клавиатуре и синхронизация с Appwrite Cloud.",
+      "tagline": "Ваши ссылки — умные и сияющие"
     },
     "btn": {
       "exportJSON": "Экспорт JSON",
@@ -1592,20 +1632,24 @@ export const missingTranslations = {
     },
     "feature": {
       "aiTagging": {
-        "desc": "Автоматические теги для ссылок",
-        "title": "AI Теги"
+        "desc": "Авто-заголовки макс. 15 символов",
+        "title": "ИИ Заголовки"
       },
       "cloudSync": {
-        "desc": "Безопасная синхронизация",
+        "desc": "Appwrite Cloud и локальное хранение",
         "title": "Облачная синхронизация"
       },
       "htmlImport": {
-        "desc": "Импорт из закладок",
-        "title": "HTML Импорт"
+        "desc": "HTML закладки и JSON бэкап",
+        "title": "Импорт и Экспорт"
       },
       "pinLock": {
-        "desc": "Блокировка папок",
-        "title": "Блокировка PIN"
+        "desc": "Надежная защита папок",
+        "title": "4-значный PIN-код"
+      },
+      "voiceChat": {
+        "desc": "Предпрослушивание перед отправкой",
+        "title": "Голосовой чат ≤30с"
       }
     },
     "file": {
@@ -1625,7 +1669,9 @@ export const missingTranslations = {
       "forgotLink": "Забыли пароль?",
       "forgotTitle": "Сброс пароля",
       "hasAccount": "Уже есть аккаунт?",
-      "min8": "Мин. 8 символов",
+      "expandFeatures": "Функции",
+      "collapseFeatures": "Свернуть",
+      "min8": "Минимум 8 символов",
       "min8Alert": "Пароль должен быть не менее 8 символов",
       "newPassword": "Новый пароль",
       "noAccount": "Нет аккаунта?",
@@ -1755,9 +1801,9 @@ export const missingTranslations = {
       "loginRequired": "Пожалуйста, войдите в свой аккаунт, чтобы получить доступ к подписке Pro.",
       "wait": "Обработка подтверждения оплаты",
       "pendingDesc": "Ваше подтверждение транзакции отправлено и проверяется администратором. Функции Pro активируются автоматически после одобрения.",
-      "active": "Lumina Pro Активна",
-      "activeDesc": "Поздравляем! Ваш аккаунт пользуется всеми премиум-функциями Lumina Pro бессрочно.",
-      "upgrade": "Обновить до Lumina Pro",
+      "active": "TautanLumina Pro Активна",
+      "activeDesc": "Поздравляем! Ваш аккаунт пользуется всеми премиум-функциями TautanLumina Pro без ограничений.",
+      "upgrade": "Обновить до TautanLumina Pro",
       "price": "27 ₽ RUB / неделя",
       "freeCoreNote": "Основные функции (Облачная синхронизация, ИИ-теги, PIN-код) всегда БЕСПЛАТНЫ для всех!",
       "feat1": "<strong>Безлимитное комментирование и обсуждение</strong> объявлений (Free: 1 раз в день)",
@@ -1830,6 +1876,8 @@ export const missingTranslations = {
       "moved": "Перемещено",
       "noBookmarksInFolder": "Нет закладок",
       "noteSaved": "Заметка сохранена",
+      "offlineModeNotice": "Автономный режим: ваши заметки и закладки сохранены локально и доступны без интернета.",
+      "onlineBack": "Соединение восстановлено! Запуск автоматической облачной синхронизации...",
       "otpWait": "Пожалуйста, подождите",
       "passwordChanged": "Пароль изменен",
       "passwordChangeError": "Ошибка изменения пароля",

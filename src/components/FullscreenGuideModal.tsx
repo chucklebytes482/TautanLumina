@@ -14,7 +14,7 @@ export const FullscreenGuideModal: React.FC<FullscreenGuideModalProps> = ({ isOp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#faf8f5] dark:bg-[#161618] text-neutral-900 dark:text-neutral-100 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#faf8f5] dark:bg-[#161618] bg-doodle text-neutral-900 dark:text-neutral-100 animate-in fade-in duration-200">
       {/* Compact Top Header */}
       <div className="p-2.5 bg-[#f2eee9] dark:bg-[#1e1e22] border-b border-[#e2ddd5] dark:border-[#2d2d35] shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-2.5 px-2">

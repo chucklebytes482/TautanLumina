@@ -582,16 +582,16 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
     return (
       <form
         onSubmit={handleSendMessage}
-        className="p-3 bg-white border-t border-[#e2ddd5] flex items-center gap-2 shrink-0"
+        className="p-3 bg-white/90 dark:bg-[#1e1e22]/90 backdrop-blur-xs border-t border-[#e2ddd5] dark:border-[#2d2d35] flex items-center gap-2 shrink-0"
       >
         <button
           type="button"
           onClick={startRecording}
-          className="p-2.5 text-neutral-500 hover:text-[#FF4F00] hover:bg-orange-50 rounded-xl transition-colors shrink-0 flex items-center gap-1.5"
+          className="p-2.5 text-neutral-500 dark:text-neutral-400 hover:text-[#FF4F00] dark:hover:text-[#FF4F00] hover:bg-orange-50 dark:hover:bg-orange-950/30 rounded-xl transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
           title={t.recordVoiceChat}
         >
           <Mic size={18} />
-          <span className="text-xs font-medium text-neutral-600 hidden md:inline">{t.voice}</span>
+          <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300 hidden md:inline">{t.voice}</span>
         </button>
         <input
           type="text"
@@ -604,7 +604,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
           data-bwignore="true"
           data-form-type="other"
           name="no_autofill_chat"
-          className="flex-1 px-3.5 py-2.5 text-sm rounded-xl border border-[#e2ddd5] focus:outline-none focus:ring-2 focus:ring-[#FF4F00] bg-[#faf8f5]"
+          className="flex-1 px-3.5 py-2.5 text-sm rounded-xl border border-[#e2ddd5] dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-[#FF4F00] bg-[#faf8f5] dark:bg-neutral-800 text-neutral-900 dark:text-white"
         />
         <button
           type="submit"
@@ -1208,7 +1208,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#faf8f5] dark:bg-[#161618] text-neutral-900 dark:text-neutral-100 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#faf8f5] dark:bg-[#161618] bg-doodle text-neutral-900 dark:text-neutral-100 animate-in fade-in duration-200">
       {/* Compact Top Header with Segmented Tabs & Actions */}
       <div className="p-2 bg-[#f2eee9] dark:bg-[#1e1e22] border-b border-[#e2ddd5] dark:border-[#2d2d35] shrink-0 flex items-center gap-2">
         <div className="flex-1 grid grid-cols-2 bg-white dark:bg-[#28282e] rounded-xl p-1 shadow-2xs border border-[#e2ddd5] dark:border-[#2d2d35]">
@@ -1254,19 +1254,19 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
       </div>
 
       {/* Main Body */}
-      <div className="flex-1 overflow-hidden relative flex flex-col bg-[#fdfcfb] dark:bg-[#161618]">
+      <div className="flex-1 overflow-hidden relative flex flex-col bg-[#faf8f5] dark:bg-[#161618] bg-doodle">
         {/* ================= TAB 1: PENGUMUMAN PUBLIK ================= */}
         {activeTab === 'announcements' && (
           <div className="flex-1 flex flex-col h-full overflow-hidden">
             {/* If Admin: Show toggle button to post new announcement */}
             {isAdmin && (
-              <div className="p-3 bg-white border-b border-[#e2ddd5] shrink-0 flex items-center justify-between">
-                <span className="text-xs font-semibold text-neutral-600">
+              <div className="p-3 bg-white/90 dark:bg-[#1e1e22]/90 backdrop-blur-xs border-b border-[#e2ddd5] dark:border-[#2d2d35] shrink-0 flex items-center justify-between">
+                <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">
                   {t.admin} {t.announcements}
                 </span>
                 <button
                   onClick={() => setShowAdminPostForm(!showAdminPostForm)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-[#FF4F00] text-white hover:bg-[#e04500] transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-[#FF4F00] text-white hover:bg-[#e04500] transition-all cursor-pointer"
                 >
                   <PlusCircle size={14} />
                   {showAdminPostForm ? t.cancel : t.writeAnnouncement}
@@ -1276,9 +1276,9 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
 
             {/* Admin Post Announcement Form Drawer/Box */}
             {isAdmin && showAdminPostForm && (
-              <div className="p-4 bg-white border-b border-[#e2ddd5] shadow-inner shrink-0">
+              <div className="p-4 bg-white/95 dark:bg-[#1e1e22]/95 backdrop-blur-xs border-b border-[#e2ddd5] dark:border-[#2d2d35] shadow-inner shrink-0">
                 <form onSubmit={handlePostAnnouncement} className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-neutral-700">
+                  <label className="text-xs font-bold text-neutral-700 dark:text-neutral-200">
                     {t.writeAnnouncement} (Markdown)
                   </label>
                   <textarea
@@ -1292,20 +1292,20 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                     data-bwignore="true"
                     data-form-type="other"
                     name="no_autofill_announcement"
-                    className="w-full p-3 text-sm rounded-xl border border-[#e2ddd5] focus:outline-none focus:ring-2 focus:ring-[#FF4F00] bg-[#faf8f5] resize-none"
+                    className="w-full p-3 text-sm rounded-xl border border-[#e2ddd5] dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-[#FF4F00] bg-[#faf8f5] dark:bg-neutral-800 text-neutral-900 dark:text-white resize-none"
                   />
                   <div className="flex justify-end gap-2 mt-1">
                     <button
                       type="button"
                       onClick={() => setShowAdminPostForm(false)}
-                      className="px-3 py-2 text-xs font-semibold rounded-lg text-neutral-600 hover:bg-[#f0ece1]"
+                      className="px-3 py-2 text-xs font-semibold rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-[#f0ece1] dark:hover:bg-neutral-800 cursor-pointer"
                     >
                       {t.cancel}
                     </button>
                     <button
                       type="submit"
                       disabled={postingAnnouncement || !newAnnouncement.trim()}
-                      className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-[#FF4F00] text-white hover:bg-[#e04500] disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-[#FF4F00] text-white hover:bg-[#e04500] disabled:opacity-50 cursor-pointer"
                     >
                       {postingAnnouncement ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
                       {t.send}
@@ -1316,10 +1316,10 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
             )}
 
             {/* Announcements List View (Mobile Clean Minimalist) */}
-            <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3">
+            <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 bg-doodle">
               {announcements.length === 0 ? (
-                <div className="py-12 text-center text-xs text-neutral-400 flex flex-col items-center gap-2">
-                  <Inbox size={32} className="text-neutral-300" />
+                <div className="py-12 text-center text-xs text-neutral-400 dark:text-neutral-500 flex flex-col items-center gap-2">
+                  <Inbox size={32} className="text-neutral-300 dark:text-neutral-600" />
                   {t.noMessages}
                 </div>
               ) : (
@@ -1331,7 +1331,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                   return (
                     <div
                       key={annId}
-                      className="p-4 bg-white border border-[#e2ddd5] rounded-xl shadow-xs text-xs leading-relaxed space-y-3"
+                      className="p-4 bg-white/90 dark:bg-[#1e1e22]/90 backdrop-blur-xs border border-[#e2ddd5] dark:border-[#2d2d35] rounded-xl shadow-xs text-xs leading-relaxed space-y-3 text-neutral-900 dark:text-neutral-100"
                     >
                       {/* Post Header */}
                       <div className="flex items-center justify-between border-b border-[#f0ece1] pb-2">
@@ -1580,13 +1580,13 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
             {isAdmin ? (
               selectedChatUser === null ? (
                 /* ADMIN VIEW - LIST OF USER CHATS */
-                <div className="flex-1 flex flex-col overflow-hidden bg-white">
-                  <div className="p-3 bg-[#faf8f5] border-b border-[#e2ddd5] text-xs font-bold text-neutral-500 uppercase tracking-wider">
+                <div className="flex-1 flex flex-col overflow-hidden bg-transparent bg-doodle">
+                  <div className="p-3 bg-[#faf8f5]/90 dark:bg-[#1e1e22]/90 backdrop-blur-xs border-b border-[#e2ddd5] dark:border-[#2d2d35] text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                     {t.message} ({userConversations.length})
                   </div>
-                  <div className="flex-1 overflow-y-auto divide-y divide-[#f0ece1]">
+                  <div className="flex-1 overflow-y-auto divide-y divide-[#f0ece1] dark:divide-neutral-800">
                     {userConversations.length === 0 ? (
-                      <div className="py-12 text-center text-xs text-neutral-400">
+                      <div className="py-12 text-center text-xs text-neutral-400 dark:text-neutral-500">
                         {t.noMessages}
                       </div>
                     ) : (
@@ -1599,27 +1599,27 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                         return (
                           <div
                             key={email}
-                            className="w-full p-3.5 transition-colors hover:bg-[#faf8f5] flex items-center justify-between gap-3 border-b border-[#f0ece1]"
+                            className="w-full p-3.5 transition-colors hover:bg-white/80 dark:hover:bg-neutral-800/80 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xs flex items-center justify-between gap-3 border-b border-[#f0ece1] dark:border-neutral-800"
                           >
                             <button
                               onClick={() => setSelectedChatUser(email)}
-                              className="flex-1 flex items-center gap-3 truncate text-left"
+                              className="flex-1 flex items-center gap-3 truncate text-left cursor-pointer"
                             >
-                              <div className="w-10 h-10 rounded-full bg-neutral-200 text-neutral-700 flex items-center justify-center font-bold text-sm shrink-0">
+                              <div className="w-10 h-10 rounded-full bg-[#FF4F00]/10 text-[#FF4F00] dark:bg-[#FF4F00]/20 flex items-center justify-center font-bold text-sm shrink-0">
                                 {email[0]?.toUpperCase() || 'U'}
                               </div>
                               <div className="truncate">
-                                <div className="text-sm font-bold text-neutral-900 truncate">
+                                <div className="text-sm font-bold text-neutral-900 dark:text-neutral-100 truncate">
                                   <MaskedEmail email={email} isViewerAdmin={isAdmin} />
                                 </div>
-                                <div className="text-xs text-neutral-500 truncate mt-0.5">
+                                <div className="text-xs text-neutral-500 dark:text-neutral-400 truncate mt-0.5">
                                   {lastMsg ? lastMsg.content : t.message}
                                 </div>
                               </div>
                             </button>
                             <div className="flex items-center gap-2 shrink-0">
                               {lastMsg && (
-                                <span className="text-[10px] text-neutral-400">
+                                <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
                                   {new Date(lastMsg.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               )}
@@ -1628,7 +1628,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                                   e.stopPropagation();
                                   handleDeleteUserConversation(email);
                                 }}
-                                className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer"
                                 title={t.deleteAll}
                                 aria-label={t.deleteAll}
                               >
@@ -1645,21 +1645,21 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                 /* ADMIN VIEW - ACTIVE CONVERSATION WITH SELECTED USER */
                 <div className="flex-1 flex flex-col h-full overflow-hidden">
                   {/* Subheader with Back Button & Delete User Chat Button */}
-                  <div className="p-2.5 bg-white border-b border-[#e2ddd5] flex items-center justify-between shrink-0">
+                  <div className="p-2.5 bg-white/90 dark:bg-[#1e1e22]/90 backdrop-blur-xs border-b border-[#e2ddd5] dark:border-[#2d2d35] flex items-center justify-between shrink-0">
                     <button
                       onClick={() => setSelectedChatUser(null)}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-[#f0ece1] rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-[#f0ece1] dark:hover:bg-neutral-800 rounded-lg transition-colors cursor-pointer"
                     >
                       <ArrowLeft size={16} />
                       {t.back}
                     </button>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-neutral-800 truncate max-w-[180px]">
+                      <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 truncate max-w-[180px]">
                         <MaskedEmail email={selectedChatUser} isViewerAdmin={isAdmin} />
                       </span>
                       <button
                         onClick={() => selectedChatUser && handleDeleteUserConversation(selectedChatUser)}
-                        className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer"
                         title={t.deleteAll}
                         aria-label={t.deleteAll}
                       >
@@ -1669,9 +1669,9 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                   </div>
 
                   {/* Message Stream */}
-                  <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3">
+                  <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 bg-doodle">
                     {filteredMessages.length === 0 ? (
-                      <div className="py-8 text-center text-xs text-neutral-400">
+                      <div className="py-8 text-center text-xs text-neutral-400 dark:text-neutral-500">
                         {t.noMessages}
                       </div>
                     ) : (
@@ -1682,7 +1682,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                             key={m.id || m.$id}
                             className={`w-full flex flex-col ${isSelf ? 'items-end' : 'items-start'}`}
                           >
-                            <span className="text-[10px] text-neutral-400 mb-1 px-1">
+                            <span className="text-[10px] text-neutral-400 dark:text-neutral-500 mb-1 px-1">
                               {new Date(m.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                             <div className={`flex items-end gap-1.5 max-w-[85%] sm:max-w-[75%] ${isSelf ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -1690,7 +1690,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                                 className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm leading-relaxed whitespace-pre-wrap [word-break:break-word] shadow-sm min-w-0 ${
                                   isSelf
                                     ? 'bg-[#FF4F00] text-white rounded-br-none'
-                                    : 'bg-white text-neutral-900 border border-[#e2ddd5] rounded-bl-none'
+                                    : 'bg-white dark:bg-[#28282e] text-neutral-900 dark:text-neutral-100 border border-[#e2ddd5] dark:border-[#2d2d35] rounded-bl-none'
                                 }`}
                               >
                                 {renderMessageContent(m.content, isSelf)}
@@ -1698,7 +1698,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                               {isAdmin && (
                                 <button
                                   onClick={() => handleDeletePrivateMessage(m.$id || m.id)}
-                                  className="p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0 mb-1"
+                                  className="p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors shrink-0 mb-1 cursor-pointer"
                                   title={t.delete}
                                 >
                                   <Trash2 size={13} />
@@ -1720,19 +1720,19 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
               /* REGULAR USER VIEW: Direct 2-side chat stream with Admin */
               <div className="flex-1 flex flex-col h-full overflow-hidden">
                 {/* Admin Contact Header */}
-                <div className="p-2.5 bg-white border-b border-[#e2ddd5] flex items-center justify-between text-xs shrink-0">
+                <div className="p-2.5 bg-white/90 dark:bg-[#1e1e22]/90 backdrop-blur-xs border-b border-[#e2ddd5] dark:border-[#2d2d35] flex items-center justify-between text-xs shrink-0">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span className="font-medium text-neutral-600">
+                    <span className="font-medium text-neutral-600 dark:text-neutral-300">
                       {t.sendToAdmin}
                     </span>
                   </div>
                 </div>
 
                 {/* Message Stream (2 Sides) */}
-                <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3">
+                <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 bg-doodle">
                   {filteredMessages.length === 0 ? (
-                    <div className="py-8 text-center text-xs text-neutral-400">
+                    <div className="py-8 text-center text-xs text-neutral-400 dark:text-neutral-500">
                       {t.noMessages}
                     </div>
                   ) : (
@@ -1743,7 +1743,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                           key={m.id || m.$id}
                           className={`w-full flex flex-col ${isSelf ? 'items-end' : 'items-start'}`}
                         >
-                          <span className="text-[10px] text-neutral-400 mb-1 px-1">
+                          <span className="text-[10px] text-neutral-400 dark:text-neutral-500 mb-1 px-1">
                             {isSelf ? t.you : t.admin} • {new Date(m.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                           <div className={`flex items-end gap-1.5 max-w-[85%] sm:max-w-[75%] ${isSelf ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -1751,7 +1751,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                               className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm leading-relaxed whitespace-pre-wrap [word-break:break-word] shadow-sm min-w-0 ${
                                 isSelf
                                   ? 'bg-[#FF4F00] text-white rounded-br-none'
-                                  : 'bg-white text-neutral-900 border border-[#e2ddd5] rounded-bl-none'
+                                  : 'bg-white dark:bg-[#28282e] text-neutral-900 dark:text-neutral-100 border border-[#e2ddd5] dark:border-[#2d2d35] rounded-bl-none'
                               }`}
                             >
                               {renderMessageContent(m.content, isSelf)}
@@ -1759,7 +1759,7 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
                             {isAdmin && (
                               <button
                                 onClick={() => handleDeletePrivateMessage(m.$id || m.id)}
-                                className="p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0 mb-1"
+                                className="p-1 rounded text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors shrink-0 mb-1 cursor-pointer"
                                 title={t.delete}
                               >
                                 <Trash2 size={13} />
