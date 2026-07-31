@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MoreVertical, Folder, Pin, Trash2, Lock, FileText, FolderHeart, FolderCode } from 'lucide-react';
+import { MoreVertical, Folder, Pin, Trash2, Lock, FileText, FolderHeart, FolderCode, StickyNote, Copy } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
 import { toast } from 'sonner';
@@ -238,8 +238,7 @@ const Row = ({
         <div className="w-4 h-4 shrink-0" />
       )}
 
-
-      {/* Icon / Favicon */}
+      {/* Icon / Favicon / Note Badge */}
       <div className="shrink-0 w-6.5 h-6.5 flex items-center justify-center rounded-lg bg-[#faf8f5] border border-[#e2ddd5]/60 overflow-hidden relative">
         {item.type === 'folder' ? (
           item.locked && pinActive ? (

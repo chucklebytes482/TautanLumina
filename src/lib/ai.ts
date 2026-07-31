@@ -3,8 +3,8 @@ const AI_KEY_STORAGE = 'tautanlumina:ai-key';
 const AI_MODEL_STORAGE = 'tautanlumina:ai-model';
 const AI_ENDPOINT_STORAGE = 'tautanlumina:ai-endpoint';
 
-export const DEFAULT_MODEL = 'nvidia/nemotron-3-ultra-550b-a55b:free';
-export const PRO_DEFAULT_MODEL = 'nvidia/nemotron-3-ultra-550b-a55b:free';
+export const DEFAULT_MODEL = '';
+export const PRO_DEFAULT_MODEL = '';
 export const DEFAULT_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 export const PRO_DEFAULT_KEY = '';
 
@@ -45,10 +45,7 @@ export const saveKey = (k: string) => {
 export const loadModel = () => {
   const userKey = getStoredKeyName('ai-model');
   const m = localStorage.getItem(userKey) ?? localStorage.getItem(AI_MODEL_STORAGE);
-  if (!m || m === 'google/gemma-4-31b-it:free' || m === 'google/gemini-2.5-flash') {
-    return DEFAULT_MODEL;
-  }
-  return m;
+  return m ? m.trim() : '';
 };
 export const saveModel = (m: string) => {
   localStorage.setItem(getStoredKeyName('ai-model'), m);
@@ -56,7 +53,8 @@ export const saveModel = (m: string) => {
 };
 
 export const loadModelHistory = (): string[] => {
-  return [DEFAULT_MODEL];
+  const m = loadModel();
+  return m ? [m] : [];
 };
 
 export const fetchAvailableModels = async (endpoint: string, apiKey: string): Promise<string[]> => {
@@ -161,22 +159,10 @@ export const generateBookmarkData = async (apiKey: string, model: string, endpoi
   };
 
   try {
-    const res = await callAI({ apiKey, model, endpoint, prompt });
+    const res = await callAI({ apiKey, model, endpoint, prompt, maxTokens: 60 });
     return parseResponse(res);
   } catch (e) {
-    const fallbackModels = [DEFAULT_MODEL];
-    
-    for (const fbModel of fallbackModels) {
-      if (model !== fbModel) {
-        try {
-          const res = await callAI({ apiKey, model: fbModel, endpoint, prompt });
-          return parseResponse(res);
-        } catch (fallbackErr) {
-          // silently continue to next fallback
-        }
-      }
-    }
-
+    console.warn('AI title generation failed for selected model:', model, e);
     return { title: fallbackDomain };
   }
 };
@@ -187,17 +173,19 @@ interface CallOpts {
   model: string;
   endpoint: string;
   prompt: string;
+  maxTokens?: number;
   signal?: AbortSignal;
 }
 
 // WARNING: This application uses a client-side API key for API.
 // This is acceptable for "bring-your-own-key" utilities, but not recommended for production apps where you want to hide your own key.
 // As requested, keeping this client-side.
-export const callAI = async ({ apiKey, model, endpoint, prompt, signal }: CallOpts): Promise<string> => {
+export const callAI = async ({ apiKey, model, endpoint, prompt, maxTokens = 150, signal }: CallOpts): Promise<string> => {
   if (!apiKey) throw new Error('API Key kosong.');
   const finalEndpoint = endpoint || DEFAULT_ENDPOINT;
   if (!finalEndpoint) throw new Error('API Endpoint kosong.');
-  const targetModel = model ? model.trim() : DEFAULT_MODEL;
+  const targetModel = model ? model.trim() : '';
+  if (!targetModel) throw new Error('Model AI belum dipilih. Silakan pilih model di Pengaturan.');
 
   const res = await fetch(finalEndpoint, {
     method: 'POST',
@@ -217,7 +205,8 @@ export const callAI = async ({ apiKey, model, endpoint, prompt, signal }: CallOp
         },
         { role: 'user', content: prompt },
       ],
-      temperature: 0.7,
+      temperature: 0.5,
+      max_tokens: maxTokens,
     }),
   });
 

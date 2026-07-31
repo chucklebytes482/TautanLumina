@@ -75,22 +75,28 @@ export const SettingsDialog = ({
     let score = 0;
 
     // Top tier models ranking
-    if (lower.includes('deepseek-r1')) score += 100;
-    else if (lower.includes('deepseek-v3') || lower.includes('deepseek/deepseek-chat')) score += 95;
-    else if (lower.includes('gemini-2.5') || lower.includes('gemini-2.0-flash-exp')) score += 92;
-    else if (lower.includes('claude-3.7') || lower.includes('claude-3-7')) score += 90;
-    else if (lower.includes('claude-3.5') || lower.includes('claude-3-5')) score += 88;
-    else if (lower.includes('gpt-4o') || lower.includes('o3-mini') || lower.includes('o1-')) score += 85;
-    else if (lower.includes('gemini-1.5-pro') || lower.includes('gemini-2.0')) score += 82;
-    else if (lower.includes('llama-3.3-70b')) score += 80;
-    else if (lower.includes('llama-3.1-405b') || lower.includes('llama-3.1-70b')) score += 78;
-    else if (lower.includes('qwen-2.5-72b') || lower.includes('qwen-2.5-coder') || lower.includes('qwen2.5-72b')) score += 75;
-    else if (lower.includes('mistral-large') || lower.includes('codestral')) score += 70;
-    else if (lower.includes('nemotron-4') || lower.includes('nemotron-3-ultra')) score += 65;
-    else if (lower.includes('llama-3') || lower.includes('qwen')) score += 50;
-    else if (lower.includes('gemma')) score += 40;
+    if (lower.includes('gemini-2.5') || lower.includes('gemini-2.0-flash') || lower.includes('gemini-2.0-pro')) score += 100;
+    else if (lower.includes('deepseek-r1') || lower.includes('deepseek/deepseek-r1')) score += 98;
+    else if (lower.includes('deepseek-v3') || lower.includes('deepseek/deepseek-chat')) score += 96;
+    else if (lower.includes('claude-3.7') || lower.includes('claude-3-7')) score += 94;
+    else if (lower.includes('claude-3.5') || lower.includes('claude-3-5')) score += 92;
+    else if (lower.includes('gpt-4o') || lower.includes('o3-mini') || lower.includes('o1')) score += 90;
+    else if (lower.includes('gemini-1.5-pro') || lower.includes('gemini-2.0') || lower.includes('gemini')) score += 88;
+    else if (lower.includes('llama-3.3-70b') || lower.includes('llama-3.3')) score += 86;
+    else if (lower.includes('qwen-2.5-coder') || lower.includes('qwen-2.5-72b') || lower.includes('qwen-2.5')) score += 84;
+    else if (lower.includes('gemma-2-27b') || lower.includes('gemma-2-9b') || lower.includes('gemma-2') || lower.includes('gemma-4')) score += 82;
+    else if (lower.includes('mistral-large') || lower.includes('codestral') || lower.includes('mistral')) score += 80;
+    else if (lower.includes('llama-3.2') || lower.includes('llama-3.1') || lower.includes('llama-3')) score += 75;
+    else if (lower.includes('qwen')) score += 70;
+    else if (lower.includes('gemma')) score += 65;
+    else if (lower.includes('phi-4') || lower.includes('phi-3')) score += 60;
+    else if (lower.includes('nemotron')) score += 50;
 
-    // Extra points for large parameter or instruct models
+    // Bonus for higher parameter models & chat/instruct optimization
+    if (lower.includes('70b') || lower.includes('72b') || lower.includes('405b')) score += 3;
+    else if (lower.includes('32b') || lower.includes('27b') || lower.includes('31b')) score += 2;
+    else if (lower.includes('14b') || lower.includes('9b') || lower.includes('8b')) score += 1;
+
     if (lower.includes('instruct') || lower.includes('chat')) score += 2;
     if (lower.includes('free')) score += 1;
 
@@ -122,9 +128,6 @@ export const SettingsDialog = ({
         setFetchedModels(list);
         if (!silent) {
           toast.success(t('modelPicker.fetchSuccess').replace('{count}', list.length.toString()));
-        }
-        if (!model) {
-          setModel(list[0]);
         }
       } else if (!silent) {
         toast.error(t('modelPicker.fetchEmpty'));

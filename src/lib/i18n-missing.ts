@@ -69,6 +69,11 @@ export const missingTranslations = {
       "menu": "Menu",
       "note": "Note"
     },
+    "note": {
+      "chars": "chars",
+      "lines": "lines",
+      "clickToCopy": "Click to copy"
+    },
     "login": {
       "createAccount": "Create Account",
       "email": "Email",
@@ -387,6 +392,11 @@ export const missingTranslations = {
       "folder": "Folder",
       "menu": "Menu",
       "note": "Catatan"
+    },
+    "note": {
+      "chars": "karakter",
+      "lines": "baris",
+      "clickToCopy": "Klik untuk salin"
     },
     "login": {
       "createAccount": "Buat Akun",
@@ -707,6 +717,11 @@ export const missingTranslations = {
       "menu": "菜单",
       "note": "笔记"
     },
+    "note": {
+      "chars": "字符",
+      "lines": "行",
+      "clickToCopy": "点击复制"
+    },
     "login": {
       "createAccount": "创建账户",
       "email": "电子邮件",
@@ -1025,6 +1040,11 @@ export const missingTranslations = {
       "folder": "フォルダー",
       "menu": "メニュー",
       "note": "メモ"
+    },
+    "note": {
+      "chars": "文字",
+      "lines": "行",
+      "clickToCopy": "クリックしてコピー"
     },
     "login": {
       "createAccount": "アカウント作成",
@@ -1345,6 +1365,11 @@ export const missingTranslations = {
       "menu": "메뉴",
       "note": "노트"
     },
+    "note": {
+      "chars": "자",
+      "lines": "줄",
+      "clickToCopy": "클릭하여 복사"
+    },
     "login": {
       "createAccount": "계정 생성",
       "email": "이메일",
@@ -1663,6 +1688,11 @@ export const missingTranslations = {
       "folder": "Папка",
       "menu": "Меню",
       "note": "Заметка"
+    },
+    "note": {
+      "chars": "симв.",
+      "lines": "строк",
+      "clickToCopy": "Нажмите для копирования"
     },
     "login": {
       "createAccount": "Создать аккаунт",
