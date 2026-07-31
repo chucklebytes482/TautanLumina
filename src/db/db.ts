@@ -12,12 +12,18 @@ let currentDBName = 'tautanlumina_anonymous';
 export const setDatabaseUser = async (userId: string | null) => {
   const nextDBName = userId ? `tautanlumina_${userId}` : 'tautanlumina_anonymous';
   if (currentDBName !== nextDBName) {
-    if (dbPromise) {
-      const db = await dbPromise;
-      db.close();
-      dbPromise = null;
-    }
+    const oldPromise = dbPromise;
+    dbPromise = null;
     currentDBName = nextDBName;
+    if (oldPromise) {
+      oldPromise
+        .then((db) => {
+          try {
+            db.close();
+          } catch {}
+        })
+        .catch(() => {});
+    }
   }
 };
 
@@ -26,9 +32,9 @@ export const setDatabaseUser = async (userId: string | null) => {
  * Berjalan sekali saat pertama kali DB baru dibuka & masih kosong.
  */
 const migrateLegacy = async (db: IDBPDatabase, dbName: string) => {
-  const count = await db.count(STORE);
-  if (count > 0) return; // sudah ada data → skip
   try {
+    const count = await db.count(STORE);
+    if (count > 0) return; // sudah ada data → skip
     const existing = await indexedDB.databases?.();
     
     // Jika membuka DB anonim, migrasikan dari 'tautanlumina' (nama DB tunggal lama)
@@ -80,50 +86,71 @@ export const initDB = () => {
           s.createIndex('parentId', 'parentId');
         }
       },
-    }).then(async (db) => {
-      await migrateLegacy(db, currentDBName);
-      return db;
-    });
+    })
+      .then(async (db) => {
+        try {
+          db.addEventListener('close', () => {
+            dbPromise = null;
+          });
+        } catch {}
+        await migrateLegacy(db, currentDBName);
+        return db;
+      })
+      .catch((err) => {
+        dbPromise = null;
+        throw err;
+      });
   }
   return dbPromise;
 };
 
+const runOp = async <T>(op: (db: IDBPDatabase) => Promise<T>): Promise<T> => {
+  try {
+    const db = await initDB();
+    return await op(db);
+  } catch (err) {
+    dbPromise = null;
+    const db = await initDB();
+    return await op(db);
+  }
+};
+
 export const getAllItems = async (): Promise<FileSystemItem[]> => {
-  const db = await initDB();
-  return db.getAll(STORE);
+  return runOp((db) => db.getAll(STORE));
 };
 
 export const getItem = async (id: string): Promise<FileSystemItem | undefined> => {
-  const db = await initDB();
-  return db.get(STORE, id);
+  return runOp((db) => db.get(STORE, id));
 };
 
-export const saveItem = async (item: FileSystemItem) => {
-  const db = await initDB();
-  await db.put(STORE, item);
+export const saveItem = async (item: FileSystemItem): Promise<void> => {
+  await runOp((db) => db.put(STORE, item));
 };
 
-export const saveItems = async (items: FileSystemItem[]) => {
-  const db = await initDB();
-  const tx = db.transaction(STORE, 'readwrite');
-  await Promise.all(items.map((it) => tx.store.put(it)));
-  await tx.done;
+export const saveItems = async (items: FileSystemItem[]): Promise<void> => {
+  return runOp(async (db) => {
+    if (items.length === 0) return;
+    const tx = db.transaction(STORE, 'readwrite');
+    await Promise.all(items.map((it) => tx.store.put(it)));
+    await tx.done;
+  });
 };
 
-export const deleteItems = async (ids: string[]) => {
-  const db = await initDB();
-  const tx = db.transaction(STORE, 'readwrite');
-  await Promise.all(ids.map((id) => tx.store.delete(id)));
-  await tx.done;
+export const deleteItems = async (ids: string[]): Promise<void> => {
+  return runOp(async (db) => {
+    if (ids.length === 0) return;
+    const tx = db.transaction(STORE, 'readwrite');
+    await Promise.all(ids.map((id) => tx.store.delete(id)));
+    await tx.done;
+  });
 };
 
-export const clearAll = async () => {
-  const db = await initDB();
-  await db.clear(STORE);
+export const clearAll = async (): Promise<void> => {
+  await runOp((db) => db.clear(STORE));
 };
 
-export const clearItems = async () => {
-  const db = await initDB();
-  await db.clear(STORE);
+export const clearItems = async (): Promise<void> => {
+  await runOp((db) => db.clear(STORE));
 };
+
 

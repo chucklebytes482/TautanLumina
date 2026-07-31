@@ -25,8 +25,7 @@ import {
   Mail,
   Languages,
   Aperture,
-  FileText,
-  WifiOff
+  FileText
 } from 'lucide-react';
 import { AppLogo } from './components/AppLogo';
 
@@ -848,12 +847,6 @@ export default function App() {
           </a>
         </div>
         <div className="flex items-center gap-2 sm:gap-4 relative">
-          {isOffline && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 text-amber-700 rounded-full border border-amber-500/25 text-xs font-semibold" title={t('sync.offline.title') || 'Mode Luring (Tersimpan Lokal)'}>
-              <WifiOff size={14} className="text-amber-600 shrink-0" />
-              <span className="hidden sm:inline">Offline Mode</span>
-            </div>
-          )}
           <div className="relative">
             <button 
               onClick={() => setShowChatPopup(true)}

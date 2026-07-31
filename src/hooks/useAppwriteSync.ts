@@ -14,12 +14,34 @@ export function useAppwriteSync(
   loaded: boolean = true
 ) {
   const { t } = useI18n();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const getInitialUser = () => {
+    try {
+      const cachedUserStr = localStorage.getItem('tautanlumina:cached_user');
+      if (cachedUserStr) {
+        return JSON.parse(cachedUserStr);
+      }
+      const cachedEmail = localStorage.getItem('tautanlumina:current_user_email');
+      const cachedUserId = localStorage.getItem('tautanlumina:cached_user_id');
+      if (cachedUserId || cachedEmail) {
+        const uid = cachedUserId || (cachedEmail ? ('user_' + cachedEmail.replace(/[^a-zA-Z0-9]/g, '_')) : 'offline_user');
+        const email = cachedEmail || 'offline@lumina.app';
+        return { $id: uid, email, emailVerification: true, offlineMode: true };
+      }
+    } catch {}
+    return null;
+  };
+
+  const initialUser = getInitialUser();
+  const [user, setUser] = useState<any>(initialUser);
+  const [loading, setLoading] = useState<boolean>(!initialUser);
   const [syncing, setSyncing] = useState(false);
   const autoSyncedUserRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (initialUser?.$id) {
+      db.setDatabaseUser(initialUser.$id).catch(() => {});
+    }
+
     account.get().then((res) => {
       if (!res.emailVerification) {
         account.deleteSession('current').finally(async () => {
@@ -46,24 +68,23 @@ export function useAppwriteSync(
       const cachedEmail = localStorage.getItem('tautanlumina:current_user_email');
       const cachedUserId = localStorage.getItem('tautanlumina:cached_user_id');
 
-      const isOfflineOrNetworkError = 
-        !navigator.onLine || 
-        err?.message?.toLowerCase().includes('networkerror') || 
-        err?.message?.toLowerCase().includes('fetch') || 
-        err?.message?.toLowerCase().includes('network') ||
-        err?.code === 0 || err?.code === 500 || err?.code === 502 || err?.code === 503;
+      // Check if this error is an explicit 401 / session expired error from Appwrite server
+      const isExplicitUnauthorized = 
+        err?.code === 401 || 
+        err?.type === 'user_unauthorized' || 
+        err?.message?.toLowerCase().includes('unauthorized') ||
+        err?.message?.toLowerCase().includes('user (role: guests) missing scope');
 
-      if (isOfflineOrNetworkError && cachedUserStr) {
-        try {
-          const cachedUser = JSON.parse(cachedUserStr);
-          await db.setDatabaseUser(cachedUser.$id);
-          setUser(cachedUser);
-          setLoading(false);
-          return;
-        } catch {}
-      }
-
-      if (isOfflineOrNetworkError && (cachedUserId || cachedEmail)) {
+      if (!isExplicitUnauthorized && (cachedUserStr || cachedUserId || cachedEmail)) {
+        if (cachedUserStr) {
+          try {
+            const cachedUser = JSON.parse(cachedUserStr);
+            await db.setDatabaseUser(cachedUser.$id);
+            setUser(cachedUser);
+            setLoading(false);
+            return;
+          } catch {}
+        }
         const uid = cachedUserId || (cachedEmail ? ('user_' + cachedEmail.replace(/[^a-zA-Z0-9]/g, '_')) : 'offline_user');
         const email = cachedEmail || 'offline@lumina.app';
         const fallbackUser = { $id: uid, email, emailVerification: true, offlineMode: true };
