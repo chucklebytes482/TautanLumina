@@ -229,7 +229,14 @@ export const missingTranslations = {
       "confirm": "Submit Payment Proof",
       "modalTitle": "Confirm Submission",
       "modalDesc": "Are you sure you want to submit this payment transaction URL for admin verification?",
-      "yes": "Yes, Submit Now"
+      "yes": "Yes, Submit Now",
+      "promoTitle": "Redeem Promo Code",
+      "promoPlaceholder": "Enter promo code (e.g. PH2026-7D-X92K)",
+      "promoBtn": "Apply Code",
+      "promoSuccess": "Promo code {code} applied successfully! You got 1 week free Pro Tier.",
+      "promoAlreadyUsed": "This promo code has already been redeemed on your account.",
+      "promoInvalid": "Invalid or expired promo code.",
+      "promoActiveUntil": "Pro Active until: {date}"
     },
     "sync": {
       "export": {
@@ -532,7 +539,14 @@ export const missingTranslations = {
       "confirm": "Kirim Bukti Pembayaran",
       "modalTitle": "Konfirmasi Pengiriman",
       "modalDesc": "Apakah Anda yakin ingin mengirimkan URL bukti transaksi pembayaran ini untuk diverifikasi admin?",
-      "yes": "Ya, Kirim Sekarang"
+      "yes": "Ya, Kirim Sekarang",
+      "promoTitle": "Gunakan Kode Promo",
+      "promoPlaceholder": "Masukkan kode promo (contoh: PH2026-7D-X92K)",
+      "promoBtn": "Terapkan Kode",
+      "promoSuccess": "Kode promo {code} berhasil diterapkan! Anda mendapatkan 1 minggu Pro Tier gratis.",
+      "promoAlreadyUsed": "Kode promo ini sudah pernah digunakan pada akun Anda.",
+      "promoInvalid": "Kode promo tidak valid atau telah kedaluwarsa.",
+      "promoActiveUntil": "Pro Aktif hingga: {date}"
     },
     "sync": {
       "export": {
@@ -835,7 +849,14 @@ export const missingTranslations = {
       "confirm": "提交支付凭证",
       "modalTitle": "确认提交",
       "modalDesc": "您确定要提交此支付交易 URL 供管理员审核吗？",
-      "yes": "是的，立即提交"
+      "yes": "是的，立即提交",
+      "promoTitle": "兑换优惠码",
+      "promoPlaceholder": "输入优惠码（例如：PH2026-7D-X92K）",
+      "promoBtn": "应用代码",
+      "promoSuccess": "优惠码 {code} 应用成功！您已获得1周免费 Pro 权益。",
+      "promoAlreadyUsed": "此优惠码已在您的账户上兑换过。",
+      "promoInvalid": "优惠码无效或已过期。",
+      "promoActiveUntil": "Pro 有效期至：{date}"
     },
     "sync": {
       "export": {
@@ -1138,7 +1159,14 @@ export const missingTranslations = {
       "confirm": "支払い証明を送信",
       "modalTitle": "送信の確認",
       "modalDesc": "管理者の承認のために、この支払い取引URLを送信してもよろしいですか？",
-      "yes": "はい、送信します"
+      "yes": "はい、送信します",
+      "promoTitle": "プロモコードを利用",
+      "promoPlaceholder": "プロモコードを入力（例: PH2026-7D-X92K）",
+      "promoBtn": "コードを適用",
+      "promoSuccess": "プロモコード {code} が適用されました！1週間の無料Pro機能を取得しました。",
+      "promoAlreadyUsed": "このプロモコードは既に引き換え済みです。",
+      "promoInvalid": "無効または期限切れのプロモコードです。",
+      "promoActiveUntil": "Pro 有効期限: {date}"
     },
     "sync": {
       "export": {
@@ -1440,7 +1468,14 @@ export const missingTranslations = {
       "confirm": "결제 증빙 제출",
       "modalTitle": "제출 확인",
       "modalDesc": "관리자 확인을 위해 이 결제 거래 URL을 제출하시겠습니까?",
-      "yes": "예, 지금 제출"
+      "yes": "예, 지금 제출",
+      "promoTitle": "프로모션 코드 사용",
+      "promoPlaceholder": "프로모션 코드 입력 (예: PH2026-7D-X92K)",
+      "promoBtn": "코드 적용",
+      "promoSuccess": "프로모션 코드 {code}가 적용되었습니다! 1주일 무료 Pro 등급 혜택을 받으셨습니다.",
+      "promoAlreadyUsed": "이 프로모션 코드는 이미 사용되었습니다.",
+      "promoInvalid": "유효하지 않거나 만료된 프로모션 코드입니다.",
+      "promoActiveUntil": "Pro 만료일: {date}"
     },
     "sync": {
       "export": {
@@ -1744,7 +1779,14 @@ export const missingTranslations = {
       "confirm": "Отправить подтверждение",
       "modalTitle": "Подтверждение отправки",
       "modalDesc": "Вы уверены, что хотите отправить этот URL транзакции на проверку администратору?",
-      "yes": "Да, отправить"
+      "yes": "Да, отправить",
+      "promoTitle": "Активировать промокод",
+      "promoPlaceholder": "Введите промокод (например: PH2026-7D-X92K)",
+      "promoBtn": "Применить код",
+      "promoSuccess": "Промокод {code} успешно применён! Вы получили 1 неделю бесплатного Pro доступа.",
+      "promoAlreadyUsed": "Этот промокод уже был использован на вашем аккаунте.",
+      "promoInvalid": "Недействительный или истекший промокод.",
+      "promoActiveUntil": "Pro активен до: {date}"
     },
     "sync": {
       "export": {

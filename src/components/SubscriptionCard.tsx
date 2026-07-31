@@ -1,6 +1,6 @@
 import { ADMIN_EMAIL } from '../lib/appwrite';
 import React, { useState } from 'react';
-import { Crown, CheckCircle2, Clock, Upload, ShieldCheck, Zap, Copy } from 'lucide-react';
+import { Crown, CheckCircle2, Clock, Upload, ShieldCheck, Zap, Copy, Tag, Ticket, Loader2 } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 import { account } from '../lib/appwrite';
 import { toast } from 'sonner';
@@ -11,10 +11,44 @@ export const SubscriptionCard = ({ user }: { user: any }) => {
   const [step, setStep] = useState<'info' | 'payment'>('info');
   const [pastedUrl, setPastedUrl] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  
+  const [promoInput, setPromoInput] = useState('');
+  const [applyingPromo, setApplyingPromo] = useState(false);
+
   const prefs = user?.prefs || {};
   const proStatus = prefs.proStatus || 'free'; // 'free', 'pending', 'pro'
   const isDeveloper = user?.email?.toLowerCase() === ADMIN_EMAIL;
+
+  const handleApplyPromo = async () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+
+    const usedPromos = Array.isArray(prefs.usedPromos) ? prefs.usedPromos : [];
+    if (usedPromos.includes(code)) {
+      toast.error(t('sub.promoAlreadyUsed') || 'Kode promo ini sudah pernah digunakan pada akun Anda.');
+      return;
+    }
+
+    if (code === 'PH2026-7D-X92K' || code === 'PH10OFF') {
+      setApplyingPromo(true);
+      try {
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        await account.updatePrefs({
+          ...prefs,
+          proStatus: 'pro',
+          promoApplied: code,
+          proExpiresAt: expiresAt,
+          usedPromos: [...usedPromos, code],
+        });
+        toast.success((t('sub.promoSuccess') || 'Kode promo {code} berhasil diterapkan! Anda mendapatkan 1 minggu Pro Tier gratis.').replace('{code}', code));
+        window.location.reload();
+      } catch (err: any) {
+        toast.error('Gagal menerapkan kode promo: ' + (err.message || ''));
+        setApplyingPromo(false);
+      }
+    } else {
+      toast.error(t('sub.promoInvalid') || 'Kode promo tidak valid atau telah kedaluwarsa.');
+    }
+  };
 
   const handleDevSetStatus = async (status: 'pro' | 'free' | 'pending') => {
     setLoading(true);
@@ -207,6 +241,31 @@ export const SubscriptionCard = ({ user }: { user: any }) => {
             <Zap size={18} className="text-white fill-white" />
             {t("sub.btnNow")}
           </button>
+
+          <div className="mt-4 pt-4 border-t border-[#e2ddd5]/60 space-y-2">
+            <label className="text-xs font-semibold text-neutral-700 flex items-center gap-1.5">
+              <Tag size={14} className="text-[#ff4f00]" />
+              {t('sub.promoTitle') || 'Gunakan Kode Promo'}
+            </label>
+            <div className="flex flex-col sm:flex-row gap-2 w-full">
+              <input
+                type="text"
+                value={promoInput}
+                onChange={(e) => setPromoInput(e.target.value)}
+                placeholder={t('sub.promoPlaceholder') || 'Masukkan kode promo (contoh: PH2026-7D-X92K)'}
+                className="w-full sm:flex-1 text-xs font-mono px-3 py-2.5 bg-[#faf8f5] border border-[#e2ddd5] rounded-xl focus:outline-none focus:border-[#ff4f00] focus:ring-2 focus:ring-[#ff4f00]/20 text-neutral-800 uppercase min-w-0 placeholder:normal-case font-medium"
+              />
+              <button
+                type="button"
+                disabled={applyingPromo || !promoInput.trim()}
+                onClick={handleApplyPromo}
+                className="w-full sm:w-auto px-4 py-2.5 bg-neutral-900 hover:bg-neutral-800 disabled:bg-neutral-200 text-white disabled:text-neutral-400 rounded-xl text-xs font-semibold transition-colors shrink-0 flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-not-allowed shadow-xs"
+              >
+                {applyingPromo ? <Loader2 size={13} className="animate-spin" /> : <Ticket size={13} />}
+                <span>{t('sub.promoBtn') || 'Terapkan Kode'}</span>
+              </button>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="p-4 sm:p-5">

@@ -59,6 +59,9 @@ Dokumen ini dibaca secara otomatis oleh AI System Instructions pada setiap sesi 
 ## 5. Kepatuhan Desain & Kualitas Kode
 
 - Gunakan Tailwind CSS untuk antarmuka yang bersih, responsif, dan elegan.
+- **Prioritas Tampilan Mobile (Responsif)**:
+  - Setiap komponen UI, tombol, input, modal, dan formulir **WAJIB** diprioritaskan agar pas, rapi, dan tidak terpotong pada layar perangkat seluler (layar kecil / mobile view < 380px).
+  - Gunakan tata letak fleksibel bertumpuk di mobile (`flex flex-col sm:flex-row`), penanganan lebar penuh (`w-full`), pembatasan `min-w-0` pada input, serta breakpoint Tailwind (`sm:`, `md:`) agar tombol dan teks tidak terpotong atau keluar dari kontainer pada layar sempit.
 - Pastikan semua tombol memiliki tooltip/umpan balik visual yang jelas.
 - Pertahankan dukungan peningkatan bertahap (progressive enhancement) dari mode offline (local IndexedDB/LocalStorage) hingga sinkronisasi awan Appwrite.
 
