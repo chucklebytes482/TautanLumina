@@ -161,7 +161,6 @@ export default function App() {
     };
     const handleOffline = () => {
       setIsOffline(true);
-      sonnerToast.info(t('toast.offlineModeNotice') || 'Mode Luring: Catatan & markah Anda tetap tersimpan dan dapat diakses lokal.', { duration: 3500 });
     };
 
     window.addEventListener('online', handleOnline);

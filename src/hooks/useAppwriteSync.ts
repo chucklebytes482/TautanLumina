@@ -26,6 +26,8 @@ export function useAppwriteSync(
           await db.setDatabaseUser(null);
           setUser(null);
           localStorage.removeItem('tautanlumina:current_user_email');
+          localStorage.removeItem('tautanlumina:cached_user');
+          localStorage.removeItem('tautanlumina:cached_user_id');
           window.dispatchEvent(new Event('tautanlumina:user_changed'));
           setLoading(false);
         });
@@ -33,14 +35,49 @@ export function useAppwriteSync(
         db.setDatabaseUser(res.$id).then(() => {
           setUser(res);
           localStorage.setItem('tautanlumina:current_user_email', res.email);
+          localStorage.setItem('tautanlumina:cached_user', JSON.stringify(res));
+          localStorage.setItem('tautanlumina:cached_user_id', res.$id);
           window.dispatchEvent(new Event('tautanlumina:user_changed'));
           setLoading(false);
         });
       }
-    }).catch(async () => {
+    }).catch(async (err) => {
+      const cachedUserStr = localStorage.getItem('tautanlumina:cached_user');
+      const cachedEmail = localStorage.getItem('tautanlumina:current_user_email');
+      const cachedUserId = localStorage.getItem('tautanlumina:cached_user_id');
+
+      const isOfflineOrNetworkError = 
+        !navigator.onLine || 
+        err?.message?.toLowerCase().includes('networkerror') || 
+        err?.message?.toLowerCase().includes('fetch') || 
+        err?.message?.toLowerCase().includes('network') ||
+        err?.code === 0 || err?.code === 500 || err?.code === 502 || err?.code === 503;
+
+      if (isOfflineOrNetworkError && cachedUserStr) {
+        try {
+          const cachedUser = JSON.parse(cachedUserStr);
+          await db.setDatabaseUser(cachedUser.$id);
+          setUser(cachedUser);
+          setLoading(false);
+          return;
+        } catch {}
+      }
+
+      if (isOfflineOrNetworkError && (cachedUserId || cachedEmail)) {
+        const uid = cachedUserId || (cachedEmail ? ('user_' + cachedEmail.replace(/[^a-zA-Z0-9]/g, '_')) : 'offline_user');
+        const email = cachedEmail || 'offline@lumina.app';
+        const fallbackUser = { $id: uid, email, emailVerification: true, offlineMode: true };
+        await db.setDatabaseUser(uid);
+        setUser(fallbackUser);
+        setLoading(false);
+        return;
+      }
+
       await db.setDatabaseUser(null);
       setUser(null);
       localStorage.removeItem('tautanlumina:current_user_email');
+      localStorage.removeItem('tautanlumina:cached_user');
+      localStorage.removeItem('tautanlumina:cached_user_id');
       window.dispatchEvent(new Event('tautanlumina:user_changed'));
       setLoading(false);
     });
@@ -80,6 +117,8 @@ export function useAppwriteSync(
       await db.setDatabaseUser(acc.$id);
       setUser(acc);
       localStorage.setItem('tautanlumina:current_user_email', acc.email);
+      localStorage.setItem('tautanlumina:cached_user', JSON.stringify(acc));
+      localStorage.setItem('tautanlumina:cached_user_id', acc.$id);
       window.dispatchEvent(new Event('tautanlumina:user_changed'));
       toast.dismiss();
       toast.success(t('toast.loginSuccess'), { duration: 1500 });
@@ -200,11 +239,13 @@ export function useAppwriteSync(
 
   const logout = async () => {
     try {
-      await account.deleteSession('current');
+      await account.deleteSession('current').catch(() => {});
       autoSyncedUserRef.current = null;
       await db.setDatabaseUser(null);
       setUser(null);
       localStorage.removeItem('tautanlumina:current_user_email');
+      localStorage.removeItem('tautanlumina:cached_user');
+      localStorage.removeItem('tautanlumina:cached_user_id');
       window.dispatchEvent(new Event('tautanlumina:user_changed'));
       toast.dismiss();
       toast.info(t('toast.loggedOut'), { duration: 1500 });
