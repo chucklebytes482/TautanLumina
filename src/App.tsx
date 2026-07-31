@@ -155,7 +155,6 @@ export default function App() {
   useEffect(() => {
     const handleOnline = () => {
       setIsOffline(false);
-      sonnerToast.success(t('toast.onlineBack') || 'Koneksi terhubung kembali. Memulai sinkronisasi otomatis...', { duration: 2500 });
       smartSync(true);
     };
     const handleOffline = () => {
@@ -169,7 +168,14 @@ export default function App() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [smartSync, t]);
+  }, [smartSync]);
+
+  const guardOffline = useCallback(() => {
+    if (typeof navigator !== 'undefined' && (!navigator.onLine || isOffline)) {
+      return true;
+    }
+    return false;
+  }, [isOffline]);
 
   const handleLogout = async () => {
     await logout();
@@ -281,6 +287,7 @@ export default function App() {
   };
 
   const handleToggleFolderLock = async (folderId: string, skipPinCheck?: boolean) => {
+    if (guardOffline()) return;
     const f = items.find((i) => i.id === folderId);
     if (!f) return;
 
@@ -352,6 +359,7 @@ export default function App() {
   };
 
   const handleNewFolder = async () => {
+    if (guardOffline()) return;
     const name = await customPrompt(t('modal.folderName'));
     if (name && name.trim()) {
       await createItem(name.trim(), 'folder', currentFolderId);
@@ -359,6 +367,7 @@ export default function App() {
   };
 
   const handleNewFile = async () => {
+    if (guardOffline()) return;
     const url = await customPrompt(t('modal.bookmarkUrl'));
     if (!url || !url.trim()) return;
     
@@ -400,6 +409,7 @@ export default function App() {
   };
 
   const handleNewNote = async () => {
+    if (guardOffline()) return;
     const text = await customPrompt(t('modal.noteText'), '', { textarea: true, maxWidth: 'max-w-xl' });
     if (!text || !text.trim()) return;
     
@@ -462,6 +472,7 @@ export default function App() {
   };
 
   const openMovePicker = (ids: string[]) => {
+    if (guardOffline()) return;
     setPickerConfig({
       title: t('action.moveItems').replace('{count}', ids.length.toString()),
       confirmLabel: t('action.move'),
@@ -478,6 +489,7 @@ export default function App() {
     ids: string[],
     opts?: { title?: string; afterDelete?: () => void },
   ) => {
+    if (guardOffline()) return;
     const filteredIds = ids.filter(id => id !== 'folder-catatan' && id !== 'folder-hello-world');
     if (filteredIds.length < ids.length && ids.length === 1) {
       showToast(t('toast.folderSystemCannotDelete'));
@@ -537,6 +549,7 @@ export default function App() {
 
   const handleConfirmMoveKeypad = async (targetNum: number) => {
     if (!moveKeypadConfig) return;
+    if (guardOffline()) return;
     const targetIdx = targetNum - 1;
     const { targetItem } = moveKeypadConfig;
     setMoveKeypadConfig(null);
@@ -567,6 +580,7 @@ export default function App() {
   };
 
   const handleImport = () => {
+    if (guardOffline()) return;
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'application/json, text/html, .json, .html, .htm';
@@ -601,11 +615,13 @@ export default function App() {
   };
 
   const onDropOnFolder = async (targetFolderId: string, draggedIds: string[]) => {
+    if (guardOffline()) return;
     await moveMany(draggedIds, targetFolderId);
     clearSelection();
   };
 
   const onReorder = async (draggedIds: string[], overId: string, position: 'before' | 'after') => {
+    if (guardOffline()) return;
     const overItem = items.find((i) => i.id === overId);
     if (!overItem) return;
     const parentId = overItem.parentId;
@@ -629,10 +645,12 @@ export default function App() {
   };
 
   const handlePin = async (id: string, pinned: boolean) => {
+    if (guardOffline()) return;
     await fs.updateItem(id, { pinned });
   };
 
   const handleRegenerateFolder = async (folderId: string) => {
+    if (guardOffline()) return;
     const isProOrAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || user?.prefs?.proStatus === 'pro';
     if (!isProOrAdmin) {
       const todayStr = new Date().toISOString().split('T')[0];
@@ -768,6 +786,7 @@ export default function App() {
         key: 'rename',
         label: t('action.rename'),
         onClick: async () => {
+          if (guardOffline()) return;
           const n = await customPrompt('' + t('modal.newName') + '', item.name);
           if (n && n.trim()) {
             await renameItem(item.id, n.trim());
@@ -788,6 +807,7 @@ export default function App() {
         key: 'editTitle',
         label: t('action.editTitle') || 'Edit Judul & URL',
         onClick: () => {
+          if (guardOffline()) return;
           setEditingBookmarkItem(item);
         },
       });
@@ -797,6 +817,7 @@ export default function App() {
         key: 'edit',
         label: t('file.editContent') || 'Edit Isi',
         onClick: async () => {
+          if (guardOffline()) return;
           const content = await customPrompt(t('modal.noteText'), item.content || '', { textarea: true, maxWidth: 'max-w-xl' });
           if (content !== null && content.trim() !== '') {
             await updateContent(item.id, content.trim());
@@ -1154,6 +1175,7 @@ export default function App() {
             item={editingBookmarkItem}
             onClose={() => setEditingBookmarkItem(null)}
             onSave={async (id, name, url) => {
+              if (guardOffline()) return;
               await updateItem(id, { name, content: url });
               showToast(t('toast.bookmarkSaved') || 'Bookmark berhasil disimpan');
             }}

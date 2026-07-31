@@ -9,7 +9,15 @@ import {
   Cloud, 
   Search, 
   Lightbulb,
-  X
+  X,
+  ChevronRight,
+  ShieldCheck,
+  CheckCircle2,
+  Zap,
+  Mic,
+  Compass,
+  ArrowRight,
+  Key
 } from 'lucide-react';
 import { useI18n, LanguageCode } from '../lib/i18n';
 
@@ -21,26 +29,28 @@ export const GuideTabContent: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Localized markdown content for 6 languages with identical structure & detail
-  const guideContents: Record<LanguageCode, Record<GuideTab, { title: string; icon: any; content: string }>> = {
+  const guideContents: Record<LanguageCode, Record<GuideTab, { title: string; subtitle: string; icon: any; content: string }>> = {
     id: {
       overview: {
         title: 'Pengenalan TautanLumina',
+        subtitle: 'Buku panduan lengkap & ringkasan fitur utama',
         icon: BookOpen,
         content: `
 ### Selamat datang di TautanLumina ✨
 
 **TautanLumina** adalah aplikasi penyimpan tautan (bookmark) dan catatan pribadi yang cepat, minimalis, dan cerdas.
 
-#### 🚀 Fitur Utama:
+#### 🚀 Fitur Utama Unggulan:
 * **Penamaan AI Otomatis**: Menghasilkan judul ringkas otomatis (maksimal 15 karakter) untuk URL yang disimpan.
 * **Organisasi Folder & Posisi**: Susun item dalam folder kustom dan urutkan posisi dengan presisi menggunakan papan angka (Keypad Move).
 * **Perlindungan PIN Folder**: Kunci folder sensitif menggunakan PIN 4 digit yang aman.
 * **Chat AI & Voice Note**: Berinteraksi dengan AI dan kirim pesan suara hingga 30 detik dengan fitur pratinjau sebelum dikirim.
-* **Sinkronisasi Awan & Offline**: Data tersimpan aman di perangkat lokal dan tersinkronisasi otomatis ke Awan Appwrite saat terhubung internet.
+* **Akses Luring & Sinkronisasi Awan**: Tersinkronisasi otomatis ke Awan Appwrite saat terhubung internet.
         `
       },
       bookmarks: {
         title: 'Bookmark & Penamaan AI',
+        subtitle: 'Cara menambah, mengedit, dan menggunakan AI title',
         icon: Sparkles,
         content: `
 ### Cara Menambah & Mengelola Bookmark
@@ -54,11 +64,12 @@ export const GuideTabContent: React.FC = () => {
    * Pilih **Generate Ulang Judul** untuk meminta AI membuat judul baru.
    * Pilih **Edit Judul & URL** untuk mengubah nama atau URL bookmark secara manual.
 
-💡 *Tips: Kolom pencarian utama mendukung penyaringan cepat judul bookmark dan nama catatan.*
+💡 *Tips: Kolom pencarian utama mendukung penyaringan cepat judul bookmark dan nama catatan secara real-time.*
         `
       },
       organization: {
         title: 'Folder & Urutan Posisi',
+        subtitle: 'Kelola folder dan susun urutan dengan Keypad Move',
         icon: Folder,
         content: `
 ### Pengorganisasian & Penataan Item
@@ -78,6 +89,7 @@ export const GuideTabContent: React.FC = () => {
       },
       pin: {
         title: 'Keamanan & PIN Folder',
+        subtitle: 'Perlindungan akses folder pribadi dengan PIN 4 digit',
         icon: Lock,
         content: `
 ### Mengunci Folder dengan PIN
@@ -96,6 +108,7 @@ export const GuideTabContent: React.FC = () => {
       },
       chat: {
         title: 'Chat AI & Pesan Suara',
+        subtitle: 'Dukungan model AI, voice recorder 30 detik, & pratinjau',
         icon: MessageSquare,
         content: `
 ### Fitur Chat AI & Voice Chat
@@ -114,6 +127,7 @@ export const GuideTabContent: React.FC = () => {
       },
       sync: {
         title: 'Awan & Ekspor Data',
+        subtitle: 'Cadangan data otomatis, ekspor JSON, & status akun',
         icon: Cloud,
         content: `
 ### Sinkronisasi & Cadangan Data
@@ -135,6 +149,7 @@ export const GuideTabContent: React.FC = () => {
     en: {
       overview: {
         title: 'Welcome to TautanLumina',
+        subtitle: 'Comprehensive guide & core features overview',
         icon: BookOpen,
         content: `
 ### Welcome to TautanLumina ✨
@@ -146,11 +161,12 @@ export const GuideTabContent: React.FC = () => {
 * **Folders & Reordering**: Group items in custom folders and reorder precisely using a numeric keypad (Keypad Move).
 * **Folder PIN Security**: Protect sensitive folders with a secure 4-digit PIN lock.
 * **AI Chat & Voice Notes**: Interact with AI models and send voice messages up to 30 seconds with audio preview before sending.
-* **Cloud Sync & Offline Mode**: Data is saved locally in your browser and automatically synchronized with Appwrite Cloud when online.
+* **Offline Access & Cloud Sync**: Automatically synchronized with Appwrite Cloud when online.
         `
       },
       bookmarks: {
         title: 'Bookmarks & AI Naming',
+        subtitle: 'How to add, edit, and generate smart titles',
         icon: Sparkles,
         content: `
 ### Adding & Managing Bookmarks
@@ -169,6 +185,7 @@ export const GuideTabContent: React.FC = () => {
       },
       organization: {
         title: 'Folders & Item Reordering',
+        subtitle: 'Organize items with folders and Keypad Move positioning',
         icon: Folder,
         content: `
 ### Folder Management & Reordering
@@ -188,6 +205,7 @@ export const GuideTabContent: React.FC = () => {
       },
       pin: {
         title: 'Folder Security & PIN',
+        subtitle: 'Lock private folders with 4-digit PIN protection',
         icon: Lock,
         content: `
 ### Protecting Folders with PIN
@@ -206,6 +224,7 @@ export const GuideTabContent: React.FC = () => {
       },
       chat: {
         title: 'AI Chat & Voice Notes',
+        subtitle: 'AI models, 30s voice recording, and preview audio',
         icon: MessageSquare,
         content: `
 ### AI Chat & Voice Message Features
@@ -224,6 +243,7 @@ export const GuideTabContent: React.FC = () => {
       },
       sync: {
         title: 'Cloud Sync & Data Backup',
+        subtitle: 'Local backup, JSON export/import, & account features',
         icon: Cloud,
         content: `
 ### Data Sync & Backup
@@ -245,6 +265,7 @@ export const GuideTabContent: React.FC = () => {
     zh: {
       overview: {
         title: 'TautanLumina 概览',
+        subtitle: '完整使用指南与核心功能速览',
         icon: BookOpen,
         content: `
 ### 欢迎使用 TautanLumina ✨
@@ -256,11 +277,12 @@ export const GuideTabContent: React.FC = () => {
 * **文件夹与位置排序**：将项目整理到自定义文件夹中，并使用数字键盘（Keypad Move）精准调整顺序。
 * **文件夹 PIN 码锁定**：使用安全的 4 位数 PIN 码锁定保护隐私文件夹。
 * **AI 对话与语音消息**：与 AI 互动，支持长达 30 秒的语音录制并在发送前进行播放预览。
-* **云端同步与离线存储**：数据安全存储于本地浏览器，并在联网时自动同步至 Appwrite 云端。
+* **离线访问与云端同步**：联网时自动与 Appwrite 云端同步。
         `
       },
       bookmarks: {
         title: '书签与 AI 命名',
+        subtitle: '添加、编辑与 AI 生成书签标题说明',
         icon: Sparkles,
         content: `
 ### 添加与管理书签
@@ -279,6 +301,7 @@ export const GuideTabContent: React.FC = () => {
       },
       organization: {
         title: '文件夹与位置排序',
+        subtitle: '文件夹管理与数字键盘移动定位',
         icon: Folder,
         content: `
 ### 文件夹管理与排序
@@ -298,6 +321,7 @@ export const GuideTabContent: React.FC = () => {
       },
       pin: {
         title: '文件夹安全与 PIN 码',
+        subtitle: '使用 4 位数 PIN 码保护隐私文件夹',
         icon: Lock,
         content: `
 ### 使用 PIN 码保护文件夹
@@ -316,6 +340,7 @@ export const GuideTabContent: React.FC = () => {
       },
       chat: {
         title: 'AI 对话与语音消息',
+        subtitle: 'AI 模型切换、30 秒语音录制与发送前预览',
         icon: MessageSquare,
         content: `
 ### AI 对话与语音消息功能
@@ -334,6 +359,7 @@ export const GuideTabContent: React.FC = () => {
       },
       sync: {
         title: '云端同步与数据备份',
+        subtitle: '自动云端同步、JSON 导入导出与订阅说明',
         icon: Cloud,
         content: `
 ### 数据同步与备份恢复
@@ -355,6 +381,7 @@ export const GuideTabContent: React.FC = () => {
     ja: {
       overview: {
         title: 'TautanLumina の概要',
+        subtitle: '詳細な使い方ガイド＆主要機能一覧',
         icon: BookOpen,
         content: `
 ### TautanLumina へようこそ ✨
@@ -366,11 +393,12 @@ export const GuideTabContent: React.FC = () => {
 * **フォルダ整理と順序変更**: カスタムフォルダで項目を整理し、数字キーパッド（Keypad Move）で位置を正確に変更。
 * **フォルダ PIN ロック**: 安全な 4 桁の PIN コードで大切なフォルダを保護。
 * **AI チャット＆音声メッセージ**: AI と会話でき、最大 30 秒の音声メッセージを送信前にプレビュー試聴可能。
-* **クラウド同期＆オフライン**: ローカルブラウザに安全に保存され、インターネット接続時に Appwrite クラウドへ自動同期。
+* **オフライン閲覧とクラウド同期**: オンライン接続時に Appwrite クラウドへ自動同期。
         `
       },
       bookmarks: {
         title: 'ブックマーク＆ AI 自動命名',
+        subtitle: 'ブックマークの追加・編集と AI タイトル生成',
         icon: Sparkles,
         content: `
 ### ブックマークの追加と管理
@@ -389,6 +417,7 @@ export const GuideTabContent: React.FC = () => {
       },
       organization: {
         title: 'フォルダと順序並び替え',
+        subtitle: 'フォルダ管理とキーパッド移動による順序変更',
         icon: Folder,
         content: `
 ### フォルダ管理とアイテムの並び替え
@@ -408,6 +437,7 @@ export const GuideTabContent: React.FC = () => {
       },
       pin: {
         title: 'フォルダセキュリティと PIN',
+        subtitle: '4 桁の PIN コードでフォルダを保護',
         icon: Lock,
         content: `
 ### PIN コードによるフォルダ保護
@@ -426,6 +456,7 @@ export const GuideTabContent: React.FC = () => {
       },
       chat: {
         title: 'AI チャット＆音声メッセージ',
+        subtitle: 'AI モデル切り替え、30 秒録音、事前試聴機能',
         icon: MessageSquare,
         content: `
 ### AI チャットと音声メッセージ機能
@@ -444,6 +475,7 @@ export const GuideTabContent: React.FC = () => {
       },
       sync: {
         title: 'クラウド同期＆データバックアップ',
+        subtitle: '自動クラウド同期、JSON 入出力、Pro 特典',
         icon: Cloud,
         content: `
 ### データ同期とバックアップ
@@ -465,6 +497,7 @@ export const GuideTabContent: React.FC = () => {
     ko: {
       overview: {
         title: 'TautanLumina 소개',
+        subtitle: '상세 사용 설명서 및 핵심 기능 한눈에 보기',
         icon: BookOpen,
         content: `
 ### TautanLumina에 오신 것을 환영합니다 ✨
@@ -476,11 +509,12 @@ export const GuideTabContent: React.FC = () => {
 * **폴더 및 순서 정렬**: 맞춤 폴더에 항목을 정리하고 숫자 키패드(Keypad Move)를 사용하여 정확하게 위치를 변경합니다.
 * **폴더 PIN 잠금**: 안전한 4자리 PIN 코드로 중요한 폴더를 보호합니다.
 * **AI 챗 & 음성 메시지**: AI와 대화하고 전송 전 음성을 미리 들을 수 있는 최대 30초 음성 메시지를 지원합니다.
-* **클라우드 동기화 & 오프라인**: 브라우저 로컬에 안전하게 저장되며 인터넷 연결 시 Appwrite 클라우드와 자동 동기화됩니다.
+* **오프라인 접근 & 클라우드 동기화**: 온라인 연결 시 Appwrite 클라우드와 자동 동기화됩니다.
         `
       },
       bookmarks: {
         title: '북마크 & AI 제목 생성',
+        subtitle: '북마크 추가, 수정 및 AI 스마트 제목 사용법',
         icon: Sparkles,
         content: `
 ### 북마크 추가 및 관리
@@ -499,6 +533,7 @@ export const GuideTabContent: React.FC = () => {
       },
       organization: {
         title: '폴더 & 위치 이동 정렬',
+        subtitle: '폴더 정리 및 키패드 이동 정렬',
         icon: Folder,
         content: `
 ### 폴더 관리 및 순서 변경
@@ -518,6 +553,7 @@ export const GuideTabContent: React.FC = () => {
       },
       pin: {
         title: '폴더 보안 & PIN 잠금',
+        subtitle: '4자리 PIN 코드로 중요 폴더 잠금 설정',
         icon: Lock,
         content: `
 ### PIN 코드로 폴더 보호하기
@@ -536,6 +572,7 @@ export const GuideTabContent: React.FC = () => {
       },
       chat: {
         title: 'AI 챗 & 음성 메시지',
+        subtitle: 'AI 모델 선택, 30초 녹음 및 사전 듣기 기능',
         icon: MessageSquare,
         content: `
 ### AI 챗 및 음성 메시지 기능
@@ -554,6 +591,7 @@ export const GuideTabContent: React.FC = () => {
       },
       sync: {
         title: '클라우드 동기화 & 백업',
+        subtitle: '자동 동기화, JSON 내보내기/가져오기 & Pro 혜택',
         icon: Cloud,
         content: `
 ### 데이터 동기화 및 백업
@@ -575,6 +613,7 @@ export const GuideTabContent: React.FC = () => {
     ru: {
       overview: {
         title: 'О сервисе TautanLumina',
+        subtitle: 'Полное руководство пользователя и обзор функций',
         icon: BookOpen,
         content: `
 ### Добро пожаловать в TautanLumina ✨
@@ -586,11 +625,12 @@ export const GuideTabContent: React.FC = () => {
 * **Папки и сортировка**: Группируйте элементы в папки и точно меняйте их порядок с помощью цифровой клавиатуры (Keypad Move).
 * **Защита папок PIN-кодом**: Защищайте конфиденциальные папки надежным 4-значным PIN-кодом.
 * **ИИ Чат и Голосовые**: Общайтесь с ИИ и отправляйте голосовые сообщения длительностью до 30 секунд с предварительным прослушиванием.
-* **Облачная синхронизация**: Данные надежно сохраняются локально в браузере и автоматически синхронизируются с Appwrite Cloud при подключении к сети.
+* **Автономный доступ и облачная синхронизация**: Автоматическая синхронизация с Appwrite Cloud при подключении к сети.
         `
       },
       bookmarks: {
         title: 'Закладки и авто-заголовки ИИ',
+        subtitle: 'Добавление, редактирование и генерация названий',
         icon: Sparkles,
         content: `
 ### Добавление и управление закладками
@@ -609,6 +649,7 @@ export const GuideTabContent: React.FC = () => {
       },
       organization: {
         title: 'Папки и позиционирование',
+        subtitle: 'Организация папок и точное перемещение Keypad Move',
         icon: Folder,
         content: `
 ### Организация папок и элементов
@@ -628,6 +669,7 @@ export const GuideTabContent: React.FC = () => {
       },
       pin: {
         title: 'Безопасность и PIN-код',
+        subtitle: 'Защита личных папок с помощью 4-значного PIN-кода',
         icon: Lock,
         content: `
 ### Защита папок PIN-кодом
@@ -646,6 +688,7 @@ export const GuideTabContent: React.FC = () => {
       },
       chat: {
         title: 'ИИ Чат и Голосовые',
+        subtitle: 'Выбор ИИ моделей, 30 сек запись и предпрослушивание',
         icon: MessageSquare,
         content: `
 ### ИИ Чат и голосовые сообщения
@@ -664,6 +707,7 @@ export const GuideTabContent: React.FC = () => {
       },
       sync: {
         title: 'Синхронизация и бэкап',
+        subtitle: 'Авто-синхронизация, экспорт JSON и возможности Pro',
         icon: Cloud,
         content: `
 ### Синхронизация данных и резервное копирование
@@ -686,43 +730,69 @@ export const GuideTabContent: React.FC = () => {
 
   const currentLang = (guideContents[lang] ? lang : 'id') as LanguageCode;
   const sections = guideContents[currentLang];
+  const tabKeys: GuideTab[] = ['overview', 'bookmarks', 'organization', 'pin', 'chat', 'sync'];
 
-  const filteredSectionKeys = (Object.keys(sections) as GuideTab[]).filter(key => {
+  const filteredSectionKeys = tabKeys.filter(key => {
     if (!searchQuery.trim()) return true;
     const item = sections[key];
     const q = searchQuery.toLowerCase();
-    return item.title.toLowerCase().includes(q) || item.content.toLowerCase().includes(q);
+    return item.title.toLowerCase().includes(q) || item.subtitle.toLowerCase().includes(q) || item.content.toLowerCase().includes(q);
   });
 
+  const activeIndex = tabKeys.indexOf(activeSection);
+  const nextTabKey = activeIndex >= 0 && activeIndex < tabKeys.length - 1 ? tabKeys[activeIndex + 1] : null;
+
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#fdfcfb] dark:bg-[#161618] overflow-hidden">
-      {/* Top Search Bar inside Guide Tab */}
-      <div className="p-3 border-b border-[#e2ddd5] dark:border-[#2d2d35] bg-white dark:bg-[#1e1e22] shrink-0">
-        <div className="relative flex items-center max-w-xl mx-auto">
-          <Search size={16} className="absolute left-3 text-neutral-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('guide.searchPlaceholder') || 'Cari topik panduan...'}
-            className="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-[#faf8f5] dark:bg-[#28282e] border border-[#e2ddd5] dark:border-[#383842] rounded-xl text-neutral-800 dark:text-neutral-100 focus:outline-none focus:border-[#FF4F00] focus:ring-1 focus:ring-[#FF4F00]"
-          />
-          {searchQuery && (
-            <button 
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
-            >
-              <X size={14} />
-            </button>
-          )}
+    <div className="flex-1 flex flex-col h-full bg-[#faf8f5] dark:bg-[#161618] overflow-hidden text-neutral-800 dark:text-neutral-100">
+      {/* Search & Header Section */}
+      <div className="p-3 sm:p-4 border-b border-[#e5e0d8] dark:border-[#2d2d35] bg-white/80 dark:bg-[#1c1c20]/90 backdrop-blur-md shrink-0">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-[#FF4F00]/10 text-[#FF4F00] rounded-xl border border-[#FF4F00]/20 shrink-0">
+              <Compass size={20} />
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-neutral-900 dark:text-neutral-100 leading-tight">
+                {t('guide.title') || 'Panduan Penggunaan'}
+              </h2>
+              <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400">
+                Pusat bantuan & instruksi fitur TautanLumina
+              </p>
+            </div>
+          </div>
+
+          <div className="relative flex items-center w-full sm:w-72 shrink-0">
+            <Search size={15} className="absolute left-3 text-neutral-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t('guide.searchPlaceholder') || 'Cari topik panduan...'}
+              className="w-full pl-9 pr-8 py-1.5 text-xs bg-[#f4f0ea] dark:bg-[#28282e] border border-[#e2ddd5] dark:border-[#383842] rounded-xl text-neutral-800 dark:text-neutral-100 focus:outline-none focus:border-[#FF4F00] focus:ring-2 focus:ring-[#FF4F00]/20 transition-all placeholder:text-neutral-400"
+            />
+            {searchQuery ? (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer rounded-md hover:bg-neutral-200/50 dark:hover:bg-neutral-700/50 transition-colors"
+                title="Hapus pencarian"
+                aria-label="Hapus pencarian"
+              >
+                <X size={13} />
+              </button>
+            ) : (
+              <span className="absolute right-3 text-[10px] text-neutral-400 font-mono hidden sm:inline-block pointer-events-none">
+                🔍
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Main Guide Layout */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Sidebar Navigation */}
-        <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-[#e2ddd5] dark:border-[#2d2d35] bg-[#faf8f5]/80 dark:bg-[#1a1a1d] p-2 flex md:flex-col gap-1.5 overflow-x-auto md:overflow-y-auto shrink-0 no-scrollbar">
-          {(Object.keys(sections) as GuideTab[]).map((tabKey) => {
+      {/* Main Responsive Guide Layout */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-w-0">
+        {/* Navigation Tabs (Mobile horizontal scroll / Desktop sidebar) */}
+        <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-[#e5e0d8] dark:border-[#2d2d35] bg-[#f4f0ea]/60 dark:bg-[#1a1a1d] p-2.5 flex md:flex-col gap-1.5 overflow-x-auto md:overflow-y-auto shrink-0 no-scrollbar">
+          {tabKeys.map((tabKey) => {
             const item = sections[tabKey];
             const Icon = item.icon;
             const isActive = activeSection === tabKey;
@@ -734,45 +804,207 @@ export const GuideTabContent: React.FC = () => {
               <button
                 key={tabKey}
                 onClick={() => setActiveSection(tabKey)}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-left whitespace-nowrap md:whitespace-normal transition-all cursor-pointer ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-left whitespace-nowrap md:whitespace-normal transition-all cursor-pointer relative group ${
                   isActive 
-                    ? 'bg-white dark:bg-[#28282e] text-[#FF4F00] border border-[#FF4F00]/30 shadow-xs' 
-                    : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100 border border-transparent'
+                    ? 'bg-white dark:bg-[#28282e] text-[#FF4F00] shadow-2xs border border-[#FF4F00]/30 font-bold' 
+                    : 'text-neutral-600 dark:text-neutral-400 hover:bg-white/60 dark:hover:bg-neutral-800/60 hover:text-neutral-900 dark:hover:text-neutral-100 border border-transparent'
                 }`}
+                title={item.title}
               >
-                <Icon size={18} className={isActive ? 'text-[#FF4F00]' : 'text-neutral-400'} />
-                <span className="truncate">{item.title}</span>
+                <div className={`p-1.5 rounded-lg shrink-0 transition-colors ${
+                  isActive ? 'bg-[#FF4F00]/10 text-[#FF4F00]' : 'bg-neutral-200/50 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-800 dark:group-hover:text-neutral-200'
+                }`}>
+                  <Icon size={16} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate leading-tight">{item.title}</div>
+                  <div className="text-[10px] font-normal text-neutral-400 dark:text-neutral-500 truncate hidden md:block mt-0.5">
+                    {item.subtitle}
+                  </div>
+                </div>
+                {isActive && (
+                  <div className="hidden md:block w-1.5 h-4 rounded-full bg-[#FF4F00] shrink-0" />
+                )}
               </button>
             );
           })}
         </div>
 
-        {/* Content Viewer */}
-        <div className="flex-1 p-4 sm:p-6 overflow-y-auto bg-white dark:bg-[#161618]">
-          {sections[activeSection] && (
-            <div className="max-w-3xl mx-auto space-y-4">
-              <div className="flex items-center gap-2.5 pb-3 border-b border-[#e2ddd5] dark:border-[#2d2d35]">
-                {React.createElement(sections[activeSection].icon, { size: 24, className: 'text-[#FF4F00]' })}
-                <h2 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-neutral-100 m-0">
-                  {sections[activeSection].title}
-                </h2>
+        {/* Content Viewer Panel */}
+        <div className="flex-1 p-4 sm:p-6 overflow-y-auto bg-white dark:bg-[#161618] min-w-0">
+          {filteredSectionKeys.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
+              <div className="p-3 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-400">
+                <Search size={28} />
               </div>
-
-              <div className="markdown-body text-xs sm:text-sm leading-relaxed text-neutral-800 dark:text-neutral-200">
-                <ReactMarkdown>{sections[activeSection].content}</ReactMarkdown>
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-200">
+                  Tidak ditemukan hasil untuk "{searchQuery}"
+                </h3>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 max-w-xs mx-auto">
+                  Coba kata kunci lain atau bersihkan pencarian untuk melihat panduan.
+                </p>
               </div>
+              <button
+                onClick={() => setSearchQuery('')}
+                className="px-3.5 py-1.5 text-xs font-semibold bg-[#FF4F00] text-white rounded-xl shadow-2xs hover:bg-[#e04500] transition-colors cursor-pointer"
+              >
+                Bersihkan Pencarian
+              </button>
             </div>
+          ) : (
+            sections[activeSection] && (
+              <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-200">
+                {/* Hero Topic Banner Card */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#FF4F00]/10 via-[#FF4F00]/5 to-transparent dark:from-[#FF4F00]/15 dark:via-[#FF4F00]/5 dark:to-transparent border border-[#FF4F00]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="p-3 bg-white dark:bg-[#28282e] text-[#FF4F00] rounded-xl shadow-xs border border-[#FF4F00]/20 shrink-0">
+                      {React.createElement(sections[activeSection].icon, { size: 24 })}
+                    </div>
+                    <div className="min-w-0">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FF4F00]/15 text-[#FF4F00] text-[10px] font-bold uppercase tracking-wider mb-1">
+                        <Zap size={10} /> Topik Panduan
+                      </span>
+                      <h2 className="text-base sm:text-lg font-extrabold text-neutral-900 dark:text-neutral-100 m-0 leading-tight truncate">
+                        {sections[activeSection].title}
+                      </h2>
+                      <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-0.5 truncate">
+                        {sections[activeSection].subtitle}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Overview Feature Grid Card (Only on Overview tab) */}
+                {activeSection === 'overview' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div className="p-3.5 rounded-xl bg-[#faf8f5] dark:bg-[#1e1e22] border border-[#e5e0d8] dark:border-[#2d2d35] space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                        <Sparkles size={14} className="text-[#FF4F00]" />
+                        <span>AI Title Generator</span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                        Analisis otomatis URL untuk judul ringkas maksimal 15 karakter secara instan.
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-[#faf8f5] dark:bg-[#1e1e22] border border-[#e5e0d8] dark:border-[#2d2d35] space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                        <Folder size={14} className="text-[#FF4F00]" />
+                        <span>Keypad Move Position</span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                        Pindahkan dan susun urutan bookmark & catatan menggunakan nomor tombol angka presisi.
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-[#faf8f5] dark:bg-[#1e1e22] border border-[#e5e0d8] dark:border-[#2d2d35] space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                        <Lock size={14} className="text-[#FF4F00]" />
+                        <span>PIN 4-Digit Folder</span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                        Kunci folder rahasia dengan PIN aman 4 angka dan fitur reset kata sandi.
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-[#faf8f5] dark:bg-[#1e1e22] border border-[#e5e0d8] dark:border-[#2d2d35] space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                        <Mic size={14} className="text-[#FF4F00]" />
+                        <span>Voice Chat & Preview</span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                        Rekam pesan suara hingga 30 detik dengan tombol pratinjau putar sebelum kirim.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Formatted Markdown Body */}
+                <div className="prose dark:prose-invert max-w-none space-y-4">
+                  <ReactMarkdown
+                    components={{
+                      h3: ({ children }) => (
+                        <h3 className="text-sm sm:text-base font-bold text-neutral-900 dark:text-neutral-100 mt-4 mb-2 flex items-center gap-2 border-b border-neutral-100 dark:border-neutral-800 pb-2">
+                          <CheckCircle2 size={16} className="text-[#FF4F00] shrink-0" />
+                          <span>{children}</span>
+                        </h3>
+                      ),
+                      h4: ({ children }) => (
+                        <h4 className="text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-200 mt-3 mb-2 flex items-center gap-1.5">
+                          <ShieldCheck size={14} className="text-[#FF4F00] shrink-0" />
+                          <span>{children}</span>
+                        </h4>
+                      ),
+                      p: ({ children }) => (
+                        <p className="text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 my-2 leading-relaxed break-words">
+                          {children}
+                        </p>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className="space-y-2 my-2 list-none pl-0">{children}</ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol className="space-y-2.5 my-3 list-none pl-0">{children}</ol>
+                      ),
+                      li: ({ children }) => (
+                        <li className="p-2.5 rounded-xl bg-[#faf8f5] dark:bg-[#1c1c20] border border-[#e5e0d8]/60 dark:border-[#2d2d35]/60 flex items-start gap-2.5 text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 shadow-2xs">
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#FF4F00] mt-2 shrink-0" />
+                          <div className="flex-1 min-w-0 break-words">{children}</div>
+                        </li>
+                      ),
+                      code: ({ children }) => (
+                        <code className="px-1.5 py-0.5 rounded-md bg-[#FF4F00]/10 text-[#FF4F00] font-mono text-[11px] sm:text-xs font-semibold border border-[#FF4F00]/20 inline-block mx-0.5">
+                          {children}
+                        </code>
+                      ),
+                      strong: ({ children }) => (
+                        <strong className="font-bold text-neutral-900 dark:text-neutral-100">{children}</strong>
+                      )
+                    }}
+                  >
+                    {sections[activeSection].content}
+                  </ReactMarkdown>
+                </div>
+
+                {/* Next Topic Quick Jump */}
+                {nextTabKey && sections[nextTabKey] && (
+                  <div className="pt-4 border-t border-[#e5e0d8] dark:border-[#2d2d35]">
+                    <button
+                      onClick={() => setActiveSection(nextTabKey)}
+                      className="w-full p-3.5 rounded-2xl bg-[#faf8f5] dark:bg-[#1e1e22] hover:bg-[#f4f0ea] dark:hover:bg-[#25252a] border border-[#e5e0d8] dark:border-[#2d2d35] flex items-center justify-between gap-3 text-left transition-all cursor-pointer group shadow-2xs"
+                    >
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider block mb-0.5">
+                          Topik Selanjutnya →
+                        </span>
+                        <div className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-[#FF4F00] transition-colors truncate">
+                          {sections[nextTabKey].title}
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-xl bg-white dark:bg-[#28282e] text-neutral-400 group-hover:text-[#FF4F00] group-hover:translate-x-0.5 transition-all shrink-0">
+                        <ChevronRight size={16} />
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
           )}
         </div>
       </div>
 
-      {/* Guide Footer Notice */}
-      <div className="p-2.5 border-t border-[#e2ddd5] dark:border-[#2d2d35] bg-[#faf8f5] dark:bg-[#1e1e22] flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 shrink-0 px-4">
-        <div className="flex items-center gap-1.5">
+      {/* Footer Status Bar */}
+      <div className="p-2.5 border-t border-[#e5e0d8] dark:border-[#2d2d35] bg-[#f4f0ea]/80 dark:bg-[#1c1c20] flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 shrink-0 px-4">
+        <div className="flex items-center gap-2">
           <Lightbulb size={14} className="text-[#FF4F00]" />
-          <span>TautanLumina • {t('guide.title') || 'Panduan Penggunaan'}</span>
+          <span className="font-medium">TautanLumina • {t('guide.title') || 'Panduan Penggunaan'}</span>
         </div>
-        <span className="text-[11px] opacity-75">v1.0</span>
+        <div className="flex items-center gap-2 text-[11px] font-mono opacity-80">
+          <span>6 Topik</span>
+          <span>•</span>
+          <span className="px-1.5 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">v1.0</span>
+        </div>
       </div>
     </div>
   );

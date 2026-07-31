@@ -7,6 +7,23 @@ import { useI18n } from '../lib/i18n';
 import { removePin, getStoredPinHash, getStoredPinUpdatedAt, setStoredPinHash } from '../lib/pin';
 import * as db from '../db/db';
 
+const getInitialUser = () => {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    const cachedStr = localStorage.getItem('tautanlumina:cached_user');
+    if (cachedStr) {
+      const cached = JSON.parse(cachedStr);
+      if (cached && cached.$id) {
+        db.setDatabaseUser(cached.$id);
+        return cached;
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to parse initial cached user:', e);
+  }
+  return null;
+};
+
 export function useAppwriteSync(
   items: FileSystemItem[],
   importJSON: (jsonStr: string, replace: boolean) => Promise<void>,
@@ -14,23 +31,6 @@ export function useAppwriteSync(
   loaded: boolean = true
 ) {
   const { t } = useI18n();
-  const getInitialUser = () => {
-    try {
-      const cachedUserStr = localStorage.getItem('tautanlumina:cached_user');
-      if (cachedUserStr) {
-        return JSON.parse(cachedUserStr);
-      }
-      const cachedEmail = localStorage.getItem('tautanlumina:current_user_email');
-      const cachedUserId = localStorage.getItem('tautanlumina:cached_user_id');
-      if (cachedUserId || cachedEmail) {
-        const uid = cachedUserId || (cachedEmail ? ('user_' + cachedEmail.replace(/[^a-zA-Z0-9]/g, '_')) : 'offline_user');
-        const email = cachedEmail || 'offline@lumina.app';
-        return { $id: uid, email, emailVerification: true, offlineMode: true };
-      }
-    } catch {}
-    return null;
-  };
-
   const initialUser = getInitialUser();
   const [user, setUser] = useState<any>(initialUser);
   const [loading, setLoading] = useState<boolean>(!initialUser);
@@ -38,10 +38,6 @@ export function useAppwriteSync(
   const autoSyncedUserRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (initialUser?.$id) {
-      db.setDatabaseUser(initialUser.$id).catch(() => {});
-    }
-
     account.get().then((res) => {
       if (!res.emailVerification) {
         account.deleteSession('current').finally(async () => {
@@ -63,43 +59,30 @@ export function useAppwriteSync(
           setLoading(false);
         });
       }
-    }).catch(async (err) => {
-      const cachedUserStr = localStorage.getItem('tautanlumina:cached_user');
-      const cachedEmail = localStorage.getItem('tautanlumina:current_user_email');
-      const cachedUserId = localStorage.getItem('tautanlumina:cached_user_id');
+    }).catch(async (err: any) => {
+      const isUnauthenticated = err?.code === 401 || err?.code === 403;
 
-      // Check if this error is an explicit 401 / session expired error from Appwrite server
-      const isExplicitUnauthorized = 
-        err?.code === 401 || 
-        err?.type === 'user_unauthorized' || 
-        err?.message?.toLowerCase().includes('unauthorized') ||
-        err?.message?.toLowerCase().includes('user (role: guests) missing scope');
-
-      if (!isExplicitUnauthorized && (cachedUserStr || cachedUserId || cachedEmail)) {
+      if (isUnauthenticated) {
+        // Explicit 401/403 from server means session is revoked or expired
+        await db.setDatabaseUser(null);
+        setUser(null);
+        localStorage.removeItem('tautanlumina:current_user_email');
+        localStorage.removeItem('tautanlumina:cached_user');
+        localStorage.removeItem('tautanlumina:cached_user_id');
+        window.dispatchEvent(new Event('tautanlumina:user_changed'));
+      } else {
+        // Offline or network error: keep initialUser / cached_user logged in!
+        const cachedUserStr = localStorage.getItem('tautanlumina:cached_user');
         if (cachedUserStr) {
           try {
             const cachedUser = JSON.parse(cachedUserStr);
-            await db.setDatabaseUser(cachedUser.$id);
-            setUser(cachedUser);
-            setLoading(false);
-            return;
+            if (cachedUser && cachedUser.$id) {
+              await db.setDatabaseUser(cachedUser.$id);
+              setUser(cachedUser);
+            }
           } catch {}
         }
-        const uid = cachedUserId || (cachedEmail ? ('user_' + cachedEmail.replace(/[^a-zA-Z0-9]/g, '_')) : 'offline_user');
-        const email = cachedEmail || 'offline@lumina.app';
-        const fallbackUser = { $id: uid, email, emailVerification: true, offlineMode: true };
-        await db.setDatabaseUser(uid);
-        setUser(fallbackUser);
-        setLoading(false);
-        return;
       }
-
-      await db.setDatabaseUser(null);
-      setUser(null);
-      localStorage.removeItem('tautanlumina:current_user_email');
-      localStorage.removeItem('tautanlumina:cached_user');
-      localStorage.removeItem('tautanlumina:cached_user_id');
-      window.dispatchEvent(new Event('tautanlumina:user_changed'));
       setLoading(false);
     });
   }, []);
@@ -543,7 +526,7 @@ export function useAppwriteSync(
           !navigator.onLine;
 
         let errorMsg = isNetworkOrServerErr 
-          ? t('toast.syncOffline')
+          ? (t('toast.syncError') || 'Gagal terhubung ke server Appwrite')
           : t('toast.syncError');
 
         const isDeveloper = targetUser?.email?.toLowerCase() === ADMIN_EMAIL;

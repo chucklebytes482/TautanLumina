@@ -346,6 +346,10 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
   const sendVoiceNote = async () => {
     if (!recordedAudioUrl && !isRecording) return;
 
+    if (!navigator.onLine) {
+      return;
+    }
+
     setIsUploadingAudio(true);
 
     if (recordedAudioUrl) {
@@ -832,6 +836,10 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
   const handleAddComment = async (announcementId: string, content: string, parentId?: string | null) => {
     if (!content.trim()) return;
 
+    if (!navigator.onLine) {
+      return;
+    }
+
     if (!isProOrAdmin && getUserCommentCountToday() >= 1) {
       alert(t('toast.proLimitComment') || 'Akun Free dibatasi maksimal 1 kali komentar per hari di pengumuman. Tingkatkan ke Pro untuk komentar tanpa batas.');
       return;
@@ -901,6 +909,9 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
   };
 
   const handleDeleteComment = async (announcementId: string, commentId: string) => {
+    if (!navigator.onLine) {
+      return;
+    }
     const updatedAnnouncements = announcements.map((ann) => {
       if ((ann.$id || ann.id) !== announcementId) return ann;
 
@@ -944,6 +955,10 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
   const handlePostAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin || !newAnnouncement.trim()) return;
+
+    if (!navigator.onLine) {
+      return;
+    }
 
     setPostingAnnouncement(true);
     const newItem: AnnouncementItem = {
@@ -1047,6 +1062,10 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
+
+    if (!navigator.onLine) {
+      return;
+    }
 
     if (!isAdmin && !isProOrAdmin && getUserPrivateMsgCountToday() >= 3) {
       alert(t('toast.proLimitPrivateMsg') || 'Akun Free dibatasi maksimal 3 kali kirim pesan pribadi per hari ke Admin. Tingkatkan ke Pro untuk pesan tanpa batas.');

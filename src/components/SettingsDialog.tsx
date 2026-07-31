@@ -555,7 +555,7 @@ export const SettingsDialog = ({
   const renderSyncTab = () => (
     <div className="space-y-4">
       <div>
-        <h4 className="text-sm font-semibold text-neutral-800 border-b border-neutral-100 pb-2">{t('sync.offline.title') || 'Offline File'}</h4>
+        <h4 className="text-sm font-semibold text-neutral-800 border-b border-neutral-100 pb-2">{t('sync.backup.title') || 'Cadangan & Berkas Data'}</h4>
         <div className="space-y-3 mt-4">
           <button
             onClick={onExport}

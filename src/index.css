@@ -302,3 +302,12 @@ button { cursor: pointer; }
   background-image: var(--bg-doodle);
   background-size: 400px 400px;
 }
+
+/* Hide offline notification elements if injected in DOM */
+div[class*="offline-banner"],
+div[class*="offline_banner"],
+div[id*="offline-banner"],
+[data-offline-banner],
+.offline-notification {
+  display: none !important;
+}

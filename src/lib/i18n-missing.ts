@@ -251,8 +251,8 @@ export const missingTranslations = {
       "import": {
         "desc": "Import data"
       },
-      "offline": {
-        "title": "Offline"
+      "backup": {
+        "title": "Data Backup"
       }
     },
     "toast": {
@@ -286,7 +286,8 @@ export const missingTranslations = {
       "moved": "Moved",
       "noBookmarksInFolder": "No bookmarks",
       "noteSaved": "Note saved",
-      "offlineModeNotice": "Offline Mode: Your notes & bookmarks remain stored and accessible locally.",
+      "offlineModeNotice": "Cloud Sync: Your notes & bookmarks are synced directly to Appwrite Cloud.",
+      "offlineReadonlyNotice": "Offline Mode (Read Only): Changes cannot be made while offline.",
       "onlineBack": "Reconnected! Starting automatic cloud sync...",
       "otpWait": "Please wait",
       "passwordChanged": "Password changed",
@@ -307,7 +308,7 @@ export const missingTranslations = {
       "syncCompleted": "Sync completed",
       "syncError": "Sync error",
       "syncing": "Syncing",
-      "syncOffline": "Sync offline",
+      "syncOffline": "Cloud sync",
       "syncSuccess": "Sync successful",
       "urlPasted": "URL pasted",
       "verifyEmailError": "Verification failed",
@@ -569,8 +570,8 @@ export const missingTranslations = {
       "import": {
         "desc": "Impor data"
       },
-      "offline": {
-        "title": "Offline"
+      "backup": {
+        "title": "Cadangan Data"
       }
     },
     "toast": {
@@ -604,7 +605,8 @@ export const missingTranslations = {
       "moved": "Dipindahkan",
       "noBookmarksInFolder": "Tidak ada markah",
       "noteSaved": "Catatan disimpan",
-      "offlineModeNotice": "Mode Luring: Catatan & markah Anda tetap tersimpan dan dapat diakses secara lokal.",
+      "offlineModeNotice": "Sinkronisasi Awan: Catatan & markah Anda tersinkronisasi langsung ke Appwrite Cloud.",
+      "offlineReadonlyNotice": "Mode Luring (Hanya Baca): Perubahan tidak dapat dilakukan saat offline.",
       "onlineBack": "Koneksi terhubung kembali. Memulai sinkronisasi otomatis...",
       "otpWait": "Mohon tunggu",
       "passwordChanged": "Kata sandi diubah",
@@ -625,7 +627,7 @@ export const missingTranslations = {
       "syncCompleted": "Sinkronisasi selesai",
       "syncError": "Kesalahan sinkron",
       "syncing": "Menyinkronkan",
-      "syncOffline": "Sinkron offline",
+      "syncOffline": "Sinkronisasi Awan",
       "syncSuccess": "Sinkronisasi berhasil",
       "urlPasted": "URL ditempel",
       "verifyEmailError": "Verifikasi gagal",
@@ -887,8 +889,8 @@ export const missingTranslations = {
       "import": {
         "desc": "导入数据"
       },
-      "offline": {
-        "title": "离线"
+      "backup": {
+        "title": "数据备份"
       }
     },
     "toast": {
@@ -922,7 +924,8 @@ export const missingTranslations = {
       "moved": "已移动",
       "noBookmarksInFolder": "无书签",
       "noteSaved": "笔记已保存",
-      "offlineModeNotice": "离线模式：您的笔记与书签保持在本地安全存储与访问。",
+      "offlineModeNotice": "云端同步：您的笔记与书签同步至 Appwrite 云端。",
+      "offlineReadonlyNotice": "离线模式（仅读）：离线状态下无法保存任何更改。",
       "onlineBack": "网络已恢复！正在启动自动云端同步...",
       "otpWait": "请稍候",
       "passwordChanged": "密码已更改",
@@ -943,7 +946,7 @@ export const missingTranslations = {
       "syncCompleted": "同步完成",
       "syncError": "同步错误",
       "syncing": "正在同步",
-      "syncOffline": "离线同步",
+      "syncOffline": "云端同步",
       "syncSuccess": "同步成功",
       "urlPasted": "网址已粘贴",
       "verifyEmailError": "验证失败",
@@ -1205,8 +1208,8 @@ export const missingTranslations = {
       "import": {
         "desc": "データをインポート"
       },
-      "offline": {
-        "title": "オフライン"
+      "backup": {
+        "title": "データバックアップ"
       }
     },
     "toast": {
@@ -1240,7 +1243,8 @@ export const missingTranslations = {
       "moved": "移動済み",
       "noBookmarksInFolder": "ブックマークなし",
       "noteSaved": "メモが保存されました",
-      "offlineModeNotice": "オフラインモード：メモやブックマークはローカルに保存され、オフラインでもアクセス可能です。",
+      "offlineModeNotice": "クラウド同期：メモやブックマークは Appwrite クラウドに同期されます。",
+      "offlineReadonlyNotice": "オフラインモード（読み取り専用）：オフライン時は変更を保存できません。",
       "onlineBack": "オンラインに復帰しました！自動クラウド同期を開始します...",
       "otpWait": "お待ちください",
       "passwordChanged": "パスワードが変更されました",
@@ -1261,7 +1265,7 @@ export const missingTranslations = {
       "syncCompleted": "同期完了",
       "syncError": "同期エラー",
       "syncing": "同期中",
-      "syncOffline": "オフライン同期",
+      "syncOffline": "クラウド同期",
       "syncSuccess": "同期成功",
       "urlPasted": "URLが貼り付けられました",
       "verifyEmailError": "確認失敗",
@@ -1522,8 +1526,8 @@ export const missingTranslations = {
       "import": {
         "desc": "데이터 가져오기"
       },
-      "offline": {
-        "title": "오프라인"
+      "backup": {
+        "title": "데이터 백업"
       }
     },
     "toast": {
@@ -1558,7 +1562,8 @@ export const missingTranslations = {
       "moved": "이동됨",
       "noBookmarksInFolder": "북마크 없음",
       "noteSaved": "노트 저장됨",
-      "offlineModeNotice": "오프라인 모드: 노트와 북마크가 기기에 안전하게 저장되어 오프라인에서도 이용 가능합니다.",
+      "offlineModeNotice": "클라우드 동기화: 노트와 북마크가 Appwrite 클라우드에 동기화됩니다.",
+      "offlineReadonlyNotice": "오프라인 모드 (읽기 전용): 오프라인 상태에서는 변경 사항을 저장할 수 없습니다.",
       "onlineBack": "인터넷이 다시 연결되었습니다! 자동 클라우드 동기화를 시작합니다...",
       "otpWait": "기다려 주세요",
       "passwordChanged": "비밀번호 변경됨",
@@ -1579,7 +1584,7 @@ export const missingTranslations = {
       "syncCompleted": "동기화 완료",
       "syncError": "동기화 오류",
       "syncing": "동기화 중",
-      "syncOffline": "오프라인 동기화",
+      "syncOffline": "클라우드 동기화",
       "syncSuccess": "동기화 성공",
       "urlPasted": "URL 붙여넣음",
       "verifyEmailError": "확인 실패",
@@ -1841,8 +1846,8 @@ export const missingTranslations = {
       "import": {
         "desc": "Импорт данных"
       },
-      "offline": {
-        "title": "Офлайн"
+      "backup": {
+        "title": "Резервное копирование"
       }
     },
     "toast": {
@@ -1876,7 +1881,8 @@ export const missingTranslations = {
       "moved": "Перемещено",
       "noBookmarksInFolder": "Нет закладок",
       "noteSaved": "Заметка сохранена",
-      "offlineModeNotice": "Автономный режим: ваши заметки и закладки сохранены локально и доступны без интернета.",
+      "offlineModeNotice": "Облачная синхронизация: заметки и закладки синхронизируются с Appwrite Cloud.",
+      "offlineReadonlyNotice": "Автономный режим (только чтение): изменения не могут быть сохранены в офлайне.",
       "onlineBack": "Соединение восстановлено! Запуск автоматической облачной синхронизации...",
       "otpWait": "Пожалуйста, подождите",
       "passwordChanged": "Пароль изменен",
@@ -1897,7 +1903,7 @@ export const missingTranslations = {
       "syncCompleted": "Синхронизация завершена",
       "syncError": "Ошибка синхронизации",
       "syncing": "Синхронизация...",
-      "syncOffline": "Синхронизация офлайн",
+      "syncOffline": "Облачная синхронизация",
       "syncSuccess": "Синхронизация успешна",
       "urlPasted": "URL вставлен",
       "verifyEmailError": "Ошибка подтверждения",
