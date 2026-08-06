@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import {
   Search,
@@ -45,13 +45,13 @@ import { loadKey, loadModel, loadEndpoint, generateBookmarkData } from './lib/ai
 import { hasPinSet, removePin, usePinState } from './lib/pin';
 import { isNetscapeBookmarkHTML } from './lib/bookmarkParser';
 
-const FolderPicker = lazy(() => import('./components/FolderPicker').then((m) => ({ default: m.FolderPicker })));
-const SettingsDialog = lazy(() => import('./components/SettingsDialog').then((m) => ({ default: m.SettingsDialog })));
-const PinModal = lazy(() => import('./components/PinModal').then((m) => ({ default: m.PinModal })));
-const MoveKeypadModal = lazy(() => import('./components/MoveKeypadModal').then((m) => ({ default: m.MoveKeypadModal })));
-const EditBookmarkModal = lazy(() => import('./components/EditBookmarkModal').then((m) => ({ default: m.EditBookmarkModal })));
-const FullscreenChatModal = lazy(() => import('./components/FullscreenChatModal').then((m) => ({ default: m.FullscreenChatModal })));
-const FullscreenGuideModal = lazy(() => import('./components/FullscreenGuideModal').then((m) => ({ default: m.FullscreenGuideModal })));
+import { FolderPicker } from './components/FolderPicker';
+import { SettingsDialog } from './components/SettingsDialog';
+import { PinModal } from './components/PinModal';
+import { MoveKeypadModal } from './components/MoveKeypadModal';
+import { EditBookmarkModal } from './components/EditBookmarkModal';
+import { FullscreenChatModal } from './components/FullscreenChatModal';
+import { FullscreenGuideModal } from './components/FullscreenGuideModal';
 
 export default function App() {
   const fs = useFileSystem();
@@ -1080,7 +1080,6 @@ export default function App() {
         />
       )}
 
-      <Suspense fallback={null}>
         {pickerConfig && (
           <FolderPicker
             items={items}
@@ -1181,9 +1180,6 @@ export default function App() {
             }}
           />
         )}
-
-
-      </Suspense>
       </main>
     </div>
   );

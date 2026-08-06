@@ -621,10 +621,11 @@ export const SettingsDialog = ({
     );
   };
 
-  const NavItem = ({ id, icon: Icon, label }: { id: TabType, icon: any, label: string }) => {
+  const renderNavItem = (id: TabType, Icon: any, label: string) => {
     const isActive = activeTab === id;
     return (
       <button
+        key={id ?? 'all'}
         onClick={() => setActiveTab(id)}
         className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
           isActive 
@@ -655,15 +656,15 @@ export const SettingsDialog = ({
 
           <div className="mb-6">
             <div className="space-y-1">
-              <NavItem id={null} icon={LayoutGrid} label={t('menu.all')} />
+              {renderNavItem(null, LayoutGrid, t('menu.all'))}
             </div>
           </div>
 
           <div className="mb-6">
             <div className="px-3 mb-2 text-[11px] font-bold tracking-widest text-neutral-400 uppercase">{t('menu.general')}</div>
             <div className="space-y-1">
-              <NavItem id="api" icon={Key} label={t('menu.api')} />
-              <NavItem id="sync" icon={RefreshCw} label={t('menu.sync') || 'Sync'} />
+              {renderNavItem('api', Key, t('menu.api'))}
+              {renderNavItem('sync', RefreshCw, t('menu.sync') || 'Sync')}
               {onOpenGuide && (
                 <button
                   onClick={() => {
@@ -682,8 +683,8 @@ export const SettingsDialog = ({
           <div>
             <div className="px-3 mb-2 text-[11px] font-bold tracking-widest text-neutral-400 uppercase">{t('menu.personal')}</div>
             <div className="space-y-1">
-              <NavItem id="wallet" icon={Crown} label={t('menu.wallet')} />
-              <NavItem id="profile" icon={User} label={t('menu.profile')} />
+              {renderNavItem('wallet', Crown, t('menu.wallet'))}
+              {renderNavItem('profile', User, t('menu.profile'))}
             </div>
           </div>
         </div>
