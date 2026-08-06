@@ -61,12 +61,15 @@
   <body>
     <div id="root">
       <!-- App Loading Splash State (Replaced immediately when React mounts) -->
-      <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #faf8f5; font-family: system-ui, -apple-system, sans-serif; color: #131313; padding: 20px; text-align: center;">
-        <div style="width: 56px; height: 56px; background-color: #FF4F00; border-radius: 16px; display: flex; items-center; justify-content: center; box-shadow: 0 10px 25px rgba(255, 79, 0, 0.3); margin-bottom: 16px; animation: pulse 1.8s infinite ease-in-out;">
+      <div id="initial-splash" style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #faf8f5; font-family: system-ui, -apple-system, sans-serif; color: #131313; padding: 20px; text-align: center;">
+        <div style="width: 56px; height: 56px; background-color: #FF4F00; border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(255, 79, 0, 0.3); margin-bottom: 16px; animation: pulse 1.8s infinite ease-in-out;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
         </div>
         <div style="font-weight: 800; font-size: 20px; letter-spacing: -0.5px; color: #131313; margin-bottom: 4px;">TautanLumina</div>
-        <div style="font-size: 12px; font-weight: 600; color: #FF4F00; text-transform: uppercase; letter-spacing: 0.5px;">Memuat Aplikasi...</div>
+        <div id="splash-subtext" style="font-size: 12px; font-weight: 600; color: #FF4F00; text-transform: uppercase; letter-spacing: 0.5px;">Memuat Aplikasi...</div>
+        <div id="splash-reload" style="display: none; margin-top: 16px;">
+          <button onclick="window.location.reload(true)" style="padding: 8px 18px; background-color: #FF4F00; color: #ffffff; font-weight: 600; font-size: 13px; border: none; border-radius: 10px; cursor: pointer; shadow: 0 4px 12px rgba(255,79,0,0.2);">Muat Ulang Aplikasi</button>
+        </div>
         <style>
           @keyframes pulse {
             0%, 100% { transform: scale(1); opacity: 1; }
@@ -76,5 +79,17 @@
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Fallback timeout: if React hasn't replaced initial splash in 5s, offer manual reload
+      setTimeout(function() {
+        var splash = document.getElementById('initial-splash');
+        if (splash) {
+          var reloadBtn = document.getElementById('splash-reload');
+          var subtext = document.getElementById('splash-subtext');
+          if (subtext) subtext.innerText = 'MEMUAT AGAK LAMA...';
+          if (reloadBtn) reloadBtn.style.display = 'block';
+        }
+      }, 5000);
+    </script>
   </body>
 </html>

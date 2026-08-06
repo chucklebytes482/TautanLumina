@@ -1,7 +1,13 @@
 import { Client, Account, Databases, Storage } from 'appwrite';
 
 // Obfuscated config resolver to prevent plain text static string extraction & runtime injection
-const _d = (s: string) => typeof window !== 'undefined' && window.atob ? window.atob(s) : Buffer.from(s, 'base64').toString('utf-8');
+const _d = (s: string) => {
+  try {
+    if (typeof atob === 'function') return atob(s);
+    if (typeof window !== 'undefined' && typeof window.atob === 'function') return window.atob(s);
+  } catch {}
+  return s;
+};
 
 const _config = Object.freeze({
   ep: _d('aHR0cHM6Ly9zZ3AuY2xvdWQuYXBwd3JpdGUuaW8vdjE='),

@@ -33,19 +33,16 @@ try {
   /* ignore */
 }
 
+// Safely initialize mobile drag drop polyfill
 try {
-  mobileDndPolyfill({
-    holdToDrag: 300,
-    dragImageTranslateOverride: undefined as unknown as never,
-  });
-  window.addEventListener('touchmove', () => {}, { passive: false });
+  mobileDndPolyfill({ holdToDrag: 300 });
 } catch (err) {
   console.warn('Polyfill init skipped:', err);
 }
 
 // Register Service Worker for PWA Offline Access
 try {
-  if ('serviceWorker' in navigator) {
+  if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js').catch((err) => {
         console.warn('SW registration failed:', err);
@@ -56,15 +53,19 @@ try {
   console.warn('SW init skipped:', err);
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ErrorBoundary>
-      <I18nProvider>
-        <DialogProvider>
-          <Toaster position="top-center" richColors duration={1500} visibleToasts={1} toastOptions={{ duration: 1500 }} />
-          <App />
-        </DialogProvider>
-      </I18nProvider>
-    </ErrorBoundary>
-  </StrictMode>,
-);
+const container = document.getElementById('root');
+if (container) {
+  const root = createRoot(container);
+  root.render(
+    <StrictMode>
+      <ErrorBoundary>
+        <I18nProvider>
+          <DialogProvider>
+            <Toaster position="top-center" richColors duration={1500} visibleToasts={1} toastOptions={{ duration: 1500 }} />
+            <App />
+          </DialogProvider>
+        </I18nProvider>
+      </ErrorBoundary>
+    </StrictMode>
+  );
+}

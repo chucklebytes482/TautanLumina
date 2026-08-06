@@ -16,55 +16,60 @@ export const useFileSystem = () => {
   const [loaded, setLoaded] = useState(false);
 
   const reload = useCallback(async () => {
-    let all = await db.getAllItems();
-    
-    let changed = false;
-    const catatanExists = all.some(it => it.id === 'folder-catatan');
-    if (!catatanExists) {
-      const folderCatatan: FileSystemItem = {
-        id: 'folder-catatan',
-        parentId: null,
-        name: 'Note',
-        type: 'folder',
-        order: 0,
-        createdAt: 0,
-        updatedAt: Date.now(),
-      };
-      await db.saveItem(folderCatatan);
-      changed = true;
-    }
+    try {
+      let all = await db.getAllItems();
+      
+      let changed = false;
+      const catatanExists = all.some(it => it.id === 'folder-catatan');
+      if (!catatanExists) {
+        const folderCatatan: FileSystemItem = {
+          id: 'folder-catatan',
+          parentId: null,
+          name: 'Note',
+          type: 'folder',
+          order: 0,
+          createdAt: 0,
+          updatedAt: Date.now(),
+        };
+        await db.saveItem(folderCatatan);
+        changed = true;
+      }
 
-    const helloWorldExists = all.some(it => it.id === 'folder-hello-world');
-    if (!helloWorldExists) {
-      const folderHelloWorld: FileSystemItem = {
-        id: 'folder-hello-world',
-        parentId: null,
-        name: 'hello world',
-        type: 'folder',
-        order: 1,
-        createdAt: 0,
-        updatedAt: Date.now(),
-      };
-      await db.saveItem(folderHelloWorld);
-      changed = true;
-    }
+      const helloWorldExists = all.some(it => it.id === 'folder-hello-world');
+      if (!helloWorldExists) {
+        const folderHelloWorld: FileSystemItem = {
+          id: 'folder-hello-world',
+          parentId: null,
+          name: 'hello world',
+          type: 'folder',
+          order: 1,
+          createdAt: 0,
+          updatedAt: Date.now(),
+        };
+        await db.saveItem(folderHelloWorld);
+        changed = true;
+      }
 
-    if (changed) {
-      all = await db.getAllItems();
-    }
+      if (changed) {
+        all = await db.getAllItems();
+      }
 
-    const invalidFolders = all.filter(it => it.type === 'folder' && !it.name?.trim());
-    if (invalidFolders.length > 0) {
-      invalidFolders.forEach(it => {
-        it.name = 'Folder';
-        it.updatedAt = Date.now();
-      });
-      await db.saveItems(invalidFolders);
-      all = await db.getAllItems();
-    }
+      const invalidFolders = all.filter(it => it.type === 'folder' && !it.name?.trim());
+      if (invalidFolders.length > 0) {
+        invalidFolders.forEach(it => {
+          it.name = 'Folder';
+          it.updatedAt = Date.now();
+        });
+        await db.saveItems(invalidFolders);
+        all = await db.getAllItems();
+      }
 
-    setItems(all);
-    setLoaded(true);
+      setItems(all);
+    } catch (e) {
+      console.warn('Failed to load file system items:', e);
+    } finally {
+      setLoaded(true);
+    }
   }, []);
 
   useEffect(() => {

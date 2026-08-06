@@ -38,19 +38,30 @@ export function useAppwriteSync(
   const autoSyncedUserRef = useRef<string | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+
+    // Safety timeout: Never leave loading true for more than 3 seconds
+    const timer = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 3000);
+
     account.get().then((res) => {
+      if (!mounted) return;
       if (!res.emailVerification) {
         account.deleteSession('current').finally(async () => {
           await db.setDatabaseUser(null);
-          setUser(null);
-          localStorage.removeItem('tautanlumina:current_user_email');
-          localStorage.removeItem('tautanlumina:cached_user');
-          localStorage.removeItem('tautanlumina:cached_user_id');
-          window.dispatchEvent(new Event('tautanlumina:user_changed'));
-          setLoading(false);
+          if (mounted) {
+            setUser(null);
+            localStorage.removeItem('tautanlumina:current_user_email');
+            localStorage.removeItem('tautanlumina:cached_user');
+            localStorage.removeItem('tautanlumina:cached_user_id');
+            window.dispatchEvent(new Event('tautanlumina:user_changed'));
+            setLoading(false);
+          }
         });
       } else {
         db.setDatabaseUser(res.$id).then(() => {
+          if (!mounted) return;
           setUser(res);
           localStorage.setItem('tautanlumina:current_user_email', res.email);
           localStorage.setItem('tautanlumina:cached_user', JSON.stringify(res));
@@ -60,6 +71,7 @@ export function useAppwriteSync(
         });
       }
     }).catch(async (err: any) => {
+      if (!mounted) return;
       const isUnauthenticated = err?.code === 401 || err?.code === 403;
 
       if (isUnauthenticated) {
@@ -84,7 +96,15 @@ export function useAppwriteSync(
         }
       }
       setLoading(false);
+    }).finally(() => {
+      clearTimeout(timer);
+      if (mounted) setLoading(false);
     });
+
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+    };
   }, []);
 
   const verifyEmail = async (userId: string, secret: string) => {

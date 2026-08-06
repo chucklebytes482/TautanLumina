@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tautanlumina-v1';
+const CACHE_NAME = 'tautanlumina-v2';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -60,31 +60,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets (js, css, svg, icons, images, fonts): Cache first, fallback to network
+  // Static assets (js, css, svg, icons, images, fonts): Network first, fallback to cache
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Fetch background update to keep cache fresh
-        fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.ok) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
-          }
-        }).catch(() => {/* ignore background update error */});
-        return cachedResponse;
-      }
-
-      return fetch(event.request).then((networkResponse) => {
+    fetch(event.request)
+      .then((networkResponse) => {
         if (networkResponse && networkResponse.ok && event.request.url.startsWith(self.location.origin)) {
           const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
         }
         return networkResponse;
-      }).catch(() => {
-        // Return fallback if offline and asset not cached
-        if (event.request.headers.get('accept')?.includes('text/html')) {
-          return caches.match('/index.html');
-        }
-      });
-    })
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse;
+          if (event.request.headers.get('accept')?.includes('text/html')) {
+            return caches.match('/index.html');
+          }
+        });
+      })
   );
 });
