@@ -388,7 +388,13 @@ export default function App() {
           const apiKey = loadKey();
           const model = loadModel();
           const endpoint = loadEndpoint();
-          const { title } = await generateBookmarkData(
+
+          if (!apiKey) {
+            sonnerToast.info(t('ai.noKeyNotice') || 'Bookmark disimpan. (Atur API Key AI di Pengaturan untuk penamaan otomatis)', { duration: 3500 });
+            return;
+          }
+
+          const { title, error } = await generateBookmarkData(
             apiKey,
             model,
             endpoint,
@@ -396,11 +402,15 @@ export default function App() {
             t('ai.bookmarkPrompt'),
             domain
           );
-          if (title) {
+
+          if (error) {
+            sonnerToast.error(`Status AI: ${error}`, { duration: 4500 });
+          } else if (title) {
             await updateItem(newItem.id, { name: title });
+            sonnerToast.success(`AI Title: "${title}"`, { duration: 2500 });
           }
-        } catch {
-          // Keep domain name on AI failure
+        } catch (err: any) {
+          sonnerToast.error(`Status AI: ${err?.message || 'Error AI'}`, { duration: 4500 });
         }
       })();
     } catch (e: any) {
@@ -692,11 +702,24 @@ export default function App() {
     const confirmed = await customConfirm(confirmMessage);
     if (!confirmed) return;
 
-    const toastId = sonnerToast.loading(t('toast.regenerating') || 'Regenerasi judul bookmark...');
+    const toastId = sonnerToast.loading(t('toast.regenerating') || 'Regenerasi judul bookmark dengan AI...');
     try {
       const apiKey = loadKey();
       const model = loadModel();
       const endpoint = loadEndpoint();
+
+      if (!apiKey) {
+        sonnerToast.error('Gagal: API Key AI belum diisi di Pengaturan.', { id: toastId, duration: 4000 });
+        return;
+      }
+      if (!model) {
+        sonnerToast.error('Gagal: Model AI belum dipilih di Pengaturan.', { id: toastId, duration: 4000 });
+        return;
+      }
+
+      let firstAiError: string | null = null;
+      let successCount = 0;
+      let failCount = 0;
 
       const updates: { id: string; updates: Partial<FileSystemItem> }[] = [];
 
@@ -713,7 +736,7 @@ export default function App() {
             } catch {}
 
             try {
-              const { title } = await generateBookmarkData(
+              const { title, error } = await generateBookmarkData(
                 apiKey,
                 model,
                 endpoint,
@@ -721,11 +744,23 @@ export default function App() {
                 t('ai.bookmarkPrompt'),
                 fallbackDomain
               );
-              updates.push({
-                id: bm.id,
-                updates: { name: title || fallbackDomain },
-              });
-            } catch {
+              if (error) {
+                if (!firstAiError) firstAiError = error;
+                failCount++;
+                updates.push({
+                  id: bm.id,
+                  updates: { name: fallbackDomain },
+                });
+              } else {
+                successCount++;
+                updates.push({
+                  id: bm.id,
+                  updates: { name: title || fallbackDomain },
+                });
+              }
+            } catch (err: any) {
+              if (!firstAiError) firstAiError = err?.message || 'Error AI';
+              failCount++;
               updates.push({
                 id: bm.id,
                 updates: { name: fallbackDomain },
@@ -746,9 +781,15 @@ export default function App() {
         localStorage.setItem(countKey, (currentCount + 1).toString());
       }
 
-      sonnerToast.success(t('toast.regenerated') || 'Judul berhasil diperbarui!', { id: toastId, duration: 2000 });
-    } catch (e) {
-      sonnerToast.error(t('toast.syncError') || 'Gagal memperbarui', { id: toastId, duration: 2000 });
+      if (firstAiError && successCount === 0) {
+        sonnerToast.error(`Gagal AI: ${firstAiError}`, { id: toastId, duration: 5000 });
+      } else if (firstAiError) {
+        sonnerToast.warning(`Selesai (${successCount} sukses, ${failCount} gagal): ${firstAiError}`, { id: toastId, duration: 4500 });
+      } else {
+        sonnerToast.success(t('toast.regenerated') || 'Judul berhasil diperbarui!', { id: toastId, duration: 2500 });
+      }
+    } catch (e: any) {
+      sonnerToast.error(`Gagal: ${e?.message || t('toast.syncError')}`, { id: toastId, duration: 4000 });
     }
   };
 

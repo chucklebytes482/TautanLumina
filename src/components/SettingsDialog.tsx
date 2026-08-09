@@ -28,7 +28,7 @@ import { SubscriptionCard } from './SubscriptionCard';
 import { FileSystemItem } from '../Types';
 import { toast } from 'sonner';
 
-import { loadKey, loadModel, loadEndpoint, loadModelHistory, saveKey, saveModel, saveEndpoint, fetchAvailableModels } from '../lib/ai';
+import { loadKey, loadModel, loadEndpoint, loadModelHistory, saveKey, saveModel, saveEndpoint, fetchAvailableModels, callAI } from '../lib/ai';
 import { useI18n } from '../lib/i18n';
 import { usePinState } from '../lib/pin';
 
@@ -147,6 +147,44 @@ export const SettingsDialog = ({
     }
   };
 
+  const [testingAi, setTestingAi] = useState(false);
+
+  const handleTestAiStatus = async () => {
+    if (!apiKey || !apiKey.trim()) {
+      toast.error('API Key belum diisi. Tempel atau masukkan API Key terlebih dahulu.');
+      return;
+    }
+    setTestingAi(true);
+    const toastId = toast.loading('Memeriksa status API Key, koneksi server, & saldo AI...');
+    try {
+      const list = await fetchAvailableModels(endpoint, apiKey);
+      if (list && list.length > 0) {
+        setFetchedModels(list);
+      }
+
+      const testModel = model ? model.trim() : (list[0] || 'google/gemini-2.5-flash');
+      await callAI({
+        apiKey: apiKey.trim(),
+        model: testModel,
+        endpoint: endpoint.trim(),
+        prompt: 'test status ok',
+        maxTokens: 5,
+      });
+
+      toast.success(`API Key & Status AI Aktif!\nModel "${testModel}" merespons. Saldo/Kuota Tersedia.`, {
+        id: toastId,
+        duration: 4000,
+      });
+    } catch (err: any) {
+      toast.error(`Status AI: ${err.message || 'Gagal terhubung'}`, {
+        id: toastId,
+        duration: 5000,
+      });
+    } finally {
+      setTestingAi(false);
+    }
+  };
+
   const handleSaveSettings = () => {
     saveKey(apiKey.trim());
     saveModel(model.trim());
@@ -256,12 +294,25 @@ export const SettingsDialog = ({
         </button>
       </div>
 
-      <button
-        onClick={handleSaveSettings}
-        className="w-full flex items-center justify-center gap-2 bg-[#ff4f00] hover:bg-[#e04500] text-white font-semibold py-3 px-4 rounded-xl text-sm transition-all mt-2 shadow-sm shadow-[#ff4f00]/25 cursor-pointer"
-      >
-        <Save size={18} /> {t('settings.api.save')}
-      </button>
+      <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+        <button
+          type="button"
+          disabled={testingAi}
+          onClick={handleTestAiStatus}
+          className="w-full sm:w-1/2 flex items-center justify-center gap-2 border border-[#e2ddd5] hover:border-[#ff4f00] bg-white hover:bg-[#fff0eb] text-neutral-800 hover:text-[#ff4f00] font-semibold py-3 px-3 rounded-xl text-xs transition-all cursor-pointer shadow-2xs"
+        >
+          {testingAi ? <Loader2 size={16} className="animate-spin text-[#ff4f00]" /> : <RefreshCw size={16} />}
+          <span>Cek Status & Saldo AI</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleSaveSettings}
+          className="w-full sm:w-1/2 flex items-center justify-center gap-2 bg-[#ff4f00] hover:bg-[#e04500] text-white font-semibold py-3 px-4 rounded-xl text-xs transition-all shadow-sm shadow-[#ff4f00]/25 cursor-pointer"
+        >
+          <Save size={16} /> {t('settings.api.save')}
+        </button>
+      </div>
 
       {/* Jendela Modal Memuat Model dari Sumber */}
       {isModelPickerOpen && (

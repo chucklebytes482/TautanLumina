@@ -1,7 +1,8 @@
 export const missingTranslations = {
   "en": {
     "ai": {
-      "bookmarkPrompt": "Analyze this URL and return a concise, clean title (maximum 15 characters) for the following URL: {url}"
+      "bookmarkPrompt": "Analyze this URL and return a concise, clean title (maximum 15 characters) for the following URL: {url}",
+      "noKeyNotice": "Bookmark saved. (Set AI Key in Settings for auto-titling)"
     },
     "action": {
       "cancel": "Cancel",
@@ -325,7 +326,8 @@ export const missingTranslations = {
   },
   "id": {
     "ai": {
-      "bookmarkPrompt": "Analisis URL ini dan berikan judul yang ringkas dan jelas (maksimal 15 karakter) untuk URL berikut: {url}"
+      "bookmarkPrompt": "Analisis URL ini dan berikan judul yang ringkas dan jelas (maksimal 15 karakter) untuk URL berikut: {url}",
+      "noKeyNotice": "Bookmark disimpan. (Atur API Key AI di Pengaturan untuk penamaan otomatis)"
     },
     "action": {
       "cancel": "Batal",
@@ -649,7 +651,8 @@ export const missingTranslations = {
   },
   "zh": {
     "ai": {
-      "bookmarkPrompt": "分析此URL，并为以下URL返回简洁清晰的标题（最多15个字符）：{url}"
+      "bookmarkPrompt": "分析此URL，并为以下URL返回简洁清晰的标题（最多15个字符）：{url}",
+      "noKeyNotice": "书签已保存。（在设置中配置 AI 密钥以自动命名）"
     },
     "action": {
       "cancel": "取消",
@@ -973,7 +976,8 @@ export const missingTranslations = {
   },
   "ja": {
     "ai": {
-      "bookmarkPrompt": "このURLを分析し、以下のURLの簡潔で明確なタイトル（最大15文字）を返してください：{url}"
+      "bookmarkPrompt": "このURLを分析し、以下のURLの簡潔で明確なタイトル（最大15文字）を返してください：{url}",
+      "noKeyNotice": "ブックマークを保存しました。（自動命名用に設定で AI キーを設定してください）"
     },
     "action": {
       "cancel": "キャンセル",
@@ -1297,7 +1301,8 @@ export const missingTranslations = {
   },
   "ko": {
     "ai": {
-      "bookmarkPrompt": "이 URL을 분석하여 다음 URL에 대한 간결하고 명확한 제목(최대 15자)을 반환하세요: {url}"
+      "bookmarkPrompt": "이 URL을 분석하여 다음 URL에 대한 간결하고 명확한 제목(최대 15자)을 반환하세요: {url}",
+      "noKeyNotice": "북마크가 저장되었습니다. (자동 제목 생성을 위해 설정에서 AI 키를 설정하세요)"
     },
     "action": {
       "cancel": "취소",
@@ -1621,7 +1626,8 @@ export const missingTranslations = {
   },
   "ru": {
     "ai": {
-      "bookmarkPrompt": "Проанализируйте этот URL и верните понятный заголовок (максимум 15 символов) для следующего URL: {url}"
+      "bookmarkPrompt": "Проанализируйте этот URL и верните понятный заголовок (максимум 15 символов) для следующего URL: {url}",
+      "noKeyNotice": "Закладка сохранена. (Установите ключ AI в Настройках для автоименования)"
     },
     "action": {
       "cancel": "Отмена",
