@@ -38,30 +38,30 @@ export const GuideTabContent: React.FC = () => {
         content: `
 ### Selamat datang di TautanLumina ✨
 
-**TautanLumina** adalah aplikasi penyimpan tautan (bookmark) dan catatan pribadi yang cepat, minimalis, dan cerdas.
+**TautanLumina** adalah aplikasi penyimpan tautan (bookmark) dan catatan pribadi yang cepat dan minimalis.
 
 #### 🚀 Fitur Utama Unggulan:
-* **Penamaan AI Otomatis**: Menghasilkan judul ringkas otomatis (maksimal 15 karakter) untuk URL yang disimpan.
+* **Penamaan Otomatis dari URL**: Secara otomatis mengambil nama judul dari alamat URL yang disimpan dengan mengecualikan \`https/\`, garis miring (\`/\`), dan titik (\`.\`).
 * **Organisasi Folder & Posisi**: Susun item dalam folder kustom dan urutkan posisi dengan presisi menggunakan papan angka (Keypad Move).
 * **Perlindungan PIN Folder**: Kunci folder sensitif menggunakan PIN 4 digit yang aman.
-* **Chat AI & Voice Note**: Berinteraksi dengan AI dan kirim pesan suara hingga 30 detik dengan fitur pratinjau sebelum dikirim.
+* **Pesan Suara (Voice Note)**: Kirim pesan suara hingga 30 detik dengan fitur pratinjau sebelum dikirim.
 * **Akses Luring & Sinkronisasi Awan**: Tersinkronisasi otomatis ke Awan Appwrite saat terhubung internet.
         `
       },
       bookmarks: {
-        title: 'Bookmark & Penamaan AI',
-        subtitle: 'Cara menambah, mengedit, dan menggunakan AI title',
+        title: 'Bookmark & Penamaan URL',
+        subtitle: 'Cara menambah, mengedit, dan otomatisasi judul dari URL',
         icon: Sparkles,
         content: `
 ### Cara Menambah & Mengelola Bookmark
 
 1. **Menambah Bookmark**:
    * Tempelkan tautan URL langsung ke kolom pencarian / input utama di bagian atas.
-   * Tekan tombol **+ Bookmark**. AI secara otomatis menganalisis URL dan membuat judul ringkas (maksimal 15 karakter).
+   * Tekan tombol **+ Bookmark**. Aplikasi secara otomatis mengekstrak judul dari URL (mengecualikan \`https/\`, garis miring, dan titik).
 
-2. **Generate Ulang & Edit Judul & URL**:
+2. **Format Ulang & Edit Judul & URL**:
    * Klik tombol **Titik Tiga (\`...\`)** pada kartu bookmark.
-   * Pilih **Generate Ulang Judul** untuk meminta AI membuat judul baru.
+   * Pilih **Format Ulang Judul** untuk memperbarui judul dari URL.
    * Pilih **Edit Judul & URL** untuk mengubah nama atau URL bookmark secara manual.
 
 💡 *Tips: Kolom pencarian utama mendukung penyaringan cepat judul bookmark dan nama catatan secara real-time.*
@@ -107,19 +107,16 @@ export const GuideTabContent: React.FC = () => {
         `
       },
       chat: {
-        title: 'Chat AI & Pesan Suara',
-        subtitle: 'Dukungan model AI, voice recorder 30 detik, & pratinjau',
+        title: 'Pesan Suara & Komunikasi',
+        subtitle: 'Voice recorder 30 detik & pratinjau sebelum dikirim',
         icon: MessageSquare,
         content: `
-### Fitur Chat AI & Voice Chat
+### Fitur Pesan Suara & Komunikasi
 
 1. **Membuka Chat**:
    * Buka jendela **Pesan** atau **Pengumuman** dari menu utama.
 
-2. **Memilih Model AI**:
-   * Buka menu **Model AI** untuk memilih model AI gratis atau pro. Daftar model diurutkan berdasarkan peringkat skor kualitas terbaik secara otomatis.
-
-3. **Voice Note (Pesan Suara)**:
+2. **Voice Note (Pesan Suara)**:
    * Tekan ikon mikrofon untuk merekam suara.
    * **Maksimal 30 detik**: Perekaman otomatis berhenti di detik ke-30.
    * **Pratinjau Suara**: Setelah rekam, Anda dapat *Memutar/Mendengarkan* pratinjau atau *Membatalkan* sebelum mengeklik **Kirim**.

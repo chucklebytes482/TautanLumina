@@ -41,7 +41,7 @@ import { useI18n, languages } from './lib/i18n';
 import { ADMIN_EMAIL } from './lib/appwrite';
 
 import { FileSystemItem } from './Types';
-import { loadKey, loadModel, loadEndpoint, generateBookmarkData } from './lib/ai';
+import { extractTitleFromUrl } from './lib/titleExtractor';
 import { hasPinSet, removePin, usePinState } from './lib/pin';
 import { isNetscapeBookmarkHTML } from './lib/bookmarkParser';
 
@@ -97,7 +97,7 @@ export default function App() {
   >(null);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'api' | 'wallet' | 'profile' | 'sync' | null>(null);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'wallet' | 'profile' | 'sync' | null>(null);
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showChatPopup, setShowChatPopup] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
@@ -372,47 +372,11 @@ export default function App() {
     if (!url || !url.trim()) return;
     
     const finalUrl = url.trim().startsWith('http') ? url.trim() : `https://${url.trim()}`;
-    
-    let domain = t('file.bookmark') || 'Bookmark';
-    try {
-      domain = new URL(finalUrl).hostname;
-    } catch {}
+    const autoTitle = extractTitleFromUrl(finalUrl);
 
     try {
-      const newItem = await createItem(domain, 'file', currentFolderId, finalUrl);
+      await createItem(autoTitle, 'file', currentFolderId, finalUrl);
       showToast(t('toast.bookmarkSaved'));
-
-      // Background AI generation
-      (async () => {
-        try {
-          const apiKey = loadKey();
-          const model = loadModel();
-          const endpoint = loadEndpoint();
-
-          if (!apiKey) {
-            sonnerToast.info(t('ai.noKeyNotice') || 'Bookmark disimpan. (Atur API Key AI di Pengaturan untuk penamaan otomatis)', { duration: 3500 });
-            return;
-          }
-
-          const { title, error } = await generateBookmarkData(
-            apiKey,
-            model,
-            endpoint,
-            finalUrl,
-            t('ai.bookmarkPrompt'),
-            domain
-          );
-
-          if (error) {
-            sonnerToast.error(`Status AI: ${error}`, { duration: 4500 });
-          } else if (title) {
-            await updateItem(newItem.id, { name: title });
-            sonnerToast.success(`AI Title: "${title}"`, { duration: 2500 });
-          }
-        } catch (err: any) {
-          sonnerToast.error(`Status AI: ${err?.message || 'Error AI'}`, { duration: 4500 });
-        }
-      })();
     } catch (e: any) {
       showToast(e?.message || t('toast.bookmarkSaveFailed'));
     }
@@ -661,16 +625,6 @@ export default function App() {
 
   const handleRegenerateFolder = async (folderId: string) => {
     if (guardOffline()) return;
-    const isProOrAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || user?.prefs?.proStatus === 'pro';
-    if (!isProOrAdmin) {
-      const todayStr = new Date().toISOString().split('T')[0];
-      const countKey = `tautanlumina:regenerate_count_${todayStr}`;
-      const currentCount = parseInt(localStorage.getItem(countKey) || '0', 10);
-      if (currentCount >= 2) {
-        sonnerToast.error(t('toast.proLimitRegenerate') || 'Batas 2x generate ulang per hari untuk akun Free tercapai. Tingkatkan ke Pro untuk tanpa batas.');
-        return;
-      }
-    }
 
     const targetFolder = items.find((i) => i.id === folderId);
     if (targetFolder && isNoteFolderOrSubfolder(targetFolder)) {
@@ -698,99 +652,24 @@ export default function App() {
     }
 
     const folderName = targetFolder?.name || 'folder ini';
-    const confirmMessage = `Generate ulang judul AI untuk ${folderBookmarks.length} bookmark di "${folderName}"?`;
+    const confirmMessage = `Format ulang judul untuk ${folderBookmarks.length} bookmark di "${folderName}" berdasarkan URL?`;
     const confirmed = await customConfirm(confirmMessage);
     if (!confirmed) return;
 
-    const toastId = sonnerToast.loading(t('toast.regenerating') || 'Regenerasi judul bookmark dengan AI...');
-    try {
-      const apiKey = loadKey();
-      const model = loadModel();
-      const endpoint = loadEndpoint();
+    const updates = folderBookmarks.map((bm) => {
+      const url = bm.content?.trim() || bm.name;
+      const finalUrl = url.startsWith('http') ? url : `https://${url}`;
+      return {
+        id: bm.id,
+        updates: { name: extractTitleFromUrl(finalUrl) },
+      };
+    });
 
-      if (!apiKey) {
-        sonnerToast.error('Gagal: API Key AI belum diisi di Pengaturan.', { id: toastId, duration: 4000 });
-        return;
-      }
-      if (!model) {
-        sonnerToast.error('Gagal: Model AI belum dipilih di Pengaturan.', { id: toastId, duration: 4000 });
-        return;
-      }
-
-      let firstAiError: string | null = null;
-      let successCount = 0;
-      let failCount = 0;
-
-      const updates: { id: string; updates: Partial<FileSystemItem> }[] = [];
-
-      const BATCH_SIZE = 4;
-      for (let i = 0; i < folderBookmarks.length; i += BATCH_SIZE) {
-        const batch = folderBookmarks.slice(i, i + BATCH_SIZE);
-        await Promise.all(
-          batch.map(async (bm) => {
-            const url = bm.content?.trim() || bm.name;
-            const finalUrl = url.startsWith('http') ? url : `https://${url}`;
-            let fallbackDomain = t('file.bookmark') || 'Bookmark';
-            try {
-              fallbackDomain = new URL(finalUrl).hostname;
-            } catch {}
-
-            try {
-              const { title, error } = await generateBookmarkData(
-                apiKey,
-                model,
-                endpoint,
-                finalUrl,
-                t('ai.bookmarkPrompt'),
-                fallbackDomain
-              );
-              if (error) {
-                if (!firstAiError) firstAiError = error;
-                failCount++;
-                updates.push({
-                  id: bm.id,
-                  updates: { name: fallbackDomain },
-                });
-              } else {
-                successCount++;
-                updates.push({
-                  id: bm.id,
-                  updates: { name: title || fallbackDomain },
-                });
-              }
-            } catch (err: any) {
-              if (!firstAiError) firstAiError = err?.message || 'Error AI';
-              failCount++;
-              updates.push({
-                id: bm.id,
-                updates: { name: fallbackDomain },
-              });
-            }
-          })
-        );
-      }
-
-      if (updates.length > 0) {
-        await updateMany(updates);
-      }
-
-      if (!isProOrAdmin) {
-        const todayStr = new Date().toISOString().split('T')[0];
-        const countKey = `tautanlumina:regenerate_count_${todayStr}`;
-        const currentCount = parseInt(localStorage.getItem(countKey) || '0', 10);
-        localStorage.setItem(countKey, (currentCount + 1).toString());
-      }
-
-      if (firstAiError && successCount === 0) {
-        sonnerToast.error(`Gagal AI: ${firstAiError}`, { id: toastId, duration: 5000 });
-      } else if (firstAiError) {
-        sonnerToast.warning(`Selesai (${successCount} sukses, ${failCount} gagal): ${firstAiError}`, { id: toastId, duration: 4500 });
-      } else {
-        sonnerToast.success(t('toast.regenerated') || 'Judul berhasil diperbarui!', { id: toastId, duration: 2500 });
-      }
-    } catch (e: any) {
-      sonnerToast.error(`Gagal: ${e?.message || t('toast.syncError')}`, { id: toastId, duration: 4000 });
+    if (updates.length > 0) {
+      await updateMany(updates);
     }
+
+    sonnerToast.success(t('toast.regenerated') || 'Judul berhasil diperbarui dari URL!');
   };
 
   const openItemMenu = (item: FileSystemItem) => {
