@@ -264,9 +264,9 @@ export const SettingsDialog = ({
                     onClose();
                     onOpenGuide();
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 hover:bg-[#fff0eb] hover:text-[#ff4f00] transition-colors cursor-pointer"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 hover:bg-[#faf8f5] transition-colors cursor-pointer"
                 >
-                  <BookOpen size={18} className="text-[#ff4f00]" />
+                  <BookOpen size={18} className="text-neutral-500" />
                   {t('guide.title') || 'Panduan Penggunaan'}
                 </button>
               )}

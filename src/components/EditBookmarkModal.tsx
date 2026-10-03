@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Globe, Type, Bookmark, RefreshCw } from 'lucide-react';
+import { X, Globe, Type, Bookmark } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
-import { extractTitleFromUrl } from '../lib/titleExtractor';
 
 interface EditBookmarkModalProps {
   item: FileSystemItem | null;
@@ -51,16 +50,6 @@ export const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
     }
   };
 
-  const handleAutoGenerateTitle = () => {
-    const rawUrl = (url || name || '').trim();
-    if (!rawUrl) return;
-    const finalUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
-    setName(extractTitleFromUrl(finalUrl));
-    if (!url.trim()) {
-      setUrl(finalUrl);
-    }
-  };
-
   return (
     <div className="modal-root" onClick={onClose} data-testid="edit-bookmark-modal">
       <div
@@ -88,21 +77,10 @@ export const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Field 1: Judul */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-neutral-700 flex items-center gap-1.5">
-                <Type size={14} className="text-[#FF4F00]" />
-                {t('modal.newName') || 'Judul'}
-              </label>
-              <button
-                type="button"
-                onClick={handleAutoGenerateTitle}
-                className="text-[11px] font-semibold text-[#FF4F00] hover:underline flex items-center gap-1 cursor-pointer"
-                title={t('action.regenerate') || 'Generate ulang judul dari URL'}
-              >
-                <RefreshCw size={12} />
-                <span>{t('action.regenerate') || 'Generate ulang judul'}</span>
-              </button>
-            </div>
+            <label className="text-xs font-semibold text-neutral-700 flex items-center gap-1.5">
+              <Type size={14} className="text-[#FF4F00]" />
+              {t('modal.newName') || 'Judul'}
+            </label>
             <input
               type="text"
               value={name}

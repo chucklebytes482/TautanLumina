@@ -4,6 +4,7 @@ import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
 import { toast } from 'sonner';
 import { usePinState } from '../lib/pin';
+import { cleanText, extractTitleFromUrl, getBookmarkDisplayTitle } from '../lib/titleExtractor';
 
 interface Props {
   items: FileSystemItem[];
@@ -264,16 +265,16 @@ const Row = ({
       {/* Info */}
       <div className="min-w-0 flex-1">
         {item.type === 'folder' ? (
-          <div className="text-[11.5px] leading-snug font-medium text-neutral-900 line-clamp-2 break-words" title={item.name}>
-            {item.name || t('file.folder')}
+          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name}>
+            {cleanText(item.name) || t('file.folder')}
           </div>
         ) : item.type === 'note' ? (
-          <div className="text-[11.5px] leading-snug font-medium text-neutral-900 line-clamp-2 break-words" title={item.content || item.name}>
-            {item.content || item.name || t('file.note')}
+          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.content || item.name}>
+            {cleanText(item.content) || cleanText(item.name) || t('file.note')}
           </div>
         ) : (
-          <div className="text-[11.5px] leading-snug font-medium text-neutral-900 line-clamp-2 break-words" title={item.name || item.content}>
-            {item.name || domain || t('file.bookmark')}
+          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name || item.content}>
+            {getBookmarkDisplayTitle(item.name, item.content)}
           </div>
         )}
       </div>

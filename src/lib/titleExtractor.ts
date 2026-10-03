@@ -1,11 +1,23 @@
+export const cleanText = (str?: string | null): string => {
+  if (!str) return '';
+  return str
+    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, ' ')
+    .replace(/[\x00-\x1F\x7F-\x9F]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
 export const extractTitleFromUrl = (url: string): string => {
-  if (!url) return 'Bookmark';
-  let clean = url.trim();
+  const cleanedUrl = cleanText(url);
+  if (!cleanedUrl) return 'Bookmark';
+  let clean = cleanedUrl;
 
   // Decode URI components if URL encoded (e.g. %20 -> space)
   try {
     clean = decodeURIComponent(clean);
   } catch {}
+
+  clean = cleanText(clean);
 
   // Remove protocol prefix (http://, https://, http/, https/)
   clean = clean.replace(/^https?:\/*\/*/i, '');
@@ -14,7 +26,6 @@ export const extractTitleFromUrl = (url: string): string => {
   clean = clean.replace(/^www\d*\./i, '');
 
   // Strip common URL path parameters or query strings like ?ref= or #anchor
-  // But keep words inside query params if needed
   clean = clean.replace(/[?&#=]+/g, ' ');
 
   // Strip common file extensions and TLDs (.com, .org, .net, .co.id, .id, .html, .php, etc.)
@@ -32,15 +43,37 @@ export const extractTitleFromUrl = (url: string): string => {
   clean = clean.replace(/[/._+:\-]+/g, ' ');
 
   // Collapse multiple spaces into a single space and trim
-  clean = clean.replace(/\s+/g, ' ').trim();
+  clean = cleanText(clean);
 
   if (!clean) return 'Bookmark';
 
-  // Filter out standalone trailing 'www' or empty words and apply Title Case
+  // Filter out standalone 'www' and apply Title Case
   const words = clean
     .split(' ')
     .filter((word) => word.length > 0 && word.toLowerCase() !== 'www')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1));
 
-  return words.join(' ') || 'Bookmark';
+  const result = words.join(' ');
+  return cleanText(result) || 'Bookmark';
+};
+
+export const getBookmarkDisplayTitle = (name?: string, content?: string): string => {
+  const cleanName = cleanText(name);
+  const cleanUrl = cleanText(content);
+
+  if (cleanName && cleanName.toLowerCase() !== 'bookmark') {
+    return cleanName;
+  }
+
+  if (cleanUrl) {
+    const fullUrl = cleanUrl.startsWith('http') ? cleanUrl : `https://${cleanUrl}`;
+    const extracted = extractTitleFromUrl(fullUrl);
+    if (extracted && extracted.toLowerCase() !== 'bookmark' && extracted.length > 0) {
+      return extracted;
+    }
+    // Fallback: Display FULL URL address
+    return fullUrl;
+  }
+
+  return cleanName || 'Bookmark';
 };

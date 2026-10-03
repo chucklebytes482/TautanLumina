@@ -25,7 +25,8 @@ import {
   Mail,
   Languages,
   Aperture,
-  FileText
+  FileText,
+  RefreshCw
 } from 'lucide-react';
 import { AppLogo } from './components/AppLogo';
 
@@ -41,7 +42,7 @@ import { useI18n, languages } from './lib/i18n';
 import { ADMIN_EMAIL } from './lib/appwrite';
 
 import { FileSystemItem } from './Types';
-import { extractTitleFromUrl } from './lib/titleExtractor';
+import { extractTitleFromUrl, cleanText } from './lib/titleExtractor';
 import { hasPinSet, removePin, usePinState } from './lib/pin';
 import { isNetscapeBookmarkHTML } from './lib/bookmarkParser';
 
@@ -262,25 +263,6 @@ export default function App() {
       }
     }
 
-    const activeAncestors = new Set<string>();
-    if (id) {
-      let cur = items.find((i) => i.id === id);
-      while (cur) {
-        activeAncestors.add(cur.id);
-        cur = items.find((i) => i.id === cur.parentId);
-      }
-    }
-
-    setUnlockedFolderIds((prev) => {
-      const next = new Set<string>();
-      prev.forEach((folderId) => {
-        if (activeAncestors.has(folderId)) {
-          next.add(folderId);
-        }
-      });
-      return next;
-    });
-
     setCurrentFolderId(id);
     setQuery('');
     setSelectedIds(new Set());
@@ -372,7 +354,8 @@ export default function App() {
     if (!url || !url.trim()) return;
     
     const finalUrl = url.trim().startsWith('http') ? url.trim() : `https://${url.trim()}`;
-    const autoTitle = extractTitleFromUrl(finalUrl);
+    const extracted = extractTitleFromUrl(finalUrl);
+    const autoTitle = (extracted && extracted.toLowerCase() !== 'bookmark') ? extracted : finalUrl;
 
     try {
       await createItem(autoTitle, 'file', currentFolderId, finalUrl);
@@ -519,6 +502,59 @@ export default function App() {
   const bulkDelete = () => {
     const ids = [...selectedIds];
     guardedDelete(ids);
+  };
+
+  const bulkRegenerate = async () => {
+    if (guardOffline()) return;
+    const sourceList = selectMode && selectedIds.size > 0
+      ? items.filter((i) => selectedIds.has(i.id))
+      : listItems;
+
+    if (sourceList.length === 0) {
+      sonnerToast.info(t('toast.noBookmarksInFolder') || 'Tidak ada bookmark untuk diperbarui');
+      return;
+    }
+
+    const targetBookmarks: FileSystemItem[] = [];
+    const queue = [...sourceList];
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (current.type === 'file') {
+        targetBookmarks.push(current);
+      } else if (current.type === 'folder' && !isNoteFolderOrSubfolder(current)) {
+        const children = items.filter((i) => i.parentId === current.id);
+        queue.push(...children);
+      }
+    }
+
+    if (targetBookmarks.length === 0) {
+      sonnerToast.info(t('toast.noBookmarksInFolder') || 'Tidak ada bookmark untuk diperbarui');
+      return;
+    }
+
+    const updates = targetBookmarks.map((bm) => {
+      const rawUrl = cleanText(bm.content) || cleanText(bm.name);
+      const finalUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
+      const extracted = extractTitleFromUrl(finalUrl);
+      const titleToUse = (extracted && extracted.toLowerCase() !== 'bookmark') ? extracted : finalUrl;
+      const updatesObj: Partial<FileSystemItem> = {
+        name: titleToUse,
+      };
+      if (!cleanText(bm.content)) {
+        updatesObj.content = finalUrl;
+      }
+      return {
+        id: bm.id,
+        updates: updatesObj,
+      };
+    });
+
+    if (updates.length > 0) {
+      await updateMany(updates);
+    }
+
+    sonnerToast.success(t('toast.regenerated') || 'Judul berhasil diperbarui dari URL!');
   };
 
   const handleConfirmMoveKeypad = async (targetNum: number) => {
@@ -680,7 +716,7 @@ export default function App() {
 
   const handleRegenerateBookmark = async (item: FileSystemItem) => {
     if (guardOffline()) return;
-    const rawUrl = (item.content || item.name || '').trim();
+    const rawUrl = cleanText(item.content) || cleanText(item.name);
     if (!rawUrl) return;
     const finalUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
     const newTitle = extractTitleFromUrl(finalUrl);
@@ -688,7 +724,7 @@ export default function App() {
     const updatesObj: Partial<FileSystemItem> = {
       name: newTitle,
     };
-    if (!item.content || !item.content.trim()) {
+    if (!cleanText(item.content)) {
       updatesObj.content = finalUrl;
     }
 
@@ -738,20 +774,8 @@ export default function App() {
         },
       });
 
-      if (!isNoteFolderOrSubfolder(item)) {
-        list.push({
-          key: 'regenerate',
-          label: t('action.regenerate') || 'Generate ulang judul',
-          onClick: () => handleRegenerateFolder(item.id),
-        });
-      }
     }
     if (item.type === 'file') {
-      list.push({
-        key: 'regenerateBookmark',
-        label: t('action.regenerate') || 'Generate ulang judul',
-        onClick: () => handleRegenerateBookmark(item),
-      });
       list.push({
         key: 'editTitle',
         label: t('action.editTitle') || 'Edit Judul & URL',
@@ -938,7 +962,17 @@ export default function App() {
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3.5">
+              <button
+                data-testid="regenerate-header-btn"
+                onClick={bulkRegenerate}
+                disabled={listItems.length === 0}
+                className="p-1.5 rounded-lg disabled:opacity-40 disabled:hover:bg-transparent transition-colors hover:bg-[#faf8f5] text-neutral-700 border border-transparent hover:border-[#e2ddd5] flex items-center justify-center cursor-pointer mr-1"
+                title={t('action.regenerate') || 'Generate ulang judul'}
+                aria-label={t('action.regenerate') || 'Generate ulang judul'}
+              >
+                <RefreshCw size={18} className="text-[#FF4F00]" />
+              </button>
               <button
                 data-testid="select-all-header-btn"
                 onClick={toggleSelectAllHeader}
