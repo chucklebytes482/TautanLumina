@@ -657,11 +657,17 @@ export default function App() {
     if (!confirmed) return;
 
     const updates = folderBookmarks.map((bm) => {
-      const url = bm.content?.trim() || bm.name;
-      const finalUrl = url.startsWith('http') ? url : `https://${url}`;
+      const rawUrl = (bm.content || bm.name || '').trim();
+      const finalUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
+      const updatesObj: Partial<FileSystemItem> = {
+        name: extractTitleFromUrl(finalUrl),
+      };
+      if (!bm.content || !bm.content.trim()) {
+        updatesObj.content = finalUrl;
+      }
       return {
         id: bm.id,
-        updates: { name: extractTitleFromUrl(finalUrl) },
+        updates: updatesObj,
       };
     });
 
@@ -669,6 +675,24 @@ export default function App() {
       await updateMany(updates);
     }
 
+    sonnerToast.success(t('toast.regenerated') || 'Judul berhasil diperbarui dari URL!');
+  };
+
+  const handleRegenerateBookmark = async (item: FileSystemItem) => {
+    if (guardOffline()) return;
+    const rawUrl = (item.content || item.name || '').trim();
+    if (!rawUrl) return;
+    const finalUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
+    const newTitle = extractTitleFromUrl(finalUrl);
+
+    const updatesObj: Partial<FileSystemItem> = {
+      name: newTitle,
+    };
+    if (!item.content || !item.content.trim()) {
+      updatesObj.content = finalUrl;
+    }
+
+    await updateItem(item.id, updatesObj);
     sonnerToast.success(t('toast.regenerated') || 'Judul berhasil diperbarui dari URL!');
   };
 
@@ -723,6 +747,11 @@ export default function App() {
       }
     }
     if (item.type === 'file') {
+      list.push({
+        key: 'regenerateBookmark',
+        label: t('action.regenerate') || 'Generate ulang judul',
+        onClick: () => handleRegenerateBookmark(item),
+      });
       list.push({
         key: 'editTitle',
         label: t('action.editTitle') || 'Edit Judul & URL',

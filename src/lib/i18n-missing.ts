@@ -1,8 +1,8 @@
 export const missingTranslations = {
   "en": {
     "ai": {
-      "bookmarkPrompt": "Analyze this URL and return a concise, clean title (maximum 15 characters) for the following URL: {url}",
-      "noKeyNotice": "Bookmark saved. (Set AI Key in Settings for auto-titling)"
+      "bookmarkPrompt": "Extract title from URL: {url}",
+      "noKeyNotice": "Bookmark saved."
     },
     "action": {
       "cancel": "Cancel",
@@ -19,7 +19,7 @@ export const missingTranslations = {
       "selected": "Selected"
     },
     "app": {
-      "heroDesc": "TautanLumina is an ultra-minimalist, AI-powered smart bookmark & note manager. Auto-generate concise titles (max 15 chars), lock folders with a 4-digit PIN, record 30s voice notes with audio preview, reorder items with Keypad Move, and sync with Appwrite Cloud.",
+      "heroDesc": "TautanLumina is an ultra-minimalist smart bookmark & note manager. Auto-extract concise titles from URLs, lock folders with a 4-digit PIN, record 30s voice notes with audio preview, reorder items with Keypad Move, and sync with Appwrite Cloud.",
       "tagline": "Your Links, Smart & Luminous."
     },
     "btn": {
@@ -43,8 +43,8 @@ export const missingTranslations = {
     },
     "feature": {
       "aiTagging": {
-        "desc": "Auto-generate titles (max 15 chars)",
-        "title": "AI Title & Tagging"
+        "desc": "Auto-extract titles from URLs",
+        "title": "URL Auto-Titling"
       },
       "cloudSync": {
         "desc": "Appwrite Cloud & local storage",
@@ -326,8 +326,8 @@ export const missingTranslations = {
   },
   "id": {
     "ai": {
-      "bookmarkPrompt": "Analisis URL ini dan berikan judul yang ringkas dan jelas (maksimal 15 karakter) untuk URL berikut: {url}",
-      "noKeyNotice": "Bookmark disimpan. (Atur API Key AI di Pengaturan untuk penamaan otomatis)"
+      "bookmarkPrompt": "Format judul dari URL: {url}",
+      "noKeyNotice": "Bookmark disimpan."
     },
     "action": {
       "cancel": "Batal",
@@ -344,7 +344,7 @@ export const missingTranslations = {
       "selected": "Terpilih"
     },
     "app": {
-      "heroDesc": "TautanLumina adalah pengelola bookmark & catatan cerdas berbasis AI yang ultra-minimalis. Penamaan judul otomatis (maks 15 karakter), kunci folder PIN 4-digit, voice note 30 detik dengan pratinjau audio, urutan posisi Keypad Move, serta sinkronisasi Awan Appwrite.",
+      "heroDesc": "TautanLumina adalah pengelola bookmark & catatan yang cepat dan ultra-minimalis. Otomatisasi judul dari URL dengan kata dan spasi yang rapi, kunci folder PIN 4-digit, voice note 30 detik dengan pratinjau audio, urutan posisi Keypad Move, serta sinkronisasi Awan Appwrite.",
       "tagline": "Tautan Anda, Cerdas & Bercahaya."
     },
     "btn": {
@@ -368,8 +368,8 @@ export const missingTranslations = {
     },
     "feature": {
       "aiTagging": {
-        "desc": "Generate judul otomatis maks 15 karakter",
-        "title": "Judul & Tag AI"
+        "desc": "Ekstraksi judul otomatis dari URL",
+        "title": "Otomatisasi Judul URL"
       },
       "cloudSync": {
         "desc": "Appwrite Cloud & penyimpanan lokal",
@@ -651,8 +651,8 @@ export const missingTranslations = {
   },
   "zh": {
     "ai": {
-      "bookmarkPrompt": "分析此URL，并为以下URL返回简洁清晰的标题（最多15个字符）：{url}",
-      "noKeyNotice": "书签已保存。（在设置中配置 AI 密钥以自动命名）"
+      "bookmarkPrompt": "URL 标题提取: {url}",
+      "noKeyNotice": "书签已保存。"
     },
     "action": {
       "cancel": "取消",
@@ -669,7 +669,7 @@ export const missingTranslations = {
       "selected": "已选"
     },
     "app": {
-      "heroDesc": "TautanLumina 是一款极简智能 AI 书签与笔记管理器。支持自动生成标题（最多 15 个字符）、4 位数 PIN 码文件夹加密、30 秒语音录制及播放预览、数字键盘精准排序和 Appwrite 云端同步。",
+      "heroDesc": "TautanLumina 是一款极简书签与笔记管理器。支持自动提取 URL 标题、4 位数 PIN 码文件夹加密、30 秒语音录制及播放预览、数字键盘精准排序和 Appwrite 云端同步。",
       "tagline": "智能书签，亮彩呈现"
     },
     "btn": {
@@ -693,8 +693,8 @@ export const missingTranslations = {
     },
     "feature": {
       "aiTagging": {
-        "desc": "自动生成精简标题（最多15字符）",
-        "title": "AI 自动命名"
+        "desc": "自动提取 URL 标题",
+        "title": "URL 自动命名"
       },
       "cloudSync": {
         "desc": "Appwrite 云端与本地离线存储",
@@ -976,8 +976,8 @@ export const missingTranslations = {
   },
   "ja": {
     "ai": {
-      "bookmarkPrompt": "このURLを分析し、以下のURLの簡潔で明確なタイトル（最大15文字）を返してください：{url}",
-      "noKeyNotice": "ブックマークを保存しました。（自動命名用に設定で AI キーを設定してください）"
+      "bookmarkPrompt": "URL タイトル抽出: {url}",
+      "noKeyNotice": "ブックマークを保存しました。"
     },
     "action": {
       "cancel": "キャンセル",
@@ -994,7 +994,7 @@ export const missingTranslations = {
       "selected": "選択済み"
     },
     "app": {
-      "heroDesc": "TautanLumina は、高速でミニマルな AI ブックマーク＆ノート管理ツールです。自動タイトル作成（最大15文字）、4桁PINフォルダロック、30秒音声ノート＆プレビュー試聴、キーパッド移動、Appwrite クラウド同期を搭載。",
+      "heroDesc": "TautanLumina は、高速でミニマルなブックマーク＆ノート管理ツールです。URL からタイトルを自動抽出し、4桁PINフォルダロック、30秒音声ノート＆プレビュー試聴、キーパッド移動、Appwrite クラウド同期を搭載。",
       "tagline": "あなたのリンクを、スマートに美しく"
     },
     "btn": {
@@ -1018,8 +1018,8 @@ export const missingTranslations = {
     },
     "feature": {
       "aiTagging": {
-        "desc": "15文字以内のタイトルを自動生成",
-        "title": "AI 自動命名"
+        "desc": "URL からタイトルを自動抽出",
+        "title": "URL 自動タイトル作成"
       },
       "cloudSync": {
         "desc": "Appwrite クラウド＆ローカル保存",

@@ -1,6 +1,6 @@
 {
   "name": "TautanLumina",
-  "description": "TautanLumina is a fast, ultra-minimalist, AI-powered smart bookmark and note manager featuring PWA offline support, cloud sync via Appwrite, auto-generated titles (max 15 chars), 4-digit PIN folder security, 30s voice notes with audio preview, keypad reordering, and HTML/JSON backup.",
+  "description": "TautanLumina is a fast, ultra-minimalist smart bookmark and note manager featuring PWA offline support, cloud sync via Appwrite, auto-extracted URL titles, 4-digit PIN folder security, 30s voice notes with audio preview, keypad reordering, and HTML/JSON backup.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

@@ -41,7 +41,7 @@ export const GuideTabContent: React.FC = () => {
 **TautanLumina** adalah aplikasi penyimpan tautan (bookmark) dan catatan pribadi yang cepat dan minimalis.
 
 #### 🚀 Fitur Utama Unggulan:
-* **Penamaan Otomatis dari URL**: Secara otomatis mengambil nama judul dari alamat URL yang disimpan dengan mengecualikan \`https/\`, garis miring (\`/\`), dan titik (\`.\`).
+* **Penamaan Otomatis dari URL**: Secara otomatis mengambil nama judul dari alamat URL yang disimpan dengan mengecualikan \`https/\`, garis miring (\`/\`), dan titik (\`.\`) serta pemisahan spasi otomatis.
 * **Organisasi Folder & Posisi**: Susun item dalam folder kustom dan urutkan posisi dengan presisi menggunakan papan angka (Keypad Move).
 * **Perlindungan PIN Folder**: Kunci folder sensitif menggunakan PIN 4 digit yang aman.
 * **Pesan Suara (Voice Note)**: Kirim pesan suara hingga 30 detik dengan fitur pratinjau sebelum dikirim.
@@ -57,7 +57,7 @@ export const GuideTabContent: React.FC = () => {
 
 1. **Menambah Bookmark**:
    * Tempelkan tautan URL langsung ke kolom pencarian / input utama di bagian atas.
-   * Tekan tombol **+ Bookmark**. Aplikasi secara otomatis mengekstrak judul dari URL (mengecualikan \`https/\`, garis miring, dan titik).
+   * Tekan tombol **+ Bookmark**. Aplikasi secara otomatis mengekstrak judul dari URL dengan kata dan spasi yang rapi.
 
 2. **Format Ulang & Edit Judul & URL**:
    * Klik tombol **Titik Tiga (\`...\`)** pada kartu bookmark.
@@ -151,30 +151,30 @@ export const GuideTabContent: React.FC = () => {
         content: `
 ### Welcome to TautanLumina ✨
 
-**TautanLumina** is a fast, minimalist, and intelligent bookmark & personal note management application.
+**TautanLumina** is a fast, minimalist bookmark & personal note management application.
 
 #### 🚀 Key Features:
-* **Automatic AI Titles**: Generates concise titles (maximum 15 characters) for saved URLs automatically.
+* **Automatic URL Titles**: Generates clean titles with proper spaces for saved URLs automatically.
 * **Folders & Reordering**: Group items in custom folders and reorder precisely using a numeric keypad (Keypad Move).
 * **Folder PIN Security**: Protect sensitive folders with a secure 4-digit PIN lock.
-* **AI Chat & Voice Notes**: Interact with AI models and send voice messages up to 30 seconds with audio preview before sending.
+* **Voice Notes & Communication**: Send voice messages up to 30 seconds with audio preview before sending.
 * **Offline Access & Cloud Sync**: Automatically synchronized with Appwrite Cloud when online.
         `
       },
       bookmarks: {
-        title: 'Bookmarks & AI Naming',
-        subtitle: 'How to add, edit, and generate smart titles',
+        title: 'Bookmarks & URL Naming',
+        subtitle: 'How to add, edit, and generate clean titles from URLs',
         icon: Sparkles,
         content: `
 ### Adding & Managing Bookmarks
 
 1. **Adding a Bookmark**:
    * Paste any URL directly into the top search/input field.
-   * Click **+ Bookmark**. AI will automatically analyze the URL and generate a short title (maximum 15 characters).
+   * Click **+ Bookmark**. The app will automatically parse the URL and generate a clean title with spaces.
 
 2. **Regenerate & Edit Title & URL**:
    * Click the **Three Dots (\`...\`)** button on any bookmark card.
-   * Select **Regenerate Title** to request a new AI-generated title.
+   * Select **Regenerate Title** to update the title from URL.
    * Select **Edit Title & URL** to manually update the name or URL of a bookmark.
 
 💡 *Tip: The main search field allows quick real-time filtering of bookmark titles and note contents.*
@@ -220,19 +220,16 @@ export const GuideTabContent: React.FC = () => {
         `
       },
       chat: {
-        title: 'AI Chat & Voice Notes',
-        subtitle: 'AI models, 30s voice recording, and preview audio',
+        title: 'Voice Notes & Communication',
+        subtitle: '30s voice recording and preview audio',
         icon: MessageSquare,
         content: `
-### AI Chat & Voice Message Features
+### Voice Message & Communication Features
 
 1. **Open Chat**:
    * Open the **Messages** or **Announcements** window from the main menu.
 
-2. **Select AI Models**:
-   * Open **AI Model** menu to choose free or pro AI models sorted automatically by quality score.
-
-3. **Voice Notes**:
+2. **Voice Notes**:
    * Tap the microphone icon to record your voice.
    * **30-second Limit**: Recording automatically stops at 30 seconds.
    * **Voice Preview**: Listen to playback or cancel before clicking **Send**.
@@ -267,30 +264,30 @@ export const GuideTabContent: React.FC = () => {
         content: `
 ### 欢迎使用 TautanLumina ✨
 
-**TautanLumina** 是一款极简、快速且智能的书签与个人笔记管理应用。
+**TautanLumina** 是一款极简、快速的书签与个人笔记管理应用。
 
 #### 🚀 核心功能：
-* **AI 自动命名**：为保存的 URL 自动生成精简标题（最多 15 个字符）。
+* **URL 自动命名**：为保存的 URL 自动提取并整理精简标题。
 * **文件夹与位置排序**：将项目整理到自定义文件夹中，并使用数字键盘（Keypad Move）精准调整顺序。
 * **文件夹 PIN 码锁定**：使用安全的 4 位数 PIN 码锁定保护隐私文件夹。
-* **AI 对话与语音消息**：与 AI 互动，支持长达 30 秒的语音录制并在发送前进行播放预览。
+* **语音消息**：支持长达 30 秒的语音录制并在发送前进行播放预览。
 * **离线访问与云端同步**：联网时自动与 Appwrite 云端同步。
         `
       },
       bookmarks: {
-        title: '书签与 AI 命名',
-        subtitle: '添加、编辑与 AI 生成书签标题说明',
+        title: '书签与 URL 命名',
+        subtitle: '添加、编辑与 URL 提取书签标题说明',
         icon: Sparkles,
         content: `
 ### 添加与管理书签
 
 1. **添加书签**：
    * 将 URL 链接直接粘贴至顶部搜索/输入框。
-   * 点击 **+ 书签**，AI 将自动分析网址并生成精简标题（最多 15 个字符）。
+   * 点击 **+ 书签**，系统将自动从网址提取格式整洁的标题。
 
 2. **重新生成与编辑标题及 URL**：
    * 点击书签卡片上的 **三点菜单 (\`...\`)**。
-   * 选择 **重新生成标题** 以请求 AI 重新生成标题。
+   * 选择 **重新生成标题** 以根据 URL 更新标题。
    * 选择 **编辑标题与 URL** 手动更改书签的名称或 URL。
 
 💡 *提示：顶部主搜索框支持实时快速筛选书签标题和笔记内容。*
@@ -336,19 +333,16 @@ export const GuideTabContent: React.FC = () => {
         `
       },
       chat: {
-        title: 'AI 对话与语音消息',
-        subtitle: 'AI 模型切换、30 秒语音录制与发送前预览',
+        title: '语音消息与沟通',
+        subtitle: '30 秒语音录制与发送前预览',
         icon: MessageSquare,
         content: `
-### AI 对话与语音消息功能
+### 语音消息与沟通功能
 
 1. **打开对话窗口**：
    * 从主菜单打开 **消息** 或 **公告** 窗口。
 
-2. **选择 AI 模型**：
-   * 打开 **AI 模型** 菜单自由选择免费或高级 AI 模型，列表按质量评分自动排序。
-
-3. **语音消息（Voice Note）**：
+2. **语音消息（Voice Note）**：
    * 点击麦克风图标开始录制语音。
    * **最长 30 秒**：录音会在第 30 秒时自动停止。
    * **语音预览**：录音完成后，可以在点击 **发送** 前 *播放/听取* 预览或 *取消* 录音。
@@ -383,30 +377,30 @@ export const GuideTabContent: React.FC = () => {
         content: `
 ### TautanLumina へようこそ ✨
 
-**TautanLumina** は、高速でミニマル、かつスマートなブックマーク＆個人ノート管理アプリケーションです。
+**TautanLumina** は、高速でミニマルなブックマーク＆個人ノート管理アプリケーションです。
 
 #### 🚀 主な機能:
-* **AI 自動タイトル作成**: 保存した URL に対して簡潔なタイトル（最大 15 文字）を自動生成。
+* **URL 自動タイトル作成**: 保存した URL から整ったタイトルを自動抽出。
 * **フォルダ整理と順序変更**: カスタムフォルダで項目を整理し、数字キーパッド（Keypad Move）で位置を正確に変更。
 * **フォルダ PIN ロック**: 安全な 4 桁の PIN コードで大切なフォルダを保護。
-* **AI チャット＆音声メッセージ**: AI と会話でき、最大 30 秒の音声メッセージを送信前にプレビュー試聴可能。
+* **音声メッセージ**: 最大 30 秒の音声メッセージを送信前にプレビュー試聴可能。
 * **オフライン閲覧とクラウド同期**: オンライン接続時に Appwrite クラウドへ自動同期。
         `
       },
       bookmarks: {
-        title: 'ブックマーク＆ AI 自動命名',
-        subtitle: 'ブックマークの追加・編集と AI タイトル生成',
+        title: 'ブックマーク＆ URL 自動命名',
+        subtitle: 'ブックマークの追加・編集と URL タイトル生成',
         icon: Sparkles,
         content: `
 ### ブックマークの追加と管理
 
 1. **ブックマークの追加**:
    * 上部の検索/入力欄に URL を直接貼り付けます。
-   * **+ ブックマーク** ボタンを押すと、AI が自動で URL を解析し、短いタイトル（最大 15 文字）を生成します。
+   * **+ ブックマーク** ボタンを押すと、アプリが自動で URL から短いタイトルを生成します。
 
 2. **タイトルの再生成・URL 手動編集**:
    * ブックマークカードの **三点メニュー (\`...\`)** をクリック。
-   * **タイトルを再生成** を選ぶと AI が新しいタイトルを作成します。
+   * **タイトルを再生成** を選ぶと URL からタイトルを更新します。
    * **タイトルと URL の編集** を選ぶと手動でお好みの名称や URL に変更できます。
 
 💡 *ヒント: 上部メイン検索バーでブックマークタイトルやノート内容をリアルタイム検索できます。*
@@ -452,19 +446,16 @@ export const GuideTabContent: React.FC = () => {
         `
       },
       chat: {
-        title: 'AI チャット＆音声メッセージ',
-        subtitle: 'AI モデル切り替え、30 秒録音、事前試聴機能',
+        title: '音声メッセージ',
+        subtitle: '30 秒録音、事前試聴機能',
         icon: MessageSquare,
         content: `
-### AI チャットと音声メッセージ機能
+### 音声メッセージ機能
 
 1. **チャットを開く**:
    * メインメニューから **メッセージ** または **お知らせ** 画面を開きます。
 
-2. **AI モデルの選択**:
-   * **AI モデル** メニューから無料/プロモデルを選択。スコア順に自動ソートされます。
-
-3. **音声メッセージ (Voice Note)**:
+2. **音声メッセージ (Voice Note)**:
    * マイクアイコンを押して録音を開始します。
    * **最大 30 秒**: 30 秒に達すると自動的に録音が停止します。
    * **音声プレビュー**: 送信前に *再生/試聴* や *キャンセル* を選択できます。
@@ -499,30 +490,30 @@ export const GuideTabContent: React.FC = () => {
         content: `
 ### TautanLumina에 오신 것을 환영합니다 ✨
 
-**TautanLumina**는 빠르고 미니멀하며 스마트한 북마크 및 개인 메모 관리 애플리케이션입니다.
+**TautanLumina**는 빠르고 미니멀한 북마크 및 개인 메모 관리 애플리케이션입니다.
 
 #### 🚀 주요 기능:
-* **AI 자동 제목 생성**: 저장한 URL에 대해 최적화된 짧은 제목(최대 15자)을 자동으로 생성합니다.
+* **URL 자동 제목 생성**: 저장한 URL에 대해 깨끗한 제목을 자동으로 생성합니다.
 * **폴더 및 순서 정렬**: 맞춤 폴더에 항목을 정리하고 숫자 키패드(Keypad Move)를 사용하여 정확하게 위치를 변경합니다.
 * **폴더 PIN 잠금**: 안전한 4자리 PIN 코드로 중요한 폴더를 보호합니다.
-* **AI 챗 & 음성 메시지**: AI와 대화하고 전송 전 음성을 미리 들을 수 있는 최대 30초 음성 메시지를 지원합니다.
+* **음성 메시지**: 전송 전 음성을 미리 들을 수 있는 최대 30초 음성 메시지를 지원합니다.
 * **오프라인 접근 & 클라우드 동기화**: 온라인 연결 시 Appwrite 클라우드와 자동 동기화됩니다.
         `
       },
       bookmarks: {
-        title: '북마크 & AI 제목 생성',
-        subtitle: '북마크 추가, 수정 및 AI 스마트 제목 사용법',
+        title: '북마크 & URL 제목 생성',
+        subtitle: '북마크 추가, 수정 및 URL 제목 사용법',
         icon: Sparkles,
         content: `
 ### 북마크 추가 및 관리
 
 1. **북마크 추가**:
    * 상단 검색/입력창에 URL을 직접 붙여넣습니다.
-   * **+ 북마크** 버튼을 누르면 AI가 URL을 분석하여 짧은 제목(최대 15자)을 자동으로 생성합니다.
+   * **+ 북마크** 버튼을 누르면 URL에서 정돈된 제목을 자동으로 생성합니다.
 
 2. **제목 재생성 및 URL 편집**:
    * 북마크 카드의 **점 3개 메뉴 (\`...\`)** 를 클릭합니다.
-   * **제목 재생성**을 선택하여 새 AI 제목을 생성하거나,
+   * **제목 재생성**을 선택하여 URL 기반 제목을 업데이트하거나,
    * **제목 및 URL 편집**을 선택하여 원하는 이름이나 URL을 직접 변경할 수 있습니다.
 
 💡 *팁: 상단 메인 검색창을 통해 북마크 제목과 메모 내용을 실시간으로 필터링할 수 있습니다.*
@@ -568,19 +559,16 @@ export const GuideTabContent: React.FC = () => {
         `
       },
       chat: {
-        title: 'AI 챗 & 음성 메시지',
-        subtitle: 'AI 모델 선택, 30초 녹음 및 사전 듣기 기능',
+        title: '음성 메시지',
+        subtitle: '30초 녹음 및 사전 듣기 기능',
         icon: MessageSquare,
         content: `
-### AI 챗 및 음성 메시지 기능
+### 음성 메시지 기능
 
 1. **챗 창 열기**:
    * 메인 메뉴에서 **메시지** 또는 **공지사항** 창을 엽니다.
 
-2. **AI 모델 선택**:
-   * **AI 모델** 메뉴에서 무료 및 프로 모델을 선택합니다. 모델 목록은 품질 점수순으로 자동 정렬됩니다.
-
-3. **음성 메시지 (Voice Note)**:
+2. **음성 메시지 (Voice Note)**:
    * 마이크 아이콘을 눌러 음성 녹음을 시작합니다.
    * **최대 30초**: 30초에 도달하면 녹음이 자동으로 중지됩니다.
    * **음성 미리듣기**: 전송 전 *재생/미리듣기* 또는 *취소*를 선택할 수 있습니다.
@@ -615,30 +603,30 @@ export const GuideTabContent: React.FC = () => {
         content: `
 ### Добро пожаловать в TautanLumina ✨
 
-**TautanLumina** — это быстрый, минималистичный и умный менеджер закладок и личных заметок.
+**TautanLumina** — это быстрый, минималистичный менеджер закладок и личных заметок.
 
 #### 🚀 Основные возможности:
-* **Авто-заголовки ИИ**: Автоматически генерирует короткие названия (максимум 15 символов) для сохраненных URL.
+* **Авто-заголовки URL**: Автоматически извлекает аккуратные названия для сохраненных URL.
 * **Папки и сортировка**: Группируйте элементы в папки и точно меняйте их порядок с помощью цифровой клавиатуры (Keypad Move).
 * **Защита папок PIN-кодом**: Защищайте конфиденциальные папки надежным 4-значным PIN-кодом.
-* **ИИ Чат и Голосовые**: Общайтесь с ИИ и отправляйте голосовые сообщения длительностью до 30 секунд с предварительным прослушиванием.
+* **Голосовые сообщения**: Отправляйте голосовые сообщения длительностью до 30 секунд с предварительным прослушиванием.
 * **Автономный доступ и облачная синхронизация**: Автоматическая синхронизация с Appwrite Cloud при подключении к сети.
         `
       },
       bookmarks: {
-        title: 'Закладки и авто-заголовки ИИ',
-        subtitle: 'Добавление, редактирование и генерация названий',
+        title: 'Закладки и авто-заголовки URL',
+        subtitle: 'Добавление, редактирование и генерация названий из URL',
         icon: Sparkles,
         content: `
 ### Добавление и управление закладками
 
 1. **Добавление закладки**:
    * Вставьте ссылку URL непосредственно в верхнюю строку поиска/ввода.
-   * Нажмите **+ Закладка**. ИИ проанализирует URL и автоматически создаст короткий заголовок (макс. 15 символов).
+   * Нажмите **+ Закладка**. Приложение автоматически извлечет красивый заголовок из URL.
 
 2. **Перегенерация и редактирование заголовка и URL**:
    * Нажмите кнопку **Три точки (\`...\`)** на карточке закладки.
-   * Выберите **Перегенерировать заголовок** для запроса нового заголовка ИИ.
+   * Выберите **Перегенерировать заголовок** для обновления заголовка из URL.
    * Выберите **Редактировать заголовок и URL** для ручного изменения названия или URL.
 
 💡 *Совет: Главная строка поиска позволяет мгновенно фильтровать закладки и заметки в реальном времени.*
@@ -684,19 +672,16 @@ export const GuideTabContent: React.FC = () => {
         `
       },
       chat: {
-        title: 'ИИ Чат и Голосовые',
-        subtitle: 'Выбор ИИ моделей, 30 сек запись и предпрослушивание',
+        title: 'Голосовые сообщения',
+        subtitle: '30 сек запись и предпрослушивание',
         icon: MessageSquare,
         content: `
-### ИИ Чат и голосовые сообщения
+### Голосовые сообщения
 
 1. **Открытие чата**:
    * Откройте окно **Сообщения** или **Объявления** из главного меню.
 
-2. **Выбор модели ИИ**:
-   * Откройте меню **Модель ИИ** для выбора бесплатной или про модели, отсортированных по рейтингу качества.
-
-3. **Голосовые сообщения (Voice Note)**:
+2. **Голосовые сообщения (Voice Note)**:
    * Нажмите значок микрофона для начала записи.
    * **Максимум 30 секунд**: Запись автоматически останавливается на 30-й секунде.
    * **Предпросмотр**: Прослушайте запись или отмените ее перед нажатием **Отправить**.
@@ -737,7 +722,6 @@ export const GuideTabContent: React.FC = () => {
   });
 
   const activeIndex = tabKeys.indexOf(activeSection);
-  const nextTabKey = activeIndex >= 0 && activeIndex < tabKeys.length - 1 ? tabKeys[activeIndex + 1] : null;
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#faf8f5] dark:bg-[#161618] overflow-hidden text-neutral-800 dark:text-neutral-100">
@@ -878,10 +862,10 @@ export const GuideTabContent: React.FC = () => {
                     <div className="p-3.5 rounded-xl bg-[#faf8f5] dark:bg-[#1e1e22] border border-[#e5e0d8] dark:border-[#2d2d35] space-y-1.5">
                       <div className="flex items-center gap-2 text-xs font-bold text-neutral-900 dark:text-neutral-100">
                         <Sparkles size={14} className="text-[#FF4F00]" />
-                        <span>AI Title Generator</span>
+                        <span>Otomatisasi Judul URL</span>
                       </div>
                       <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
-                        Analisis otomatis URL untuk judul ringkas maksimal 15 karakter secara instan.
+                        Ekstraksi otomatis judul ringkas dari URL dengan pemisahan spasi yang rapi secara instan.
                       </p>
                     </div>
 
@@ -908,7 +892,7 @@ export const GuideTabContent: React.FC = () => {
                     <div className="p-3.5 rounded-xl bg-[#faf8f5] dark:bg-[#1e1e22] border border-[#e5e0d8] dark:border-[#2d2d35] space-y-1.5">
                       <div className="flex items-center gap-2 text-xs font-bold text-neutral-900 dark:text-neutral-100">
                         <Mic size={14} className="text-[#FF4F00]" />
-                        <span>Voice Chat & Preview</span>
+                        <span>Voice Message & Preview</span>
                       </div>
                       <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
                         Rekam pesan suara hingga 30 detik dengan tombol pratinjau putar sebelum kirim.
@@ -918,89 +902,12 @@ export const GuideTabContent: React.FC = () => {
                 )}
 
                 {/* Formatted Markdown Body */}
-                <div className="prose dark:prose-invert max-w-none space-y-4">
-                  <ReactMarkdown
-                    components={{
-                      h3: ({ children }) => (
-                        <h3 className="text-sm sm:text-base font-bold text-neutral-900 dark:text-neutral-100 mt-4 mb-2 flex items-center gap-2 border-b border-neutral-100 dark:border-neutral-800 pb-2">
-                          <CheckCircle2 size={16} className="text-[#FF4F00] shrink-0" />
-                          <span>{children}</span>
-                        </h3>
-                      ),
-                      h4: ({ children }) => (
-                        <h4 className="text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-200 mt-3 mb-2 flex items-center gap-1.5">
-                          <ShieldCheck size={14} className="text-[#FF4F00] shrink-0" />
-                          <span>{children}</span>
-                        </h4>
-                      ),
-                      p: ({ children }) => (
-                        <p className="text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 my-2 leading-relaxed break-words">
-                          {children}
-                        </p>
-                      ),
-                      ul: ({ children }) => (
-                        <ul className="space-y-2 my-2 list-none pl-0">{children}</ul>
-                      ),
-                      ol: ({ children }) => (
-                        <ol className="space-y-2.5 my-3 list-none pl-0">{children}</ol>
-                      ),
-                      li: ({ children }) => (
-                        <li className="p-2.5 rounded-xl bg-[#faf8f5] dark:bg-[#1c1c20] border border-[#e5e0d8]/60 dark:border-[#2d2d35]/60 flex items-start gap-2.5 text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 shadow-2xs">
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#FF4F00] mt-2 shrink-0" />
-                          <div className="flex-1 min-w-0 break-words">{children}</div>
-                        </li>
-                      ),
-                      code: ({ children }) => (
-                        <code className="px-1.5 py-0.5 rounded-md bg-[#FF4F00]/10 text-[#FF4F00] font-mono text-[11px] sm:text-xs font-semibold border border-[#FF4F00]/20 inline-block mx-0.5">
-                          {children}
-                        </code>
-                      ),
-                      strong: ({ children }) => (
-                        <strong className="font-bold text-neutral-900 dark:text-neutral-100">{children}</strong>
-                      )
-                    }}
-                  >
-                    {sections[activeSection].content}
-                  </ReactMarkdown>
+                <div className="prose dark:prose-invert prose-xs sm:prose-sm max-w-none text-neutral-700 dark:text-neutral-300 leading-relaxed">
+                  <ReactMarkdown>{sections[activeSection].content}</ReactMarkdown>
                 </div>
-
-                {/* Next Topic Quick Jump */}
-                {nextTabKey && sections[nextTabKey] && (
-                  <div className="pt-4 border-t border-[#e5e0d8] dark:border-[#2d2d35]">
-                    <button
-                      onClick={() => setActiveSection(nextTabKey)}
-                      className="w-full p-3.5 rounded-2xl bg-[#faf8f5] dark:bg-[#1e1e22] hover:bg-[#f4f0ea] dark:hover:bg-[#25252a] border border-[#e5e0d8] dark:border-[#2d2d35] flex items-center justify-between gap-3 text-left transition-all cursor-pointer group shadow-2xs"
-                    >
-                      <div className="min-w-0">
-                        <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider block mb-0.5">
-                          Topik Selanjutnya →
-                        </span>
-                        <div className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-[#FF4F00] transition-colors truncate">
-                          {sections[nextTabKey].title}
-                        </div>
-                      </div>
-                      <div className="p-2 rounded-xl bg-white dark:bg-[#28282e] text-neutral-400 group-hover:text-[#FF4F00] group-hover:translate-x-0.5 transition-all shrink-0">
-                        <ChevronRight size={16} />
-                      </div>
-                    </button>
-                  </div>
-                )}
               </div>
             )
           )}
-        </div>
-      </div>
-
-      {/* Footer Status Bar */}
-      <div className="p-2.5 border-t border-[#e5e0d8] dark:border-[#2d2d35] bg-[#f4f0ea]/80 dark:bg-[#1c1c20] flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 shrink-0 px-4">
-        <div className="flex items-center gap-2">
-          <Lightbulb size={14} className="text-[#FF4F00]" />
-          <span className="font-medium">TautanLumina • {t('guide.title') || 'Panduan Penggunaan'}</span>
-        </div>
-        <div className="flex items-center gap-2 text-[11px] font-mono opacity-80">
-          <span>6 Topik</span>
-          <span>•</span>
-          <span className="px-1.5 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">v1.0</span>
         </div>
       </div>
     </div>
