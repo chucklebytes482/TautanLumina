@@ -61,18 +61,14 @@ export const getBookmarkDisplayTitle = (name?: string, content?: string): string
   const cleanName = cleanText(name);
   const cleanUrl = cleanText(content);
 
+  // If user explicitly provided a title (and it's not generic 'Bookmark')
   if (cleanName && cleanName.toLowerCase() !== 'bookmark') {
     return cleanName;
   }
 
+  // If name is empty, display the URL directly
   if (cleanUrl) {
-    const fullUrl = cleanUrl.startsWith('http') ? cleanUrl : `https://${cleanUrl}`;
-    const extracted = extractTitleFromUrl(fullUrl);
-    if (extracted && extracted.toLowerCase() !== 'bookmark' && extracted.length > 0) {
-      return extracted;
-    }
-    // Fallback: Display FULL URL address
-    return fullUrl;
+    return cleanUrl.startsWith('http') ? cleanUrl : `https://${cleanUrl}`;
   }
 
   return cleanName || 'Bookmark';

@@ -41,7 +41,7 @@ export const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
 
     setIsSaving(true);
     try {
-      await onSave(item.id, trimmedName || 'Bookmark', trimmedUrl);
+      await onSave(item.id, trimmedName, trimmedUrl);
       onClose();
     } catch (err) {
       console.error('Failed to update bookmark:', err);
@@ -79,13 +79,13 @@ export const EditBookmarkModal: React.FC<EditBookmarkModalProps> = ({
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-neutral-700 flex items-center gap-1.5">
               <Type size={14} className="text-[#FF4F00]" />
-              {t('modal.newName') || 'Judul'}
+              {t('modal.newName') || 'Judul'} <span className="text-neutral-400 font-normal">(Opsional)</span>
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={t('modal.newName') || 'Judul Bookmark'}
+              placeholder="Kosongkan untuk menampilkan URL langsung"
               className="w-full border border-[#e2ddd5] bg-[#faf8f5]/60 rounded-xl px-3.5 py-2.5 text-sm text-[#131313] focus:outline-none focus:border-[#FF4F00] focus:ring-2 focus:ring-[#FF4F00]/20 focus:bg-white transition-all font-medium"
               autoFocus
             />

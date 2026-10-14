@@ -350,18 +350,45 @@ export default function App() {
 
   const handleNewFile = async () => {
     if (guardOffline()) return;
-    const url = await customPrompt(t('modal.bookmarkUrl'));
-    if (!url || !url.trim()) return;
-    
-    const finalUrl = url.trim().startsWith('http') ? url.trim() : `https://${url.trim()}`;
+    let urlToSave = '';
+
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
+        const clipText = await navigator.clipboard.readText();
+        const trimmedClip = cleanText(clipText);
+        if (trimmedClip) {
+          if (
+            trimmedClip.startsWith('http://') ||
+            trimmedClip.startsWith('https://') ||
+            trimmedClip.includes('.') ||
+            trimmedClip.startsWith('www.')
+          ) {
+            urlToSave = trimmedClip;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Clipboard access unavailable or denied:', err);
+    }
+
+    if (!urlToSave) {
+      const promptUrl = await customPrompt(t('modal.bookmarkUrl'));
+      if (!promptUrl || !promptUrl.trim()) return;
+      urlToSave = promptUrl.trim();
+    }
+
+    const finalUrl = urlToSave.startsWith('http://') || urlToSave.startsWith('https://')
+      ? urlToSave
+      : `https://${urlToSave}`;
+
     const extracted = extractTitleFromUrl(finalUrl);
     const autoTitle = (extracted && extracted.toLowerCase() !== 'bookmark') ? extracted : finalUrl;
 
     try {
       await createItem(autoTitle, 'file', currentFolderId, finalUrl);
-      showToast(t('toast.bookmarkSaved'));
+      showToast(t('toast.bookmarkSaved') || 'Bookmark berhasil disimpan dari papan klip');
     } catch (e: any) {
-      showToast(e?.message || t('toast.bookmarkSaveFailed'));
+      showToast(e?.message || t('toast.bookmarkSaveFailed') || 'Gagal menyimpan bookmark');
     }
   };
 
