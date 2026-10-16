@@ -592,14 +592,36 @@ export default function App() {
     setMoveKeypadConfig(null);
 
     if (targetItem) {
-      const currentIndex = listItems.findIndex((i) => i.id === targetItem.id);
-      if (currentIndex !== -1) {
-        const currentIds = listItems.map((i) => i.id);
-        const newIds = [...currentIds];
-        newIds.splice(currentIndex, 1);
-        newIds.splice(targetIdx, 0, targetItem.id);
-        await reorderInParent(targetItem.parentId, newIds);
-        showToast(t('toast.moved') || 'Dipindahkan');
+      const isFolder = targetItem.type === 'folder';
+      const folderItems = listItems.filter((i) => i.type === 'folder');
+      const bookmarkItems = listItems.filter((i) => i.type !== 'folder');
+
+      if (isFolder) {
+        const currentFolderIdx = folderItems.findIndex((i) => i.id === targetItem.id);
+        if (currentFolderIdx !== -1) {
+          const newFolderItems = [...folderItems];
+          newFolderItems.splice(currentFolderIdx, 1);
+          newFolderItems.splice(targetIdx, 0, targetItem);
+          const reorderedIds = [
+            ...newFolderItems.map((i) => i.id),
+            ...bookmarkItems.map((i) => i.id),
+          ];
+          await reorderInParent(targetItem.parentId, reorderedIds);
+          showToast(t('toast.moved') || 'Dipindahkan');
+        }
+      } else {
+        const currentBookmarkIdx = bookmarkItems.findIndex((i) => i.id === targetItem.id);
+        if (currentBookmarkIdx !== -1) {
+          const newBookmarkItems = [...bookmarkItems];
+          newBookmarkItems.splice(currentBookmarkIdx, 1);
+          newBookmarkItems.splice(targetIdx, 0, targetItem);
+          const reorderedIds = [
+            ...folderItems.map((i) => i.id),
+            ...newBookmarkItems.map((i) => i.id),
+          ];
+          await reorderInParent(targetItem.parentId, reorderedIds);
+          showToast(t('toast.moved') || 'Dipindahkan');
+        }
       }
     }
   };
@@ -774,10 +796,12 @@ export default function App() {
           showToast(t('toast.cantMoveSearch'));
           return;
         }
+        const isFolder = item.type === 'folder';
+        const sameTypeItems = listItems.filter((i) => isFolder ? i.type === 'folder' : i.type !== 'folder');
         setMoveKeypadConfig({
           targetItem: item,
           isBulk: false,
-          maxNum: listItems.length,
+          maxNum: sameTypeItems.length,
         });
       },
     });
