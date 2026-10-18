@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Loader2, Mail, Lock, Eye, EyeOff, Globe, ChevronDown, Sparkles, ShieldCheck, Mic, Move, Cloud, FileUp, BookOpen, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Loader2, Mail, Lock, Eye, EyeOff, ChevronDown, Sparkles, ShieldCheck, Mic, Move, Cloud, FileUp, Check } from 'lucide-react';
 import { AppLogo } from './AppLogo';
-import { useI18n, languages } from '../lib/i18n';
-import { LanguageCard, LanguageDropdown } from './LanguageSelectorModal';
-import { FullscreenGuideModal } from './FullscreenGuideModal';
+import { useI18n } from '../lib/i18n';
 import { toast } from 'sonner';
 import { isAliasedEmail, isDisposableEmail } from '../lib/emailPolicies';
 
@@ -17,28 +15,15 @@ interface Props {
 }
 
 export const LoginScreen = ({ login, register, resetPassword, updatePasswordRecovery, verifyEmail, loading }: Props) => {
-  const { t, lang, setLang } = useI18n();
+  const { t } = useI18n();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'reset'>('login');
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
-  const [showLangMenu, setShowLangMenu] = useState(false);
-  const [showGuideModal, setShowGuideModal] = useState(false);
   const [isHeroExpanded, setIsHeroExpanded] = useState(false);
   const [userId, setUserId] = useState('');
   const [secret, setSecret] = useState('');
-  const langMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) {
-        setShowLangMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -155,39 +140,7 @@ export const LoginScreen = ({ login, register, resetPassword, updatePasswordReco
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Guide Modal Trigger */}
-          <button
-            onClick={() => setShowGuideModal(true)}
-            title={t('guide.title') || 'Panduan'}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2 bg-white dark:bg-[#25252a] rounded-full shadow-2xs text-neutral-700 dark:text-neutral-200 hover:text-neutral-900 dark:hover:text-white hover:bg-[#faf8f5] dark:hover:bg-[#2d2d35] transition-all border border-[#e2ddd5] dark:border-[#383842] text-xs font-semibold cursor-pointer active:scale-95"
-          >
-            <BookOpen size={14} className="text-[#FF4F00]" />
-            <span className="text-xs">{t('guide.title') || 'Panduan'}</span>
-          </button>
 
-          {/* Language Switcher */}
-          <div className="relative" ref={langMenuRef}>
-            <button 
-              onClick={() => setShowLangMenu(!showLangMenu)}
-              title="Pilih Bahasa / Language"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2 bg-white dark:bg-[#25252a] rounded-full shadow-2xs text-neutral-700 dark:text-neutral-200 hover:text-neutral-900 dark:hover:text-white hover:bg-[#faf8f5] dark:hover:bg-[#2d2d35] transition-all border border-[#e2ddd5] dark:border-[#383842] text-xs font-semibold cursor-pointer active:scale-95"
-            >
-              <Globe size={14} className="text-[#FF4F00]" />
-              <span>{languages.find(l => l.code === lang)?.flag} {lang.toUpperCase()}</span>
-              <ChevronDown size={13} className={`text-neutral-400 transition-transform duration-200 ${showLangMenu ? 'rotate-180' : ''}`} />
-            </button>
-            <LanguageDropdown isOpen={showLangMenu} onClose={() => setShowLangMenu(false)} align="right">
-              <LanguageCard
-                currentLang={lang}
-                onSelectLang={(code) => {
-                  setLang(code);
-                  setShowLangMenu(false);
-                }}
-              />
-            </LanguageDropdown>
-          </div>
-        </div>
       </header>
 
       {/* Main Landing Card */}
@@ -414,11 +367,6 @@ export const LoginScreen = ({ login, register, resetPassword, updatePasswordReco
         <p>© 2026 TautanLumina • Ultra-Minimalist AI Bookmark & Note Manager</p>
       </footer>
 
-      {/* Fullscreen Guide Modal */}
-      <FullscreenGuideModal
-        isOpen={showGuideModal}
-        onClose={() => setShowGuideModal(false)}
-      />
     </div>
   );
 };

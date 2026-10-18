@@ -23,36 +23,35 @@ import {
   MessageCircle,
   ExternalLink,
   Mail,
-  Languages,
   Aperture,
   FileText,
-  RefreshCw
+  RefreshCw,
+  KeyRound
 } from 'lucide-react';
 import { AppLogo } from './components/AppLogo';
 
 import { FileBrowser } from './components/FileBrowser';
 import { ItemMenu, MenuAction } from './components/ItemMenu';
 import { LoginScreen } from './components/LoginScreen';
-import { LanguageCard, LanguageDropdown } from './components/LanguageSelectorModal';
 import { useDialog } from './context/DialogContext';
 
 import { useFileSystem } from './hooks/useFileSystem';
 import { useAppwriteSync } from './hooks/useAppwriteSync';
-import { useI18n, languages } from './lib/i18n';
+import { useI18n } from './lib/i18n';
 import { ADMIN_EMAIL } from './lib/appwrite';
 
 import { FileSystemItem } from './Types';
 import { extractTitleFromUrl, cleanText } from './lib/titleExtractor';
 import { hasPinSet, removePin, usePinState } from './lib/pin';
+import { isBip39EnglishWord } from './lib/bip39';
 import { isNetscapeBookmarkHTML } from './lib/bookmarkParser';
 
 import { FolderPicker } from './components/FolderPicker';
 import { SettingsDialog } from './components/SettingsDialog';
 import { PinModal } from './components/PinModal';
 import { MoveKeypadModal } from './components/MoveKeypadModal';
-import { EditBookmarkModal } from './components/EditBookmarkModal';
 import { FullscreenChatModal } from './components/FullscreenChatModal';
-import { FullscreenGuideModal } from './components/FullscreenGuideModal';
+import { PhraseViewModal } from './components/PhraseViewModal';
 
 export default function App() {
   const fs = useFileSystem();
@@ -77,10 +76,12 @@ export default function App() {
     searchItems,
     pathOf,
     exportJSON,
+    exportHTML,
     importJSON,
     importHTML,
     importItems,
     clearAll,
+    clearPharseFolder,
   } = fs;
 
   const [query, setQuery] = useState('');
@@ -93,15 +94,14 @@ export default function App() {
         title: string;
         confirmLabel: string;
         disabledIds?: Set<string>;
+        restrictedRootFolderId?: string;
         onConfirm: (folderId: string | null) => Promise<void> | void;
       }
   >(null);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<'wallet' | 'profile' | 'sync' | null>(null);
-  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const [showChatPopup, setShowChatPopup] = useState(false);
-  const [showGuideModal, setShowGuideModal] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
@@ -139,8 +139,9 @@ export default function App() {
     maxNum: number;
   } | null>(null);
 
-  // Edit Bookmark modal state
-  const [editingBookmarkItem, setEditingBookmarkItem] = useState<FileSystemItem | null>(null);
+
+  // Phrase Read-Only modal state
+  const [viewingPhraseItem, setViewingPhraseItem] = useState<FileSystemItem | null>(null);
 
   const { lang, setLang, t } = useI18n();
 
@@ -225,6 +226,30 @@ export default function App() {
     [items]
   );
 
+  const isPharseFolderOrSubfolder = useCallback(
+    (folderId: string | null): boolean => {
+      if (!folderId) return false;
+      if (folderId === 'folder-pharse') return true;
+      let cur = items.find((i) => i.id === folderId);
+      while (cur && cur.parentId) {
+        if (cur.parentId === 'folder-pharse') return true;
+        cur = items.find((i) => i.id === cur!.parentId);
+      }
+      return false;
+    },
+    [items]
+  );
+
+  const isFromPharseFolder = useCallback(
+    (id: string): boolean => {
+      const item = items.find((i) => i.id === id);
+      if (!item) return false;
+      if (item.type === 'phrase') return true;
+      return isPharseFolderOrSubfolder(item.parentId);
+    },
+    [items, isPharseFolderOrSubfolder]
+  );
+
   const breadcrumbs = getBreadcrumbs();
   const searchMode = query.trim().length > 0;
   const listItems = useMemo(
@@ -273,13 +298,13 @@ export default function App() {
     const f = items.find((i) => i.id === folderId);
     if (!f) return;
 
-    if (folderId === 'folder-catatan' || folderId === 'folder-hello-world') {
-      showToast(t('toast.folderSystemCannotLock'));
+    if (folderId === 'folder-catatan' || folderId === 'folder-hello-world' || folderId === 'folder-pharse') {
+      showToast('Tidak dapat dikunci');
       return;
     }
 
     if (!hasPinSet()) {
-      showToast(t('settings.pinNotSet') || 'PIN belum diatur. Silakan atur PIN di Pengaturan');
+      showToast('PIN belum diatur');
       return;
     }
 
@@ -296,7 +321,7 @@ export default function App() {
       if (!isProOrAdmin) {
         const currentlyLockedCount = items.filter((i) => i.type === 'folder' && i.locked).length;
         if (currentlyLockedCount >= 1) {
-          showToast(t('toast.proLimitFolderLock') || 'Akun Free dibatasi maksimal 1 folder terkunci. Tingkatkan ke Pro untuk kunci folder tanpa batas.');
+          showToast('Batas 1 folder terkunci');
           return;
         }
       }
@@ -309,14 +334,14 @@ export default function App() {
         next.delete(folderId);
         return next;
       });
-      showToast(t('toast.folderLocked') + ` "${f.name}"`);
+      showToast('Folder dikunci');
     } else {
       setUnlockedFolderIds((prev) => {
         const next = new Set(prev);
         next.add(folderId);
         return next;
       });
-      showToast(t('toast.folderUnlocked') + ` "${f.name}"`);
+      showToast('Folder dibuka');
     }
   };
 
@@ -372,23 +397,33 @@ export default function App() {
     }
 
     if (!urlToSave) {
-      const promptUrl = await customPrompt(t('modal.bookmarkUrl'));
-      if (!promptUrl || !promptUrl.trim()) return;
-      urlToSave = promptUrl.trim();
+      showToast('Tidak berisi tautan');
+      return;
     }
 
     const finalUrl = urlToSave.startsWith('http://') || urlToSave.startsWith('https://')
       ? urlToSave
       : `https://${urlToSave}`;
 
+    // Deteksi anti-duplikat langsung dari seluruh isi yang ditempel
+    const normUrl = finalUrl.trim().replace(/\/+$/, '');
+    const isDuplicate = items.some(
+      (it) => !it.deletedAt && it.type === 'file' && (it.content?.trim().replace(/\/+$/, '') === normUrl)
+    );
+    if (isDuplicate) {
+      showToast('Tautan ini sudah ada');
+      return;
+    }
+
     const extracted = extractTitleFromUrl(finalUrl);
     const autoTitle = (extracted && extracted.toLowerCase() !== 'bookmark') ? extracted : finalUrl;
 
     try {
       await createItem(autoTitle, 'file', currentFolderId, finalUrl);
-      showToast(t('toast.bookmarkSaved') || 'Bookmark berhasil disimpan dari papan klip');
+      smartSync(true);
+      showToast('Bookmark disimpan');
     } catch (e: any) {
-      showToast(e?.message || t('toast.bookmarkSaveFailed') || 'Gagal menyimpan bookmark');
+      showToast(e?.message || 'Gagal simpan');
     }
   };
 
@@ -399,14 +434,78 @@ export default function App() {
     
     const targetFolder = currentFolderId || 'folder-catatan';
     await createItem('', 'note', targetFolder, text.trim());
-    showToast(t('toast.noteSaved'));
+    smartSync(true);
+    showToast('Catatan disimpan');
+  };
+
+  const handleNewPhrase = async () => {
+    if (guardOffline()) return;
+
+    let textToProcess = '';
+
+    // 1-click paste: attempt to read from clipboard immediately
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
+        const clip = await navigator.clipboard.readText();
+        if (clip && clip.trim()) {
+          textToProcess = clip.trim();
+        }
+      }
+    } catch (err) {
+      console.warn('Clipboard read error/denied for phrase:', err);
+    }
+
+    const parseAndValidateWords = (str: string) => {
+      const lower = cleanText(str).toLowerCase();
+      const rawWords = lower.split(/[\s,]+/).filter(Boolean);
+      return rawWords.map((w) => w.toLowerCase().replace(/[^a-z0-9_-]/g, '')).filter(Boolean);
+    };
+
+    const words = parseAndValidateWords(textToProcess);
+
+    // Hapus fallback: wajib minimal 12 kata langsung dari papan klip
+    if (words.length < 12) {
+      showToast('bukan bip39');
+      return;
+    }
+
+    // Validasi apakah setiap kata valid dalam kamus BIP39 English
+    const invalidWords = words.filter(w => !isBip39EnglishWord(w));
+    if (invalidWords.length > 0) {
+      showToast('bukan bip39');
+      return;
+    }
+
+    // Force strictly lowercase space-separated words
+    const cleanContent = words.map((w) => w.toLowerCase()).join(' ');
+
+    // Deteksi anti-duplikat langsung dari seluruh isi yang ditempel
+    const isDuplicate = items.some(
+      (it) => !it.deletedAt && it.type === 'phrase' && it.content?.trim() === cleanContent.trim()
+    );
+    if (isDuplicate) {
+      showToast('Pharse ini sudah ada');
+      return;
+    }
+
+    // Judul pharse otomatis diambil dari 1 kata pertama isi pharse
+    const firstWord = words[0] || 'pharse';
+
+    try {
+      await createItem(firstWord, 'phrase', 'folder-pharse', cleanContent);
+      smartSync(true);
+      navigateTo('folder-pharse');
+      showToast('Pharse disimpan');
+    } catch (e: any) {
+      showToast(e?.message || 'Gagal simpan');
+    }
   };
 
   const toggleSelectAllHeader = () => {
     if (listItems.length === 0) return;
     
     const selectableItems = listItems.filter((item) => {
-      const isSystem = item.id === 'folder-catatan' || item.id === 'folder-hello-world';
+      const isSystem = item.id === 'folder-catatan' || item.id === 'folder-hello-world' || item.id === 'folder-pharse';
       const isLocked = item.type === 'folder' && item.locked;
       return !isSystem && !isLocked;
     });
@@ -452,19 +551,32 @@ export default function App() {
       });
     };
     movingIds.forEach(walk);
+
+    const isPharseMoving = movingIds.some((id) => isFromPharseFolder(id));
+    if (!isPharseMoving) {
+      disabled.add('folder-pharse');
+      walk('folder-pharse');
+    }
+
     return disabled;
   };
 
   const openMovePicker = (ids: string[]) => {
     if (guardOffline()) return;
+    const isPharseMoving = ids.some((id) => isFromPharseFolder(id));
     setPickerConfig({
       title: t('action.moveItems').replace('{count}', ids.length.toString()),
       confirmLabel: t('action.move'),
       disabledIds: disabledFolderIds(ids),
+      restrictedRootFolderId: isPharseMoving ? 'folder-pharse' : undefined,
       onConfirm: async (target) => {
-        await moveMany(ids, target);
-        clearSelection();
-        showToast(t('toast.moved'));
+        try {
+          await moveMany(ids, target);
+          clearSelection();
+          showToast('Dipindahkan');
+        } catch (e: any) {
+          showToast(e?.message || 'Gagal dipindahkan');
+        }
       },
     });
   };
@@ -474,9 +586,9 @@ export default function App() {
     opts?: { title?: string; afterDelete?: () => void },
   ) => {
     if (guardOffline()) return;
-    const filteredIds = ids.filter(id => id !== 'folder-catatan' && id !== 'folder-hello-world');
+    const filteredIds = ids.filter(id => id !== 'folder-catatan' && id !== 'folder-hello-world' && id !== 'folder-pharse');
     if (filteredIds.length < ids.length && ids.length === 1) {
-      showToast(t('toast.folderSystemCannotDelete'));
+      showToast('Tidak dapat dihapus');
       return;
     }
     if (filteredIds.length === 0) return;
@@ -487,7 +599,7 @@ export default function App() {
     });
     
     if (lockedItems.length > 0) {
-      showToast(t('toast.lockedItem'));
+      showToast('Item terkunci');
       return;
     }
 
@@ -517,12 +629,13 @@ export default function App() {
     const performDelete = async () => {
       await deleteMany(filteredIds);
       clearSelection();
-      showToast(t('toast.deleted'));
+      showToast('Dihapus');
       afterDelete?.();
+      smartSync(true);
     };
 
     if (await customConfirm(title)) {
-      performDelete();
+      await performDelete();
     }
   };
 
@@ -538,7 +651,7 @@ export default function App() {
       : listItems;
 
     if (sourceList.length === 0) {
-      sonnerToast.info(t('toast.noBookmarksInFolder') || 'Tidak ada bookmark untuk diperbarui');
+      sonnerToast.info('Tidak ada bookmark');
       return;
     }
 
@@ -556,7 +669,7 @@ export default function App() {
     }
 
     if (targetBookmarks.length === 0) {
-      sonnerToast.info(t('toast.noBookmarksInFolder') || 'Tidak ada bookmark untuk diperbarui');
+      sonnerToast.info('Tidak ada bookmark');
       return;
     }
 
@@ -581,7 +694,7 @@ export default function App() {
       await updateMany(updates);
     }
 
-    sonnerToast.success(t('toast.regenerated') || 'Judul berhasil diperbarui dari URL!');
+    sonnerToast.success('Judul diperbarui');
   };
 
   const handleConfirmMoveKeypad = async (targetNum: number) => {
@@ -607,7 +720,7 @@ export default function App() {
             ...bookmarkItems.map((i) => i.id),
           ];
           await reorderInParent(targetItem.parentId, reorderedIds);
-          showToast(t('toast.moved') || 'Dipindahkan');
+          showToast('Dipindahkan');
         }
       } else {
         const currentBookmarkIdx = bookmarkItems.findIndex((i) => i.id === targetItem.id);
@@ -620,13 +733,13 @@ export default function App() {
             ...newBookmarkItems.map((i) => i.id),
           ];
           await reorderInParent(targetItem.parentId, reorderedIds);
-          showToast(t('toast.moved') || 'Dipindahkan');
+          showToast('Dipindahkan');
         }
       }
     }
   };
 
-  const handleExport = () => {
+  const handleExportJSON = () => {
     const data = exportJSON();
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -635,7 +748,19 @@ export default function App() {
     a.download = 'tautan-lumina.json';
     a.click();
     URL.revokeObjectURL(url);
-    showToast(t('settings.export.success') || 'Exported successfully');
+    showToast('Berhasil diekspor');
+  };
+
+  const handleExportHTML = () => {
+    const data = exportHTML();
+    const blob = new Blob([data], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tautan-lumina-bookmarks.html';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Berhasil diekspor');
   };
 
   const handleImport = () => {
@@ -647,7 +772,7 @@ export default function App() {
       const file = e.target.files?.[0];
       if (!file) return;
       if (file.size > 10 * 1024 * 1024) {
-        showToast(t('settings.import.tooLarge') || 'File too large (Max 10MB)');
+        showToast('File terlalu besar');
         return;
       }
       const reader = new FileReader();
@@ -659,13 +784,13 @@ export default function App() {
           const targetFolder = 'folder-hello-world';
           if (isBookmark) {
             const count = await importHTML(content, false, targetFolder);
-            showToast(t('toast.importBookmarksSuccess').replace('{count}', count.toString()));
+            showToast(`${count} bookmark diimpor`);
           } else {
             await importJSON(content, false, targetFolder);
-            showToast(t('settings.import.success') || 'Imported successfully');
+            showToast('Berhasil diimpor');
           }
         } catch (err: any) {
-          showToast(err?.message || t('toast.invalidFileFormat'));
+          showToast(err?.message || 'Format tidak valid');
         }
       };
       reader.readAsText(file);
@@ -713,7 +838,7 @@ export default function App() {
 
     const targetFolder = items.find((i) => i.id === folderId);
     if (targetFolder && isNoteFolderOrSubfolder(targetFolder)) {
-      sonnerToast.info(t('toast.noBookmarksInFolder') || 'Tidak ada bookmark di folder ini');
+      sonnerToast.info('Tidak ada bookmark');
       return;
     }
 
@@ -732,7 +857,7 @@ export default function App() {
     }
 
     if (folderBookmarks.length === 0) {
-      sonnerToast.info(t('toast.noBookmarksInFolder') || 'Tidak ada bookmark di folder ini');
+      sonnerToast.info('Tidak ada bookmark');
       return;
     }
 
@@ -760,7 +885,7 @@ export default function App() {
       await updateMany(updates);
     }
 
-    sonnerToast.success(t('toast.regenerated') || 'Judul berhasil diperbarui dari URL!');
+    sonnerToast.success('Judul diperbarui');
   };
 
   const handleRegenerateBookmark = async (item: FileSystemItem) => {
@@ -778,7 +903,7 @@ export default function App() {
     }
 
     await updateItem(item.id, updatesObj);
-    sonnerToast.success(t('toast.regenerated') || 'Judul berhasil diperbarui dari URL!');
+    sonnerToast.success('Judul diperbarui');
   };
 
   const openItemMenu = (item: FileSystemItem) => {
@@ -788,12 +913,37 @@ export default function App() {
   const menuActions = (item: FileSystemItem): MenuAction[] => {
     const list: MenuAction[] = [];
 
+    if (item.type === 'phrase') {
+      list.push({
+        key: 'reorder',
+        label: t('action.moveToNum'),
+        onClick: () => {
+          if (searchMode) {
+            showToast('Tidak dapat dipindah');
+            return;
+          }
+          const sameTypeItems = listItems.filter((i) => i.type === 'phrase');
+          setMoveKeypadConfig({
+            targetItem: item,
+            isBulk: false,
+            maxNum: sameTypeItems.length,
+          });
+        },
+      });
+      list.push({
+        key: 'move',
+        label: t('action.moveToFolder'),
+        onClick: () => openMovePicker([item.id]),
+      });
+      return list;
+    }
+
     list.push({
       key: 'reorder',
       label: t('action.moveToNum'),
       onClick: () => {
         if (searchMode) {
-          showToast(t('toast.cantMoveSearch'));
+          showToast('Tidak dapat dipindah');
           return;
         }
         const isFolder = item.type === 'folder';
@@ -824,18 +974,8 @@ export default function App() {
           }
         },
       });
+    }
 
-    }
-    if (item.type === 'file') {
-      list.push({
-        key: 'editTitle',
-        label: t('action.editTitle') || 'Edit Judul & URL',
-        onClick: () => {
-          if (guardOffline()) return;
-          setEditingBookmarkItem(item);
-        },
-      });
-    }
     if (item.type === 'note') {
       list.push({
         key: 'edit',
@@ -845,7 +985,7 @@ export default function App() {
           const content = await customPrompt(t('modal.noteText'), item.content || '', { textarea: true, maxWidth: 'max-w-xl' });
           if (content !== null && content.trim() !== '') {
             await updateContent(item.id, content.trim());
-            showToast(t('toast.noteSaved'));
+            showToast('Catatan disimpan');
           }
         },
       });
@@ -879,7 +1019,10 @@ export default function App() {
         <div className="flex items-center gap-3">
           <button
             data-testid="settings-btn"
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => {
+              setSettingsInitialTab(null);
+              setSettingsOpen(true);
+            }}
             className="text-neutral-900 hover:bg-[#faf8f5] p-1.5 rounded-xl transition-colors border border-transparent hover:border-[#e2ddd5]"
             aria-label={t('file.menu')}
             title={t('file.menu')}
@@ -902,28 +1045,6 @@ export default function App() {
               <MessageCircle size={20} className="text-[#FF4F00]" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-[#FF4F00] rounded-full animate-pulse" />
             </button>
-          </div>
-          <div className="relative">
-            <button 
-              className="flex items-center gap-1.5 text-neutral-800 hover:bg-[#faf8f5] p-2 rounded-full transition-all border border-transparent hover:border-[#e2ddd5] cursor-pointer"
-              onClick={() => {
-                setShowLanguageMenu(!showLanguageMenu);
-              }}
-              title={t('lang.title') || 'Bahasa'}
-              aria-label={t('lang.title') || 'Bahasa'}
-            >
-              <Languages size={20} className="text-[#FF4F00]" />
-              <span className="text-xs font-extrabold uppercase">{languages.find(l => l.code === lang)?.flag} {lang.toUpperCase()}</span>
-            </button>
-            <LanguageDropdown isOpen={showLanguageMenu} onClose={() => setShowLanguageMenu(false)} align="right">
-              <LanguageCard
-                currentLang={lang}
-                onSelectLang={(code) => {
-                  setLang(code);
-                  setShowLanguageMenu(false);
-                }}
-              />
-            </LanguageDropdown>
           </div>
         </div>
       </header>
@@ -973,7 +1094,7 @@ export default function App() {
               <button
                 data-testid="new-file-btn"
                 onClick={handleNewFile}
-                className="p-2.5 bg-[#FF4F00] hover:bg-[#E04500] text-white border border-[#FF4F00] rounded-xl transition-all font-semibold shadow-xs flex items-center justify-center shrink-0 flex-1 sm:flex-initial flex items-center justify-center"
+                className="p-2.5 border border-[#e2ddd5] bg-white rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 shrink-0 flex-1 sm:flex-initial flex items-center justify-center"
                 title={t("btn.newBookmark")}
               >
                 <FilePlus size={20} />
@@ -985,6 +1106,15 @@ export default function App() {
                 title={t('btn.newNote')}
               >
                 <FileText size={20} />
+              </button>
+              <button
+                data-testid="new-phrase-btn"
+                onClick={handleNewPhrase}
+                className="p-2.5 border border-[#e2ddd5] bg-white rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 shrink-0 flex-1 sm:flex-initial flex items-center justify-center bg-white cursor-pointer"
+                title={t('btn.newPhrase') || 'Pharse (1x Klik Tempel)'}
+                aria-label={t('btn.newPhrase') || 'Pharse (1x Klik Tempel)'}
+              >
+                <KeyRound size={20} />
               </button>
             </div>
           </div>
@@ -1059,15 +1189,17 @@ export default function App() {
           >
             <Move size={16} />
           </button>
-          <button
-            data-testid="bulk-delete-btn"
-            onClick={bulkDelete}
-            className="p-1.5 hover:bg-neutral-800 rounded-lg text-red-400 transition-colors"
-            aria-label={t('action.delete')}
-            title={t('action.delete')}
-          >
-            <Trash2 size={16} />
-          </button>
+          {currentFolderId !== 'folder-pharse' && !Array.from(selectedIds).some(id => items.find(i => i.id === id)?.type === 'phrase') && (
+            <button
+              data-testid="bulk-delete-btn"
+              onClick={bulkDelete}
+              className="p-1.5 hover:bg-neutral-800 rounded-lg text-red-400 transition-colors"
+              aria-label={t('action.delete')}
+              title={t('action.delete')}
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
           <button
             data-testid="clear-selection-btn"
             onClick={clearSelection}
@@ -1097,13 +1229,16 @@ export default function App() {
           searchMode={searchMode}
           pathOf={pathOf}
           currentFolderId={currentFolderId}
+          onOpenPhrase={(it) => setViewingPhraseItem(it)}
         />
       </div>
 
       {menuFor && (
         <ItemMenu
           title={
-            menuFor.type === 'note'
+            menuFor.type === 'phrase'
+              ? menuFor.name || 'Pharse'
+              : menuFor.type === 'note'
               ? (menuFor.content || '').substring(0, 30) + ((menuFor.content || '').length > 30 ? '...' : '')
               : menuFor.type === 'file'
               ? (menuFor.content || '').split('\n').find((l) => l.trim()) || '(kosong)'
@@ -1117,10 +1252,15 @@ export default function App() {
         {pickerConfig && (
           <FolderPicker
             items={items}
-            initialFolderId={currentFolderId}
+            initialFolderId={
+              pickerConfig.restrictedRootFolderId
+                ? (isPharseFolderOrSubfolder(currentFolderId) ? currentFolderId : pickerConfig.restrictedRootFolderId)
+                : currentFolderId
+            }
             title={pickerConfig.title}
             confirmLabel={pickerConfig.confirmLabel}
             disabledIds={pickerConfig.disabledIds}
+            restrictedRootFolderId={pickerConfig.restrictedRootFolderId}
             onConfirm={async (id) => {
               await pickerConfig.onConfirm(id);
               setPickerConfig(null);
@@ -1143,9 +1283,9 @@ export default function App() {
             }}
             onOpenPinMenu={handleOpenPinMenu}
             onResetPinPassword={() => setPinModalMode('reset_password')}
-            onExport={handleExport}
+            onExportJSON={handleExportJSON}
+            onExportHTML={handleExportHTML}
             onImport={handleImport}
-            onOpenGuide={() => setShowGuideModal(true)}
           />
         )}
 
@@ -1165,7 +1305,7 @@ export default function App() {
                 setCurrentFolderId(fId);
                 setQuery('');
                 setSelectedIds(new Set());
-                showToast(t('toast.folderOpened').replace('{name}', folderPendingUnlock.name));
+                showToast('Folder dibuka');
               } else if (pinModalMode === 'unlock_folder_lock' && folderPendingUnlock) {
                 handleToggleFolderLock(folderPendingUnlock.id, true);
               } else if (pinModalMode === 'setup' && folderPendingUnlock) {
@@ -1198,20 +1338,13 @@ export default function App() {
           currentUserEmail={user?.email}
         />
 
-        <FullscreenGuideModal
-          isOpen={showGuideModal}
-          onClose={() => setShowGuideModal(false)}
-        />
 
-        {editingBookmarkItem && (
-          <EditBookmarkModal
-            item={editingBookmarkItem}
-            onClose={() => setEditingBookmarkItem(null)}
-            onSave={async (id, name, url) => {
-              if (guardOffline()) return;
-              await updateItem(id, { name, content: url });
-              showToast(t('toast.bookmarkSaved') || 'Bookmark berhasil disimpan');
-            }}
+
+
+        {viewingPhraseItem && (
+          <PhraseViewModal
+            item={viewingPhraseItem}
+            onClose={() => setViewingPhraseItem(null)}
           />
         )}
       </main>

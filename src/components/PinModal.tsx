@@ -143,7 +143,7 @@ export const PinModal: React.FC<PinModalProps> = ({
       return;
     }
     await savePin(p1);
-    toast.success(t('pin.setSuccess'));
+    toast.success('PIN disimpan');
     if (onSuccess) onSuccess();
     onClose();
   };
@@ -178,7 +178,7 @@ export const PinModal: React.FC<PinModalProps> = ({
       if (onToggleFolderLock) {
         onToggleFolderLock(selectedFolderToUnlock.id, true);
       }
-      toast.success(t('pin.folderUnlockedSuccess').replace('{name}', selectedFolderToUnlock.name));
+      toast.success('Folder dibuka');
       setSelectedFolderToUnlock(null);
       setUnlockFolderPin(['', '', '', '']);
       setErrorMsg('');

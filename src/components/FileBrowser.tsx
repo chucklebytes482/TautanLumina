@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MoreVertical, Folder, Pin, Trash2, Lock, FileText, FolderHeart, FolderCode, StickyNote, Copy } from 'lucide-react';
+import { MoreVertical, Folder, Pin, Trash2, Lock, FileText, FolderHeart, FolderCode, StickyNote, Copy, KeyRound } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
 import { toast } from 'sonner';
@@ -12,6 +12,7 @@ interface Props {
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onOpenFolder: (id: string) => void;
+  onOpenPhrase?: (item: FileSystemItem) => void;
   onMenu: (item: FileSystemItem, anchor: DOMRect) => void;
   onDropOnFolder: (targetFolderId: string, draggedIds: string[]) => void;
   onReorder: (draggedIds: string[], overId: string, position: 'before' | 'after') => void;
@@ -29,6 +30,7 @@ export const FileBrowser = ({
   selectedIds,
   onToggleSelect,
   onOpenFolder,
+  onOpenPhrase,
   onMenu,
   onDropOnFolder,
   onReorder,
@@ -80,6 +82,7 @@ export const FileBrowser = ({
             pathLabel={searchMode && pathOf ? pathOf(it.parentId) : undefined}
             currentFolderId={currentFolderId}
             noteNumber={isNote ? noteCounter : undefined}
+            onOpenPhrase={onOpenPhrase}
           />
         );
       })}
@@ -94,6 +97,7 @@ interface RowProps {
   allSelectedIds: Set<string>;
   onToggleSelect: () => void;
   onOpenFolder: () => void;
+  onOpenPhrase?: (item: FileSystemItem) => void;
   onMenu: (rect: DOMRect) => void;
   onDropOnFolder: (draggedIds: string[]) => void;
   onReorder: (draggedIds: string[], position: 'before' | 'after') => void;
@@ -112,6 +116,7 @@ const Row = ({
   allSelectedIds,
   onToggleSelect,
   onOpenFolder,
+  onOpenPhrase,
   onMenu,
   onDropOnFolder,
   onReorder,
@@ -129,10 +134,16 @@ const Row = ({
 
   const handleClick = () => {
     if (selectMode) {
+      if (item.id === 'folder-catatan' || item.id === 'folder-hello-world' || item.id === 'folder-pharse') {
+        return;
+      }
       onToggleSelect();
       return;
     }
     if (item.type === 'folder') onOpenFolder();
+    else if (item.type === 'phrase') {
+      onOpenPhrase?.(item);
+    }
     else if (item.type === 'note') {
       const textToCopy = item.content || item.name || '';
       navigator.clipboard.writeText(textToCopy)
@@ -221,7 +232,7 @@ const Row = ({
       ].join(' ')}
     >
       {/* Select Mode Checkbox */}
-      {selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-hello-world' && (
+      {selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-hello-world' && item.id !== 'folder-pharse' && (
         <span
           className={[
             'inline-block w-4 h-4 rounded border shrink-0 transition-colors',
@@ -235,7 +246,7 @@ const Row = ({
           }}
         />
       )}
-      {selectMode && (item.id === 'folder-catatan' || item.id === 'folder-hello-world') && (
+      {selectMode && (item.id === 'folder-catatan' || item.id === 'folder-hello-world' || item.id === 'folder-pharse') && (
         <div className="w-4 h-4 shrink-0" />
       )}
 
@@ -248,9 +259,13 @@ const Row = ({
             <FolderHeart size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
           ) : item.id === 'folder-hello-world' ? (
             <FolderCode size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
+          ) : item.id === 'folder-pharse' ? (
+            <KeyRound size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
           ) : (
             <Folder size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
           )
+        ) : item.type === 'phrase' ? (
+          <KeyRound size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
         ) : item.type === 'note' ? (
           <span className="text-[11px] font-bold text-[#ff4f00] font-mono select-none">
             {noteNumber}
@@ -268,6 +283,10 @@ const Row = ({
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name}>
             {cleanText(item.name) || t('file.folder')}
           </div>
+        ) : item.type === 'phrase' ? (
+          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name}>
+            {cleanText(item.name) || 'Pharse'}
+          </div>
         ) : item.type === 'note' ? (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.content || item.name}>
             {cleanText(item.content) || cleanText(item.name) || t('file.note')}
@@ -280,7 +299,7 @@ const Row = ({
       </div>
 
       {/* Menu Button */}
-      {!selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-hello-world' && (
+      {!selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-hello-world' && item.id !== 'folder-pharse' && (
         <div className="flex items-center shrink-0">
           <button
             data-testid={`item-menu-${item.id}`}

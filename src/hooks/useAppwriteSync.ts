@@ -568,7 +568,16 @@ export function useAppwriteSync(
     }
   };
 
-  const smartSync = useCallback((userOverride?: any, suppressToast: boolean = false) => {
+  const smartSync = useCallback((userOverrideOrSuppress?: any, maybeSuppressToast?: boolean) => {
+    let userOverride: any = undefined;
+    let suppressToast = false;
+    if (typeof userOverrideOrSuppress === 'boolean') {
+      suppressToast = userOverrideOrSuppress;
+    } else {
+      userOverride = userOverrideOrSuppress;
+      suppressToast = !!maybeSuppressToast;
+    }
+
     if (suppressToast) {
       // Debounce auto background syncs to batch rapid changes
       if (debounceTimerRef.current) {

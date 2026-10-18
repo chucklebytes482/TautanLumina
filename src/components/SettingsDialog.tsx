@@ -1,10 +1,9 @@
 import { ADMIN_EMAIL, formatDisplayEmail } from '../lib/appwrite';
 import React, { useState } from 'react';
 import { 
-  Crown, 
   User, 
   LogOut, 
-  RefreshCw, 
+  HardDrive, 
   Download, 
   Upload, 
   Loader2, 
@@ -12,10 +11,8 @@ import {
   Lock, 
   Shield, 
   ChevronRight,
-  LayoutGrid,
-  BookOpen
+  LayoutGrid
 } from 'lucide-react';
-import { SubscriptionCard } from './SubscriptionCard';
 import { toast } from 'sonner';
 
 import { useI18n } from '../lib/i18n';
@@ -30,12 +27,13 @@ interface Props {
   onOpenPinMenu?: () => void;
   onResetPinPassword?: () => void;
   onExport?: () => void;
+  onExportJSON?: () => void;
+  onExportHTML?: () => void;
   onImport?: () => void;
-  onOpenGuide?: () => void;
   initialTab?: TabType;
 }
 
-type TabType = 'wallet' | 'profile' | 'sync' | null;
+type TabType = 'profile' | 'sync' | null;
 
 export const SettingsDialog = ({ 
   user, 
@@ -46,8 +44,9 @@ export const SettingsDialog = ({
   onOpenPinMenu, 
   onResetPinPassword,
   onExport, 
+  onExportJSON,
+  onExportHTML,
   onImport, 
-  onOpenGuide,
   initialTab
 }: Props) => {
   const { t } = useI18n();
@@ -156,20 +155,34 @@ export const SettingsDialog = ({
   const renderSyncTab = () => (
     <div className="space-y-4">
       <div>
-        <h4 className="text-sm font-semibold text-neutral-800 border-b border-neutral-100 pb-2">{t('sync.backup.title') || 'Cadangan & Berkas Data'}</h4>
+        <h4 className="text-sm font-semibold text-neutral-800 border-b border-neutral-100 pb-2">Cadangan & Berkas Data</h4>
         <div className="space-y-3 mt-4">
           <button
-            onClick={onExport}
+            onClick={onExportJSON}
             className="w-full flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors text-left shadow-xs cursor-pointer"
           >
             <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
               <Download size={20} />
             </div>
             <div>
-              <p className="font-medium text-sm text-neutral-900">{t('btn.exportJSON') || 'Export JSON'}</p>
-              <p className="text-xs text-neutral-500 mt-0.5">{t('sync.export.desc') || 'Download local data as JSON'}</p>
+              <p className="font-medium text-sm text-neutral-900">Ekspor JSON</p>
+              <p className="text-xs text-neutral-500 mt-0.5">Cadangan lengkap format JSON</p>
             </div>
           </button>
+
+          <button
+            onClick={onExportHTML}
+            className="w-full flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors text-left shadow-xs cursor-pointer"
+          >
+            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
+              <Download size={20} />
+            </div>
+            <div>
+              <p className="font-medium text-sm text-neutral-900">Ekspor HTML</p>
+              <p className="text-xs text-neutral-500 mt-0.5">Format Netscape Bookmark untuk semua browser</p>
+            </div>
+          </button>
+
           <button
             onClick={onImport}
             className="w-full flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors text-left shadow-xs cursor-pointer"
@@ -178,8 +191,8 @@ export const SettingsDialog = ({
               <Upload size={20} />
             </div>
             <div>
-              <p className="font-medium text-sm text-neutral-900">{t('btn.importJSON') || 'Import JSON or HTML'}</p>
-              <p className="text-xs text-neutral-500 mt-0.5">{t('sync.import.desc') || 'Restore data from JSON file'}</p>
+              <p className="font-medium text-sm text-neutral-900">Impor JSON atau HTML</p>
+              <p className="text-xs text-neutral-500 mt-0.5">Pulihkan data dari file cadangan</p>
             </div>
           </button>
         </div>
@@ -187,17 +200,9 @@ export const SettingsDialog = ({
     </div>
   );
 
-  const renderWalletTab = () => (
-    <div className="space-y-4">
-      <h4 className="text-sm font-semibold text-neutral-800 border-b border-neutral-100 pb-2">{t('settings.wallet.title')}</h4>
-      <SubscriptionCard user={user} />
-    </div>
-  );
-
   const renderTabContent = (tab: TabType) => {
     if (tab === 'profile') return renderProfileTab();
     if (tab === 'sync') return renderSyncTab();
-    if (tab === 'wallet') return renderWalletTab();
 
     // Default / "Semua" Settings view when activeTab is null
     return (
@@ -207,9 +212,6 @@ export const SettingsDialog = ({
         </div>
         <div className="pt-8 space-y-4">
           {renderSyncTab()}
-        </div>
-        <div className="pt-8 space-y-4">
-          {renderWalletTab()}
         </div>
       </div>
     );
@@ -248,55 +250,21 @@ export const SettingsDialog = ({
             </button>
           </div>
 
-          <div className="mb-6">
-            <div className="space-y-1">
-              {renderNavItem(null, LayoutGrid, t('menu.all'))}
-            </div>
-          </div>
+
 
           <div className="mb-6">
-            <div className="px-3 mb-2 text-[11px] font-bold tracking-widest text-neutral-400 uppercase">{t('menu.general')}</div>
+            <div className="px-3 mb-2 text-[11px] font-bold tracking-widest text-neutral-400 uppercase">{t('menu.general') || 'Umum'}</div>
             <div className="space-y-1">
-              {renderNavItem('sync', RefreshCw, t('menu.sync') || 'Sync')}
-              {onOpenGuide && (
-                <button
-                  onClick={() => {
-                    onClose();
-                    onOpenGuide();
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 hover:bg-[#faf8f5] transition-colors cursor-pointer"
-                >
-                  <BookOpen size={18} className="text-neutral-500" />
-                  {t('guide.title') || 'Panduan Penggunaan'}
-                </button>
-              )}
+              {renderNavItem('sync', HardDrive, 'Cadangkan')}
             </div>
           </div>
 
           <div>
             <div className="px-3 mb-2 text-[11px] font-bold tracking-widest text-neutral-400 uppercase">{t('menu.personal')}</div>
             <div className="space-y-1">
-              {renderNavItem('wallet', Crown, t('menu.wallet'))}
               {renderNavItem('profile', User, t('menu.profile'))}
             </div>
           </div>
-        </div>
-
-        {/* Product Hunt Badge */}
-        <div className="p-4 border-t border-[#e2ddd5] bg-white flex justify-center shrink-0">
-          <a
-            href="https://www.producthunt.com/products/tautanlumina/reviews/new?utm_source=badge-product_review&utm_medium=badge&utm_source=badge-tautanlumina"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center hover:opacity-90 transition-opacity"
-          >
-            <img
-              src="https://api.producthunt.com/widgets/embed-image/v1/product_review.svg?product_id=1277343&theme=light"
-              alt="TautanLumina - Product Hunt"
-              className="h-8 w-auto shrink-0"
-              referrerPolicy="no-referrer"
-            />
-          </a>
         </div>
       </div>
 

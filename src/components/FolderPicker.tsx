@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X, ChevronRight, Home, ArrowLeft, Folder, FolderHeart, FolderCode } from 'lucide-react';
+import { X, ChevronRight, Home, ArrowLeft, Folder, FolderHeart, FolderCode, KeyRound } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { useDialog } from '../context/DialogContext';
 import { useI18n } from '../lib/i18n';
@@ -10,6 +10,7 @@ interface Props {
   title: string;
   confirmLabel: string;
   disabledIds?: Set<string>;
+  restrictedRootFolderId?: string;
   onConfirm: (folderId: string | null) => void;
   onClose: () => void;
   onCreateFolder?: (name: string, parentId: string | null) => Promise<FileSystemItem>;
@@ -21,12 +22,16 @@ export const FolderPicker = ({
   title,
   confirmLabel,
   disabledIds,
+  restrictedRootFolderId,
   onConfirm,
   onClose,
   onCreateFolder,
 }: Props) => {
   const { t } = useI18n();
-  const [current, setCurrent] = useState<string | null>(initialFolderId);
+  const [current, setCurrent] = useState<string | null>(() => {
+    if (restrictedRootFolderId) return restrictedRootFolderId;
+    return initialFolderId;
+  });
   const { prompt: customPrompt } = useDialog();
 
   useEffect(() => {
@@ -49,11 +54,12 @@ export const FolderPicker = ({
     const arr: FileSystemItem[] = [];
     let cur = items.find((i) => i.id === current);
     while (cur) {
+      if (restrictedRootFolderId && cur.id === restrictedRootFolderId) break;
       arr.unshift(cur);
       cur = items.find((i) => i.id === cur!.parentId);
     }
     return arr;
-  }, [items, current]);
+  }, [items, current, restrictedRootFolderId]);
 
   const currentFolder = items.find((i) => i.id === current);
 
@@ -69,10 +75,10 @@ export const FolderPicker = ({
     <div className="modal-root" data-testid="folder-picker">
       <div className="modal-panel border border-[#e2ddd5] rounded-2xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 p-3 border-b border-[#e2ddd5] bg-[#faf8f5]">
-          {current !== null && (
+          {current !== null && current !== restrictedRootFolderId && (
             <button
               data-testid="picker-up-btn"
-              onClick={() => setCurrent(currentFolder?.parentId ?? null)}
+              onClick={() => setCurrent(currentFolder?.parentId ?? (restrictedRootFolderId || null))}
               className="p-1.5 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-[#e2ddd5]"
               aria-label={t('picker.up')}
             >
@@ -86,13 +92,23 @@ export const FolderPicker = ({
         </div>
 
         <div className="px-3 py-2 text-xs text-neutral-600 flex items-center gap-1 overflow-x-auto no-scrollbar border-b border-[#e2ddd5]/60 bg-[#faf8f5]/50">
-          <button
-            data-testid="picker-crumb-root"
-            onClick={() => setCurrent(null)}
-            className="flex items-center gap-1 hover:text-[#FF4F00] font-medium transition-colors"
-          >
-            <Home size={12} className="text-[#FF4F00]" /> Root
-          </button>
+          {restrictedRootFolderId ? (
+            <button
+              data-testid="picker-crumb-root"
+              onClick={() => setCurrent(restrictedRootFolderId)}
+              className="flex items-center gap-1 hover:text-[#FF4F00] font-medium transition-colors"
+            >
+              <KeyRound size={12} className="text-[#FF4F00]" /> {items.find((i) => i.id === restrictedRootFolderId)?.name || 'Pharse'}
+            </button>
+          ) : (
+            <button
+              data-testid="picker-crumb-root"
+              onClick={() => setCurrent(null)}
+              className="flex items-center gap-1 hover:text-[#FF4F00] font-medium transition-colors"
+            >
+              <Home size={12} className="text-[#FF4F00]" /> Root
+            </button>
+          )}
           {breadcrumbs.map((b) => (
             <span key={b.id} className="flex items-center gap-1">
               <ChevronRight size={12} className="text-neutral-400" />
@@ -129,6 +145,8 @@ export const FolderPicker = ({
                           <FolderHeart size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
                         ) : f.id === 'folder-hello-world' ? (
                           <FolderCode size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
+                        ) : f.id === 'folder-pharse' ? (
+                          <KeyRound size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
                         ) : (
                           <Folder size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
                         )}

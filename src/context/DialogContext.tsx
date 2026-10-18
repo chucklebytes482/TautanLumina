@@ -38,8 +38,18 @@ export const DialogProvider = ({ children }: { children: ReactNode }) => {
   const hasFocusedRef = useRef(false);
 
   useEffect(() => {
-    if (dialog) {
+    if (dialog && dialog.type === 'prompt') {
       hasFocusedRef.current = false;
+      const timer = setTimeout(() => {
+        if (dialog.options?.textarea && textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(textareaRef.current.value.length, textareaRef.current.value.length);
+        } else if (!dialog.options?.textarea && inputRef.current) {
+          inputRef.current.focus();
+          inputRef.current.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length);
+        }
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, [dialog]);
 
