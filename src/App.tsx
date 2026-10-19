@@ -100,7 +100,7 @@ export default function App() {
   >(null);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'wallet' | 'profile' | 'sync' | null>(null);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'sync' | null>(null);
   const [showChatPopup, setShowChatPopup] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -375,37 +375,20 @@ export default function App() {
 
   const handleNewFile = async () => {
     if (guardOffline()) return;
-    let urlToSave = '';
 
-    try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
-        const clipText = await navigator.clipboard.readText();
-        const trimmedClip = cleanText(clipText);
-        if (trimmedClip) {
-          if (
-            trimmedClip.startsWith('http://') ||
-            trimmedClip.startsWith('https://') ||
-            trimmedClip.includes('.') ||
-            trimmedClip.startsWith('www.')
-          ) {
-            urlToSave = trimmedClip;
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('Clipboard access unavailable or denied:', err);
-    }
+    const inputUrl = await customPrompt(t('modal.bookmarkUrl') || 'URL Bookmark', '', {
+      placeholder: 'https://...',
+    });
+    if (!inputUrl || !inputUrl.trim()) return;
 
-    if (!urlToSave) {
-      showToast('Tidak berisi tautan');
-      return;
-    }
+    const trimmed = cleanText(inputUrl);
+    if (!trimmed) return;
 
-    const finalUrl = urlToSave.startsWith('http://') || urlToSave.startsWith('https://')
-      ? urlToSave
-      : `https://${urlToSave}`;
+    const finalUrl = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+      ? trimmed
+      : `https://${trimmed}`;
 
-    // Deteksi anti-duplikat langsung dari seluruh isi yang ditempel
+    // Deteksi anti-duplikat langsung dari seluruh isi yang dimasukkan
     const normUrl = finalUrl.trim().replace(/\/+$/, '');
     const isDuplicate = items.some(
       (it) => !it.deletedAt && it.type === 'file' && (it.content?.trim().replace(/\/+$/, '') === normUrl)
@@ -457,8 +440,10 @@ export default function App() {
 
     const parseAndValidateWords = (str: string) => {
       const lower = cleanText(str).toLowerCase();
-      const rawWords = lower.split(/[\s,]+/).filter(Boolean);
-      return rawWords.map((w) => w.toLowerCase().replace(/[^a-z0-9_-]/g, '')).filter(Boolean);
+      const rawWords = lower.split(/[\s,;\t\n\r]+/).filter(Boolean);
+      return rawWords
+        .map((w) => w.toLowerCase().replace(/[^a-z]/g, ''))
+        .filter(Boolean);
     };
 
     const words = parseAndValidateWords(textToProcess);
@@ -650,51 +635,60 @@ export default function App() {
       ? items.filter((i) => selectedIds.has(i.id))
       : listItems;
 
-    if (sourceList.length === 0) {
-      sonnerToast.info('Tidak ada bookmark');
-      return;
-    }
+    let updatedCount = 0;
 
-    const targetBookmarks: FileSystemItem[] = [];
-    const queue = [...sourceList];
+    if (sourceList.length > 0) {
+      const targetBookmarks: FileSystemItem[] = [];
+      const queue = [...sourceList];
 
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      if (current.type === 'file') {
-        targetBookmarks.push(current);
-      } else if (current.type === 'folder' && !isNoteFolderOrSubfolder(current)) {
-        const children = items.filter((i) => i.parentId === current.id);
-        queue.push(...children);
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        if (current.type === 'file') {
+          targetBookmarks.push(current);
+        } else if (current.type === 'folder' && !isNoteFolderOrSubfolder(current)) {
+          const children = items.filter((i) => i.parentId === current.id);
+          queue.push(...children);
+        }
+      }
+
+      if (targetBookmarks.length > 0) {
+        const updates = targetBookmarks.map((bm) => {
+          const rawUrl = cleanText(bm.content) || cleanText(bm.name);
+          const finalUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
+          const extracted = extractTitleFromUrl(finalUrl);
+          const titleToUse = (extracted && extracted.toLowerCase() !== 'bookmark') ? extracted : finalUrl;
+          const updatesObj: Partial<FileSystemItem> = {
+            name: titleToUse,
+          };
+          if (!cleanText(bm.content)) {
+            updatesObj.content = finalUrl;
+          }
+          return {
+            id: bm.id,
+            updates: updatesObj,
+          };
+        });
+
+        if (updates.length > 0) {
+          await updateMany(updates);
+          updatedCount = updates.length;
+        }
       }
     }
 
-    if (targetBookmarks.length === 0) {
-      sonnerToast.info('Tidak ada bookmark');
-      return;
-    }
-
-    const updates = targetBookmarks.map((bm) => {
-      const rawUrl = cleanText(bm.content) || cleanText(bm.name);
-      const finalUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
-      const extracted = extractTitleFromUrl(finalUrl);
-      const titleToUse = (extracted && extracted.toLowerCase() !== 'bookmark') ? extracted : finalUrl;
-      const updatesObj: Partial<FileSystemItem> = {
-        name: titleToUse,
-      };
-      if (!cleanText(bm.content)) {
-        updatesObj.content = finalUrl;
+    // Otomatis sambil menyinkronkan
+    if (user) {
+      if (updatedCount > 0) {
+        sonnerToast.success('Judul diperbarui, menyinkronkan...');
       }
-      return {
-        id: bm.id,
-        updates: updatesObj,
-      };
-    });
-
-    if (updates.length > 0) {
-      await updateMany(updates);
+      await smartSync(false);
+    } else {
+      if (updatedCount > 0) {
+        sonnerToast.success('Judul diperbarui');
+      } else {
+        sonnerToast.info(sourceList.length === 0 ? 'Tidak ada bookmark' : 'Semua bookmark sudah diperbarui');
+      }
     }
-
-    sonnerToast.success('Judul diperbarui');
   };
 
   const handleConfirmMoveKeypad = async (targetNum: number) => {
@@ -785,9 +779,11 @@ export default function App() {
           if (isBookmark) {
             const count = await importHTML(content, false, targetFolder);
             showToast(`${count} bookmark diimpor`);
+            smartSync(true);
           } else {
             await importJSON(content, false, targetFolder);
             showToast('Berhasil diimpor');
+            smartSync(true);
           }
         } catch (err: any) {
           showToast(err?.message || 'Format tidak valid');
@@ -903,6 +899,7 @@ export default function App() {
     }
 
     await updateItem(item.id, updatesObj);
+    smartSync(true);
     sonnerToast.success('Judul diperbarui');
   };
 
@@ -971,8 +968,29 @@ export default function App() {
           const n = await customPrompt('' + t('modal.newName') + '', item.name);
           if (n && n.trim()) {
             await renameItem(item.id, n.trim());
+            smartSync(true);
           }
         },
+      });
+    }
+
+    if (item.type === 'file') {
+      list.push({
+        key: 'rename',
+        label: t('action.rename') || 'Ganti Nama',
+        onClick: async () => {
+          if (guardOffline()) return;
+          const n = await customPrompt('' + t('modal.newName') + '', item.name);
+          if (n && n.trim()) {
+            await renameItem(item.id, n.trim());
+            smartSync(true);
+          }
+        },
+      });
+      list.push({
+        key: 'regenerate',
+        label: 'Perbarui Judul',
+        onClick: () => handleRegenerateBookmark(item),
       });
     }
 
@@ -985,6 +1003,7 @@ export default function App() {
           const content = await customPrompt(t('modal.noteText'), item.content || '', { textarea: true, maxWidth: 'max-w-xl' });
           if (content !== null && content.trim() !== '') {
             await updateContent(item.id, content.trim());
+            smartSync(true);
             showToast('Catatan disimpan');
           }
         },
@@ -1147,12 +1166,12 @@ export default function App() {
               <button
                 data-testid="regenerate-header-btn"
                 onClick={bulkRegenerate}
-                disabled={listItems.length === 0}
+                disabled={syncing || (!user && listItems.length === 0)}
                 className="p-1.5 rounded-lg disabled:opacity-40 disabled:hover:bg-transparent transition-colors hover:bg-[#faf8f5] text-neutral-700 border border-transparent hover:border-[#e2ddd5] flex items-center justify-center cursor-pointer mr-1"
-                title={t('action.regenerate') || 'Generate ulang judul'}
-                aria-label={t('action.regenerate') || 'Generate ulang judul'}
+                title={user ? 'Sinkronkan & perbarui judul' : (t('action.regenerate') || 'Generate ulang judul')}
+                aria-label={user ? 'Sinkronkan & perbarui judul' : (t('action.regenerate') || 'Generate ulang judul')}
               >
-                <RefreshCw size={18} className="text-[#FF4F00]" />
+                <RefreshCw size={18} className={`text-[#FF4F00] ${syncing ? 'animate-spin' : ''}`} />
               </button>
               <button
                 data-testid="select-all-header-btn"

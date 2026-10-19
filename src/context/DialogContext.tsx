@@ -9,13 +9,14 @@ interface DialogConfig {
   options?: {
     textarea?: boolean;
     maxWidth?: 'max-w-sm' | 'max-w-md' | 'max-w-lg' | 'max-w-xl';
+    placeholder?: string;
   };
 }
 
 interface DialogContextType {
   alert: (message: string) => Promise<void>;
   confirm: (message: string) => Promise<boolean>;
-  prompt: (message: string, defaultValue?: string, options?: { textarea?: boolean; maxWidth?: 'max-w-sm' | 'max-w-md' | 'max-w-lg' | 'max-w-xl' }) => Promise<string | null>;
+  prompt: (message: string, defaultValue?: string, options?: { textarea?: boolean; maxWidth?: 'max-w-sm' | 'max-w-md' | 'max-w-lg' | 'max-w-xl'; placeholder?: string }) => Promise<string | null>;
 }
 
 const DialogContext = createContext<DialogContextType | undefined>(undefined);
@@ -159,6 +160,7 @@ export const DialogProvider = ({ children }: { children: ReactNode }) => {
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck="false"
+                    placeholder={dialog.options?.placeholder}
                     className="mt-3.5 w-full border border-[#e2ddd5] bg-[#faf8f5]/60 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-[#FF4F00] focus:ring-2 focus:ring-[#FF4F00]/20 focus:bg-white transition-all text-[#131313]"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleOk();

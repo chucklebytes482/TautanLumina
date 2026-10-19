@@ -25,6 +25,7 @@ export const missingTranslations = {
     "btn": {
       "exportJSON": "Export JSON",
       "importJSON": "Import JSON or HTML",
+      "newBookmark": "New Bookmark",
       "newFolder": "New Folder",
       "newNote": "New Note",
       "newPhrase": "Pharse (1-Click Paste)",
@@ -351,6 +352,7 @@ export const missingTranslations = {
     "btn": {
       "exportJSON": "Ekspor JSON",
       "importJSON": "Impor JSON atau HTML",
+      "newBookmark": "Bookmark Baru",
       "newFolder": "Folder Baru",
       "newNote": "Catatan Baru",
       "newPhrase": "Pharse (1x Klik Tempel)",
