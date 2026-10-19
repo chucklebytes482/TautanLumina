@@ -3,7 +3,8 @@ import { toast as sonnerToast } from 'sonner';
 import {
   Search,
   FolderPlus,
-  FilePlus,
+  BookmarkPlus,
+  NotebookPen,
   Sparkles,
   Home,
   ChevronRight,
@@ -24,7 +25,6 @@ import {
   ExternalLink,
   Mail,
   Aperture,
-  FileText,
   KeyRound
 } from 'lucide-react';
 import { AppLogo } from './components/AppLogo';
@@ -63,7 +63,6 @@ export default function App() {
     currentItems,
     createItem,
     updateContent,
-    renameItem,
     updateItem,
     updateMany,
     deleteMany,
@@ -823,79 +822,6 @@ export default function App() {
     await fs.updateItem(id, { pinned });
   };
 
-  const handleRegenerateFolder = async (folderId: string) => {
-    if (guardOffline()) return;
-
-    const targetFolder = items.find((i) => i.id === folderId);
-    if (targetFolder && isNoteFolderOrSubfolder(targetFolder)) {
-      sonnerToast.info('Tidak ada bookmark');
-      return;
-    }
-
-    const folderBookmarks: FileSystemItem[] = [];
-    const queue = [folderId];
-    while (queue.length > 0) {
-      const parentId = queue.shift()!;
-      const children = items.filter((i) => i.parentId === parentId);
-      for (const child of children) {
-        if (child.type === 'file') {
-          folderBookmarks.push(child);
-        } else if (child.type === 'folder') {
-          queue.push(child.id);
-        }
-      }
-    }
-
-    if (folderBookmarks.length === 0) {
-      sonnerToast.info('Tidak ada bookmark');
-      return;
-    }
-
-    const folderName = targetFolder?.name || 'folder ini';
-    const confirmMessage = `Format ulang judul untuk ${folderBookmarks.length} bookmark di "${folderName}" berdasarkan URL?`;
-    const confirmed = await customConfirm(confirmMessage);
-    if (!confirmed) return;
-
-    const updates = folderBookmarks.map((bm) => {
-      const rawUrl = (bm.content || bm.name || '').trim();
-      const finalUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
-      const updatesObj: Partial<FileSystemItem> = {
-        name: extractTitleFromUrl(finalUrl),
-      };
-      if (!bm.content || !bm.content.trim()) {
-        updatesObj.content = finalUrl;
-      }
-      return {
-        id: bm.id,
-        updates: updatesObj,
-      };
-    });
-
-    if (updates.length > 0) {
-      await updateMany(updates);
-    }
-
-    sonnerToast.success('Judul diperbarui');
-  };
-
-  const handleRegenerateBookmark = async (item: FileSystemItem) => {
-    if (guardOffline()) return;
-    const rawUrl = cleanText(item.content) || cleanText(item.name);
-    if (!rawUrl) return;
-    const finalUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
-    const newTitle = extractTitleFromUrl(finalUrl);
-
-    const updatesObj: Partial<FileSystemItem> = {
-      name: newTitle,
-    };
-    if (!cleanText(item.content)) {
-      updatesObj.content = finalUrl;
-    }
-
-    await updateItem(item.id, updatesObj);
-    smartSync(true);
-    sonnerToast.success('Judul diperbarui');
-  };
 
   const openItemMenu = (item: FileSystemItem) => {
     setMenuFor(item);
@@ -954,38 +880,6 @@ export default function App() {
         onClick: () => handleToggleFolderLock(item.id),
       });
 
-      list.push({
-        key: 'rename',
-        label: t('action.rename'),
-        onClick: async () => {
-          if (guardOffline()) return;
-          const n = await customPrompt('' + t('modal.newName') + '', item.name);
-          if (n && n.trim()) {
-            await renameItem(item.id, n.trim());
-            smartSync(true);
-          }
-        },
-      });
-    }
-
-    if (item.type === 'file') {
-      list.push({
-        key: 'rename',
-        label: t('action.rename') || 'Ganti Nama',
-        onClick: async () => {
-          if (guardOffline()) return;
-          const n = await customPrompt('' + t('modal.newName') + '', item.name);
-          if (n && n.trim()) {
-            await renameItem(item.id, n.trim());
-            smartSync(true);
-          }
-        },
-      });
-      list.push({
-        key: 'regenerate',
-        label: 'Perbarui Judul',
-        onClick: () => handleRegenerateBookmark(item),
-      });
     }
 
     if (item.type === 'note') {
@@ -1107,18 +1001,20 @@ export default function App() {
               <button
                 data-testid="new-file-btn"
                 onClick={handleNewFile}
-                className="p-2.5 border border-[#e2ddd5] bg-white rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 shrink-0 flex-1 sm:flex-initial flex items-center justify-center"
-                title={t("btn.newBookmark")}
+                className="p-2.5 border border-[#e2ddd5] bg-white rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
+                title={t("btn.newBookmark") || "Bookmark Baru"}
+                aria-label={t("btn.newBookmark") || "Bookmark Baru"}
               >
-                <FilePlus size={20} />
+                <BookmarkPlus size={20} />
               </button>
               <button
                 data-testid="new-note-btn"
                 onClick={handleNewNote}
-                className="p-2.5 border border-[#e2ddd5] bg-white rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 shrink-0 flex-1 sm:flex-initial flex items-center justify-center bg-white"
-                title={t('btn.newNote')}
+                className="p-2.5 border border-[#e2ddd5] bg-white rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 shrink-0 flex-1 sm:flex-initial flex items-center justify-center bg-white cursor-pointer"
+                title={t('btn.newNote') || "Catatan Baru"}
+                aria-label={t('btn.newNote') || "Catatan Baru"}
               >
-                <FileText size={20} />
+                <NotebookPen size={20} />
               </button>
               <button
                 data-testid="new-phrase-btn"
