@@ -598,9 +598,9 @@ export function useAppwriteSync(
   useEffect(() => {
     if (loaded && user && !autoSyncedUserRef.current) {
       autoSyncedUserRef.current = user.$id;
-      smartSync(user, true);
+      // Dinonaktifkan: Tidak otomatis sinkron saat web dimuat/di-refresh
     }
-  }, [loaded, user, smartSync]);
+  }, [loaded, user]);
 
   useEffect(() => {
     const handlePinChange = () => {

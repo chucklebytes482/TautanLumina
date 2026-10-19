@@ -25,7 +25,6 @@ import {
   Mail,
   Aperture,
   FileText,
-  RefreshCw,
   KeyRound
 } from 'lucide-react';
 import { AppLogo } from './components/AppLogo';
@@ -370,6 +369,7 @@ export default function App() {
     const name = await customPrompt(t('modal.folderName'));
     if (name && name.trim()) {
       await createItem(name.trim(), 'folder', currentFolderId);
+      smartSync(true);
     }
   };
 
@@ -557,6 +557,7 @@ export default function App() {
       onConfirm: async (target) => {
         try {
           await moveMany(ids, target);
+          smartSync(true);
           clearSelection();
           showToast('Dipindahkan');
         } catch (e: any) {
@@ -676,18 +677,11 @@ export default function App() {
       }
     }
 
-    // Otomatis sambil menyinkronkan
-    if (user) {
-      if (updatedCount > 0) {
-        sonnerToast.success('Judul diperbarui, menyinkronkan...');
-      }
-      await smartSync(false);
+    if (updatedCount > 0) {
+      smartSync(true);
+      sonnerToast.success('Judul diperbarui');
     } else {
-      if (updatedCount > 0) {
-        sonnerToast.success('Judul diperbarui');
-      } else {
-        sonnerToast.info(sourceList.length === 0 ? 'Tidak ada bookmark' : 'Semua bookmark sudah diperbarui');
-      }
+      sonnerToast.info(sourceList.length === 0 ? 'Tidak ada bookmark' : 'Semua bookmark sudah diperbarui');
     }
   };
 
@@ -1166,12 +1160,12 @@ export default function App() {
               <button
                 data-testid="regenerate-header-btn"
                 onClick={bulkRegenerate}
-                disabled={syncing || (!user && listItems.length === 0)}
+                disabled={listItems.length === 0}
                 className="p-1.5 rounded-lg disabled:opacity-40 disabled:hover:bg-transparent transition-colors hover:bg-[#faf8f5] text-neutral-700 border border-transparent hover:border-[#e2ddd5] flex items-center justify-center cursor-pointer mr-1"
-                title={user ? 'Sinkronkan & perbarui judul' : (t('action.regenerate') || 'Generate ulang judul')}
-                aria-label={user ? 'Sinkronkan & perbarui judul' : (t('action.regenerate') || 'Generate ulang judul')}
+                title={t('action.regenerate') || 'Perbarui judul'}
+                aria-label={t('action.regenerate') || 'Perbarui judul'}
               >
-                <RefreshCw size={18} className={`text-[#FF4F00] ${syncing ? 'animate-spin' : ''}`} />
+                <Sparkles size={18} className="text-[#FF4F00]" />
               </button>
               <button
                 data-testid="select-all-header-btn"
