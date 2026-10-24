@@ -6,6 +6,7 @@ export interface FileSystemItem {
   name: string;
   type: FileSystemItemType;
   content?: string;
+  label?: string;
   order: number;
   createdAt: number;
   updatedAt: number;

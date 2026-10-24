@@ -73,3 +73,25 @@ export const getBookmarkDisplayTitle = (name?: string, content?: string): string
 
   return cleanName || 'Bookmark';
 };
+
+export const extractUrlFromLabel = (label?: string | null): string | null => {
+  if (!label) return null;
+  const trimmed = cleanText(label);
+  if (!trimmed) return null;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  if (/^www\./i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+  if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/.*)?$/i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+  const match = trimmed.match(/https?:\/\/[^\s]+|www\.[^\s]+/i);
+  if (match) {
+    const url = match[0];
+    return url.startsWith('http') ? url : `https://${url}`;
+  }
+  return null;
+};

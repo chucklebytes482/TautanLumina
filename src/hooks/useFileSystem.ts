@@ -145,6 +145,20 @@ export const useFileSystem = () => {
       items
         .filter((i) => i.parentId === pid)
         .sort((a, b) => {
+          if (pid === null) {
+            const sysRank = (id: string) => {
+              if (id === 'folder-hello-world') return 1;
+              if (id === 'folder-catatan') return 2;
+              if (id === 'folder-pharse') return 3;
+              return 999;
+            };
+            const rankA = sysRank(a.id);
+            const rankB = sysRank(b.id);
+            if (rankA !== rankB) {
+              return rankA - rankB;
+            }
+          }
+
           if (a.type === 'folder' && b.type !== 'folder') return -1;
           if (b.type === 'folder' && a.type !== 'folder') return 1;
 
@@ -259,7 +273,15 @@ export const useFileSystem = () => {
     if (it.type === 'phrase' && updates.name !== undefined) {
       delete updates.name;
     }
-    await db.saveItem({ ...it, ...updates, updatedAt: Date.now() });
+    const merged = { ...it, ...updates, updatedAt: Date.now() };
+    if (updates.label !== undefined) {
+      if (!updates.label || !updates.label.trim()) {
+        delete merged.label;
+      } else {
+        merged.label = updates.label.trim();
+      }
+    }
+    await db.saveItem(merged);
     await reload();
   };
 
@@ -449,8 +471,14 @@ export const useFileSystem = () => {
   };
 
   const reorderInParent = async (parentId: string | null, orderedIds: string[]) => {
+    let finalIds = [...orderedIds];
+    if (parentId === null) {
+      const systemIds = ['folder-hello-world', 'folder-catatan', 'folder-pharse'];
+      const nonSystem = finalIds.filter((id) => !systemIds.includes(id));
+      finalIds = [...systemIds, ...nonSystem];
+    }
     const updated: FileSystemItem[] = [];
-    orderedIds.forEach((id, idx) => {
+    finalIds.forEach((id, idx) => {
       const it = items.find((i) => i.id === id);
       if (it && it.parentId === parentId) {
         updated.push({ ...it, order: idx, updatedAt: Date.now() });
@@ -483,7 +511,9 @@ export const useFileSystem = () => {
       return items
         .filter((i) => {
           if (i.name.toLowerCase().includes(query)) return true;
+          if (i.label && i.label.toLowerCase().includes(query)) return true;
           if (i.type === 'file' && i.content && i.content.toLowerCase().includes(query)) return true;
+          if (i.type === 'note' && i.content && i.content.toLowerCase().includes(query)) return true;
           return false;
         })
         .sort((a, b) => {

@@ -189,9 +189,27 @@ export default function App() {
     sonnerToast(msg, { duration: 1500 });
   }, []);
 
+  const isPharseFolderOrSubfolder = useCallback(
+    (folderId: string | null): boolean => {
+      if (!folderId) return false;
+      if (folderId === 'folder-pharse') return true;
+      let cur = items.find((i) => i.id === folderId);
+      while (cur && cur.parentId) {
+        if (cur.parentId === 'folder-pharse') return true;
+        cur = items.find((i) => i.id === cur!.parentId);
+      }
+      return false;
+    },
+    [items]
+  );
+
   const isItemLocked = useCallback(
     (item: FileSystemItem): boolean => {
       if (!hasPinSet()) return false;
+      const isPharse = item.id === 'folder-pharse' || isPharseFolderOrSubfolder(item.id) || isPharseFolderOrSubfolder(item.parentId);
+      if (isPharse) {
+        return !unlockedFolderIds.has('folder-pharse');
+      }
       if (item.type === 'folder' && item.locked && !unlockedFolderIds.has(item.id)) {
         return true;
       }
@@ -204,7 +222,7 @@ export default function App() {
       }
       return false;
     },
-    [items, unlockedFolderIds, pinActive],
+    [items, unlockedFolderIds, pinActive, isPharseFolderOrSubfolder],
   );
 
   const isNoteFolderOrSubfolder = useCallback(
@@ -217,20 +235,6 @@ export default function App() {
         if (cur.parentId === 'folder-catatan' || cur.parentId === 'folder-hello-world') {
           return true;
         }
-        cur = items.find((i) => i.id === cur!.parentId);
-      }
-      return false;
-    },
-    [items]
-  );
-
-  const isPharseFolderOrSubfolder = useCallback(
-    (folderId: string | null): boolean => {
-      if (!folderId) return false;
-      if (folderId === 'folder-pharse') return true;
-      let cur = items.find((i) => i.id === folderId);
-      while (cur && cur.parentId) {
-        if (cur.parentId === 'folder-pharse') return true;
         cur = items.find((i) => i.id === cur!.parentId);
       }
       return false;
@@ -271,6 +275,20 @@ export default function App() {
 
   const navigateTo = (id: string | null) => {
     if (id && hasPinSet()) {
+      if (id === 'folder-pharse' || isPharseFolderOrSubfolder(id)) {
+        if (!unlockedFolderIds.has('folder-pharse')) {
+          const pharseFolder = items.find((i) => i.id === 'folder-pharse') || ({
+            id: 'folder-pharse',
+            name: 'Pharse',
+            type: 'folder',
+            locked: true,
+          } as FileSystemItem);
+          setFolderPendingUnlock(pharseFolder);
+          setPinModalMode('unlock');
+          return;
+        }
+      }
+
       let cur = items.find((i) => i.id === id);
       let lockedTarget: FileSystemItem | null = null;
       while (cur) {
@@ -296,8 +314,8 @@ export default function App() {
     const f = items.find((i) => i.id === folderId);
     if (!f) return;
 
-    if (folderId === 'folder-catatan' || folderId === 'folder-hello-world' || folderId === 'folder-pharse') {
-      showToast('Tidak dapat dikunci');
+    if (folderId === 'folder-catatan' || folderId === 'folder-hello-world' || folderId === 'folder-pharse' || isPharseFolderOrSubfolder(folderId)) {
+      showToast('Tidak dapat diubah');
       return;
     }
 
@@ -687,40 +705,97 @@ export default function App() {
   const handleConfirmMoveKeypad = async (targetNum: number) => {
     if (!moveKeypadConfig) return;
     if (guardOffline()) return;
-    const targetIdx = targetNum - 1;
     const { targetItem } = moveKeypadConfig;
     setMoveKeypadConfig(null);
 
     if (targetItem) {
+      const isRoot = !targetItem.parentId;
       const isFolder = targetItem.type === 'folder';
       const folderItems = listItems.filter((i) => i.type === 'folder');
       const bookmarkItems = listItems.filter((i) => i.type !== 'folder');
 
-      if (isFolder) {
-        const currentFolderIdx = folderItems.findIndex((i) => i.id === targetItem.id);
-        if (currentFolderIdx !== -1) {
-          const newFolderItems = [...folderItems];
-          newFolderItems.splice(currentFolderIdx, 1);
-          newFolderItems.splice(targetIdx, 0, targetItem);
-          const reorderedIds = [
-            ...newFolderItems.map((i) => i.id),
-            ...bookmarkItems.map((i) => i.id),
-          ];
-          await reorderInParent(targetItem.parentId, reorderedIds);
-          showToast('Dipindahkan');
+      if (isRoot) {
+        const systemFolderIds = ['folder-hello-world', 'folder-catatan', 'folder-pharse'];
+        if (isFolder) {
+          const userFolders = folderItems.filter((i) => !systemFolderIds.includes(i.id));
+          const currentIdx = userFolders.findIndex((i) => i.id === targetItem.id);
+          if (currentIdx !== -1) {
+            let destIdx = 0;
+            if (targetNum <= 1 || targetNum === 4) {
+              destIdx = 0;
+            } else if (targetNum > 4) {
+              destIdx = targetNum - 4;
+            } else {
+              destIdx = targetNum - 1;
+            }
+            destIdx = Math.max(0, Math.min(destIdx, userFolders.length - 1));
+
+            const newUserFolders = [...userFolders];
+            newUserFolders.splice(currentIdx, 1);
+            newUserFolders.splice(destIdx, 0, targetItem);
+
+            const sysFolders = folderItems.filter((i) => systemFolderIds.includes(i.id));
+            const reorderedIds = [
+              ...sysFolders.map((i) => i.id),
+              ...newUserFolders.map((i) => i.id),
+              ...bookmarkItems.map((i) => i.id),
+            ];
+            await reorderInParent(null, reorderedIds);
+            showToast('Dipindahkan');
+          }
+        } else {
+          const currentBookmarkIdx = bookmarkItems.findIndex((i) => i.id === targetItem.id);
+          if (currentBookmarkIdx !== -1) {
+            let destIdx = 0;
+            if (targetNum <= 1 || targetNum === 4) {
+              destIdx = 0;
+            } else if (targetNum > 4) {
+              destIdx = targetNum - 4;
+            } else {
+              destIdx = targetNum - 1;
+            }
+            destIdx = Math.max(0, Math.min(destIdx, bookmarkItems.length - 1));
+
+            const newBookmarkItems = [...bookmarkItems];
+            newBookmarkItems.splice(currentBookmarkIdx, 1);
+            newBookmarkItems.splice(destIdx, 0, targetItem);
+
+            const reorderedIds = [
+              ...folderItems.map((i) => i.id),
+              ...newBookmarkItems.map((i) => i.id),
+            ];
+            await reorderInParent(null, reorderedIds);
+            showToast('Dipindahkan');
+          }
         }
       } else {
-        const currentBookmarkIdx = bookmarkItems.findIndex((i) => i.id === targetItem.id);
-        if (currentBookmarkIdx !== -1) {
-          const newBookmarkItems = [...bookmarkItems];
-          newBookmarkItems.splice(currentBookmarkIdx, 1);
-          newBookmarkItems.splice(targetIdx, 0, targetItem);
-          const reorderedIds = [
-            ...folderItems.map((i) => i.id),
-            ...newBookmarkItems.map((i) => i.id),
-          ];
-          await reorderInParent(targetItem.parentId, reorderedIds);
-          showToast('Dipindahkan');
+        const targetIdx = Math.max(0, targetNum - 1);
+        if (isFolder) {
+          const currentFolderIdx = folderItems.findIndex((i) => i.id === targetItem.id);
+          if (currentFolderIdx !== -1) {
+            const newFolderItems = [...folderItems];
+            newFolderItems.splice(currentFolderIdx, 1);
+            newFolderItems.splice(targetIdx, 0, targetItem);
+            const reorderedIds = [
+              ...newFolderItems.map((i) => i.id),
+              ...bookmarkItems.map((i) => i.id),
+            ];
+            await reorderInParent(targetItem.parentId, reorderedIds);
+            showToast('Dipindahkan');
+          }
+        } else {
+          const currentBookmarkIdx = bookmarkItems.findIndex((i) => i.id === targetItem.id);
+          if (currentBookmarkIdx !== -1) {
+            const newBookmarkItems = [...bookmarkItems];
+            newBookmarkItems.splice(currentBookmarkIdx, 1);
+            newBookmarkItems.splice(targetIdx, 0, targetItem);
+            const reorderedIds = [
+              ...folderItems.map((i) => i.id),
+              ...newBookmarkItems.map((i) => i.id),
+            ];
+            await reorderInParent(targetItem.parentId, reorderedIds);
+            showToast('Dipindahkan');
+          }
         }
       }
     }
@@ -823,6 +898,26 @@ export default function App() {
   };
 
 
+  const handleSetLabel = async (item: FileSystemItem) => {
+    if (guardOffline()) return;
+    const promptTitle = item.label ? 'Ubah Label' : 'Tambah Label';
+    const input = await customPrompt(promptTitle, item.label || '', {
+      placeholder: 'Tulis label...',
+    });
+    if (input === null) return;
+
+    const trimmed = input.trim();
+    if (!trimmed) {
+      await updateItem(item.id, { label: '' });
+      smartSync(true);
+      showToast('Label dihapus');
+    } else {
+      await updateItem(item.id, { label: trimmed });
+      smartSync(true);
+      showToast('Label disimpan');
+    }
+  };
+
   const openItemMenu = (item: FileSystemItem) => {
     setMenuFor(item);
   };
@@ -852,6 +947,11 @@ export default function App() {
         label: t('action.moveToFolder'),
         onClick: () => openMovePicker([item.id]),
       });
+      list.push({
+        key: 'label',
+        label: item.label ? 'Ubah Label' : 'Tambah Label',
+        onClick: () => handleSetLabel(item),
+      });
       return list;
     }
 
@@ -873,13 +973,17 @@ export default function App() {
       },
     });
     list.push({ key: 'move', label: t('action.moveToFolder'), onClick: () => openMovePicker([item.id]) });
-    if (item.type === 'folder') {
+    list.push({
+      key: 'label',
+      label: item.label ? 'Ubah Label' : 'Tambah Label',
+      onClick: () => handleSetLabel(item),
+    });
+    if (item.type === 'folder' && item.id !== 'folder-pharse' && !isPharseFolderOrSubfolder(item.id)) {
       list.push({
         key: 'lock',
         label: (item.locked && hasPinSet()) ? (t('pin.unlockPin') || 'Buka PIN') : (t('pin.lockPin') || 'Kunci PIN'),
         onClick: () => handleToggleFolderLock(item.id),
       });
-
     }
 
     if (item.type === 'note') {
@@ -922,168 +1026,178 @@ export default function App() {
 
   return (
     <div className="min-h-[100dvh] bg-transparent text-[#131313] flex flex-col">
-      <header className="sticky top-0 z-40 bg-white border-b border-[#e2ddd5] px-4 py-3 flex items-center justify-between shadow-xs">
-        <div className="flex items-center gap-3">
-          <button
-            data-testid="settings-btn"
-            onClick={() => {
-              setSettingsInitialTab(null);
-              setSettingsOpen(true);
-            }}
-            className="text-neutral-900 hover:bg-[#faf8f5] p-1.5 rounded-xl transition-colors border border-transparent hover:border-[#e2ddd5]"
-            aria-label={t('file.menu')}
-            title={t('file.menu')}
-          >
-            <PanelLeft size={24} className="text-[#131313]" />
-          </button>
-          <a href="#" className="flex items-center gap-2 text-[#131313] text-xl font-bold tracking-tight no-underline select-none">
-            <AppLogo size={26} className="text-[#FF4F00]" />
-            Tautan <span className="text-[#FF4F00]">Lumina</span>
-          </a>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-4 relative">
-          <div className="relative">
-            <button 
-              onClick={() => setShowChatPopup(true)}
-              className="inline-flex text-neutral-800 hover:bg-[#faf8f5] p-2 rounded-full transition-all relative border border-transparent hover:border-[#e2ddd5]"
-              title={t('chat.title') || 'Chat & Pengumuman'}
-              aria-label={t('chat.title') || 'Chat & Pengumuman'}
+      <header className="sticky top-0 z-40 bg-white dark:bg-neutral-900 border-b border-[#e2ddd5] dark:border-neutral-800 shadow-xs select-none shrink-0">
+        {/* Top Header Bar */}
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 py-2 h-13 flex items-center justify-between border-b border-[#e2ddd5]/50 dark:border-neutral-800/80">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              data-testid="settings-btn"
+              onClick={() => {
+                setSettingsInitialTab(null);
+                setSettingsOpen(true);
+              }}
+              className="text-neutral-900 dark:text-neutral-200 hover:bg-[#faf8f5] dark:hover:bg-neutral-800 p-1.5 rounded-xl transition-colors border border-transparent hover:border-[#e2ddd5] dark:hover:border-neutral-700 shrink-0 flex items-center justify-center cursor-pointer"
+              aria-label={t('file.menu')}
+              title={t('file.menu')}
             >
-              <MessageCircle size={20} className="text-[#FF4F00]" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-[#FF4F00] rounded-full animate-pulse" />
+              <PanelLeft size={22} className="text-[#131313] dark:text-neutral-200" />
             </button>
+            <div
+              onClick={() => navigateTo(null)}
+              className="flex items-center gap-1.5 text-[#131313] dark:text-neutral-100 text-xl font-bold tracking-tight select-none shrink-0 cursor-pointer"
+            >
+              <AppLogo size={24} className="text-[#FF4F00] shrink-0" />
+              <span className="shrink-0 whitespace-nowrap">Tautan <span className="text-[#FF4F00]">Lumina</span></span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4 relative">
+            <div className="relative">
+              <button 
+                onClick={() => setShowChatPopup(true)}
+                className="inline-flex text-neutral-800 dark:text-neutral-200 hover:bg-[#faf8f5] dark:hover:bg-neutral-800 p-2 rounded-full transition-all relative border border-transparent hover:border-[#e2ddd5] dark:hover:border-neutral-700 cursor-pointer"
+                title={t('chat.title') || 'Chat & Pengumuman'}
+                aria-label={t('chat.title') || 'Chat & Pengumuman'}
+              >
+                <MessageCircle size={20} className="text-[#FF4F00]" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-[#FF4F00] rounded-full animate-pulse" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Toolbar & Search: Connected directly below top bar with ZERO gap */}
+        <div className="px-3 sm:px-4 py-2 bg-white dark:bg-neutral-900">
+          <div className="max-w-5xl mx-auto flex flex-col gap-2">
+            {/* Top Row: Search + Folder + File + Note + Phrase */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
+              <div className="w-full sm:w-0 sm:flex-1 min-w-[80px] flex items-center gap-2 border border-[#e2ddd5] dark:border-neutral-700 rounded-xl px-3.5 py-1.5 bg-[#faf8f5]/60 dark:bg-neutral-800/80 focus-within:bg-white dark:focus-within:bg-neutral-800 focus-within:border-[#FF4F00] focus-within:ring-2 focus-within:ring-[#FF4F00]/20 transition-all">
+                <Search size={18} className="text-neutral-400 shrink-0" />
+                <input
+                  data-testid="search-input"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t('search.placeholder')}
+                  autoComplete="off"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  data-bwignore="true"
+                  data-form-type="other"
+                  name="no_autofill_search"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck="false"
+                  className="flex-1 text-base bg-transparent focus:outline-none dark:text-white"
+                />
+                {query && (
+                  <button
+                    data-testid="search-clear"
+                    onClick={() => setQuery('')}
+                    className="p-1 text-neutral-400 hover:text-neutral-800 dark:hover:text-white cursor-pointer"
+                    aria-label={t('action.delete')}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button
+                  data-testid="new-folder-btn"
+                  onClick={handleNewFolder}
+                  className="p-2.5 border border-[#e2ddd5] dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 dark:text-neutral-200 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
+                  title={t('btn.newFolder')}
+                >
+                  <FolderPlus size={20} />
+                </button>
+                <button
+                  data-testid="new-file-btn"
+                  onClick={handleNewFile}
+                  className="p-2.5 border border-[#e2ddd5] dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 dark:text-neutral-200 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
+                  title={t("btn.newBookmark") || "Bookmark Baru"}
+                  aria-label={t("btn.newBookmark") || "Bookmark Baru"}
+                >
+                  <BookmarkPlus size={20} />
+                </button>
+                <button
+                  data-testid="new-note-btn"
+                  onClick={handleNewNote}
+                  className="p-2.5 border border-[#e2ddd5] dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 dark:text-neutral-200 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
+                  title={t('btn.newNote') || "Catatan Baru"}
+                  aria-label={t('btn.newNote') || "Catatan Baru"}
+                >
+                  <NotebookPen size={20} />
+                </button>
+                <button
+                  data-testid="new-phrase-btn"
+                  onClick={handleNewPhrase}
+                  className="p-2.5 border border-[#e2ddd5] dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 dark:text-neutral-200 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
+                  title={t('btn.newPhrase') || 'Pharse (1x Klik Tempel)'}
+                  aria-label={t('btn.newPhrase') || 'Pharse (1x Klik Tempel)'}
+                >
+                  <KeyRound size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom Row: Breadcrumb + Tools */}
+            <div className="flex items-center justify-between gap-2 px-0.5">
+              <div className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto no-scrollbar text-sm font-medium">
+                <button
+                  data-testid="crumb-root"
+                  onClick={() => navigateTo(null)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-[#faf8f5] dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 transition-colors cursor-pointer"
+                >
+                  <Home size={15} className="text-[#FF4F00]" /> Root
+                </button>
+                {breadcrumbs.map((b) => (
+                  <div key={b.id} className="inline-flex items-center gap-1">
+                    <ChevronRight size={14} className="text-neutral-400" />
+                    <button
+                      data-testid={`crumb-${b.id}`}
+                      onClick={() => navigateTo(b.id)}
+                      className="px-2.5 py-1 rounded-lg hover:bg-[#faf8f5] dark:hover:bg-neutral-800 truncate max-w-[140px] text-neutral-800 dark:text-neutral-200 transition-colors cursor-pointer"
+                    >
+                      {b.name}
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-3.5">
+                <button
+                  data-testid="regenerate-header-btn"
+                  onClick={bulkRegenerate}
+                  disabled={listItems.length === 0}
+                  className="p-1.5 rounded-lg disabled:opacity-40 disabled:hover:bg-transparent transition-colors hover:bg-[#faf8f5] dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-transparent hover:border-[#e2ddd5] dark:hover:border-neutral-700 flex items-center justify-center cursor-pointer mr-1"
+                  title={t('action.regenerate') || 'Perbarui judul'}
+                  aria-label={t('action.regenerate') || 'Perbarui judul'}
+                >
+                  <Sparkles size={18} className="text-[#FF4F00]" />
+                </button>
+                <button
+                  data-testid="select-all-header-btn"
+                  onClick={toggleSelectAllHeader}
+                  disabled={listItems.length === 0}
+                  className={[
+                    'p-1.5 rounded-lg disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer',
+                    selectMode ? 'bg-[#FF4F00] text-white' : 'hover:bg-[#faf8f5] dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-transparent hover:border-[#e2ddd5] dark:hover:border-neutral-700',
+                  ].join(' ')}
+                  title={t('btn.selectAll')}
+                >
+                  <ListChecks size={18} />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-5xl mx-auto p-4 flex flex-col gap-3 relative">
-        <div className="border border-[#e2ddd5] rounded-2xl p-2.5 bg-white flex flex-col gap-2 sticky top-[72px] z-30 shadow-xs">
-          {/* Top Row: Search + Folder + File */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full">
-            <div className="w-full sm:w-0 sm:flex-1 min-w-[80px] flex items-center gap-2 border border-[#e2ddd5] rounded-xl px-3.5 py-2 bg-[#faf8f5]/60 focus-within:bg-white focus-within:border-[#FF4F00] focus-within:ring-2 focus-within:ring-[#FF4F00]/20 transition-all">
-              <Search size={18} className="text-neutral-400 shrink-0" />
-              <input
-                data-testid="search-input"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={t('search.placeholder')}
-                autoComplete="off"
-                data-1p-ignore="true"
-                data-lpignore="true"
-                data-bwignore="true"
-                data-form-type="other"
-                name="no_autofill_search"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck="false"
-                className="flex-1 text-base bg-transparent focus:outline-none"
-              />
-              {query && (
-                <button
-                  data-testid="search-clear"
-                  onClick={() => setQuery('')}
-                  className="p-1 text-neutral-400 hover:text-neutral-800"
-                  aria-label={t('action.delete')}
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-              <button
-                data-testid="new-folder-btn"
-                onClick={handleNewFolder}
-                className="p-2.5 border border-[#e2ddd5] bg-white rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 shrink-0 flex-1 sm:flex-initial flex items-center justify-center"
-                title={t('btn.newFolder')}
-              >
-                <FolderPlus size={20} />
-              </button>
-              <button
-                data-testid="new-file-btn"
-                onClick={handleNewFile}
-                className="p-2.5 border border-[#e2ddd5] bg-white rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
-                title={t("btn.newBookmark") || "Bookmark Baru"}
-                aria-label={t("btn.newBookmark") || "Bookmark Baru"}
-              >
-                <BookmarkPlus size={20} />
-              </button>
-              <button
-                data-testid="new-note-btn"
-                onClick={handleNewNote}
-                className="p-2.5 border border-[#e2ddd5] bg-white rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 shrink-0 flex-1 sm:flex-initial flex items-center justify-center bg-white cursor-pointer"
-                title={t('btn.newNote') || "Catatan Baru"}
-                aria-label={t('btn.newNote') || "Catatan Baru"}
-              >
-                <NotebookPen size={20} />
-              </button>
-              <button
-                data-testid="new-phrase-btn"
-                onClick={handleNewPhrase}
-                className="p-2.5 border border-[#e2ddd5] bg-white rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 shrink-0 flex-1 sm:flex-initial flex items-center justify-center bg-white cursor-pointer"
-                title={t('btn.newPhrase') || 'Pharse (1x Klik Tempel)'}
-                aria-label={t('btn.newPhrase') || 'Pharse (1x Klik Tempel)'}
-              >
-                <KeyRound size={20} />
-              </button>
-            </div>
-          </div>
-
-          {/* Bottom Row: Breadcrumb + Tools */}
-          <div className="flex items-center justify-between gap-2 px-0.5">
-            <div className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto no-scrollbar text-sm font-medium">
-              <button
-                data-testid="crumb-root"
-                onClick={() => navigateTo(null)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-[#faf8f5] text-neutral-800 transition-colors"
-              >
-                <Home size={15} className="text-[#FF4F00]" /> Root
-              </button>
-              {breadcrumbs.map((b) => (
-                <div key={b.id} className="inline-flex items-center gap-1">
-                  <ChevronRight size={14} className="text-neutral-400" />
-                  <button
-                    data-testid={`crumb-${b.id}`}
-                    onClick={() => navigateTo(b.id)}
-                    className="px-2.5 py-1 rounded-lg hover:bg-[#faf8f5] truncate max-w-[140px] text-neutral-800 transition-colors"
-                  >
-                    {b.name}
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-3.5">
-              <button
-                data-testid="regenerate-header-btn"
-                onClick={bulkRegenerate}
-                disabled={listItems.length === 0}
-                className="p-1.5 rounded-lg disabled:opacity-40 disabled:hover:bg-transparent transition-colors hover:bg-[#faf8f5] text-neutral-700 border border-transparent hover:border-[#e2ddd5] flex items-center justify-center cursor-pointer mr-1"
-                title={t('action.regenerate') || 'Perbarui judul'}
-                aria-label={t('action.regenerate') || 'Perbarui judul'}
-              >
-                <Sparkles size={18} className="text-[#FF4F00]" />
-              </button>
-              <button
-                data-testid="select-all-header-btn"
-                onClick={toggleSelectAllHeader}
-                disabled={listItems.length === 0}
-                className={[
-                  'p-1.5 rounded-lg disabled:opacity-40 disabled:hover:bg-transparent transition-colors',
-                  selectMode ? 'bg-[#FF4F00] text-white' : 'hover:bg-[#faf8f5] text-neutral-700 border border-transparent hover:border-[#e2ddd5]',
-                ].join(' ')}
-                title={t('btn.selectAll')}
-              >
-                <ListChecks size={18} />
-              </button>
-            </div>
-          </div>
-        </div>
+      <main className="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 py-3 flex flex-col gap-3 relative">
 
       {/* Selection toolbar */}
       {selectMode && (
         <div
           data-testid="selection-bar"
-          className="mt-1 border border-[#e2ddd5] rounded-xl p-2.5 bg-[#131313] text-white flex items-center gap-2 sticky top-[92px] z-20 shadow-md"
+          className="mt-1 border border-[#e2ddd5] dark:border-neutral-700 rounded-xl p-2.5 bg-[#131313] text-white flex items-center gap-2 sticky top-[138px] z-20 shadow-md"
         >
           <div className="text-xs font-semibold px-2 py-1 bg-[#FF4F00] text-white rounded-lg" data-testid="selection-count">
             {t('action.selected').replace('{count}', selectedIds.size.toString())}
@@ -1139,6 +1253,7 @@ export default function App() {
           pathOf={pathOf}
           currentFolderId={currentFolderId}
           onOpenPhrase={(it) => setViewingPhraseItem(it)}
+          unlockedFolderIds={unlockedFolderIds}
         />
       </div>
 
@@ -1202,7 +1317,7 @@ export default function App() {
           <PinModal
             mode={pinModalMode}
             folderToUnlock={folderPendingUnlock || undefined}
-            folders={items.filter((i) => i.type === 'folder' && i.id !== 'folder-catatan' && i.id !== 'folder-hello-world')}
+            folders={items.filter((i) => i.type === 'folder' && i.id !== 'folder-catatan' && i.id !== 'folder-hello-world' && i.id !== 'folder-pharse' && !isPharseFolderOrSubfolder(i.id))}
             onClose={() => {
               setPinModalMode(null);
               setFolderPendingUnlock(null);

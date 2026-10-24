@@ -4,7 +4,7 @@ import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
 import { toast } from 'sonner';
 import { usePinState } from '../lib/pin';
-import { cleanText, extractTitleFromUrl, getBookmarkDisplayTitle } from '../lib/titleExtractor';
+import { cleanText, extractTitleFromUrl, getBookmarkDisplayTitle, extractUrlFromLabel } from '../lib/titleExtractor';
 
 interface Props {
   items: FileSystemItem[];
@@ -22,6 +22,7 @@ interface Props {
   searchMode?: boolean;
   pathOf?: (id: string | null) => string;
   currentFolderId?: string | null;
+  unlockedFolderIds?: Set<string>;
 }
 
 export const FileBrowser = ({
@@ -40,6 +41,7 @@ export const FileBrowser = ({
   searchMode = false,
   pathOf,
   currentFolderId,
+  unlockedFolderIds,
 }: Props) => {
   const { t } = useI18n();
   const pinActive = usePinState();
@@ -83,6 +85,7 @@ export const FileBrowser = ({
             currentFolderId={currentFolderId}
             noteNumber={isNote ? noteCounter : undefined}
             onOpenPhrase={onOpenPhrase}
+            unlockedFolderIds={unlockedFolderIds}
           />
         );
       })}
@@ -107,6 +110,7 @@ interface RowProps {
   pathLabel?: string;
   currentFolderId?: string | null;
   noteNumber?: number;
+  unlockedFolderIds?: Set<string>;
 }
 
 const Row = ({
@@ -126,6 +130,7 @@ const Row = ({
   pathLabel,
   currentFolderId,
   noteNumber,
+  unlockedFolderIds,
 }: RowProps) => {
   const { t } = useI18n();
   const pinActive = usePinState();
@@ -213,6 +218,15 @@ const Row = ({
     } catch {}
   }
 
+  const renderItemLabel = () => {
+    if (!item.label || !item.label.trim()) return null;
+    return (
+      <span className="inline-flex items-center text-[8px] font-bold leading-none px-1.5 py-[1.5px] rounded border border-neutral-700 text-neutral-800 bg-transparent dark:border-white dark:text-white dark:bg-white/5 mr-1.5 align-middle shrink-0 select-none tracking-wide">
+        {item.label.trim()}
+      </span>
+    );
+  };
+
   return (
     <li
       ref={rowRef}
@@ -253,7 +267,8 @@ const Row = ({
       {/* Icon / Favicon / Note Badge */}
       <div className="shrink-0 w-6.5 h-6.5 flex items-center justify-center rounded-lg bg-[#faf8f5] border border-[#e2ddd5]/60 overflow-hidden relative">
         {item.type === 'folder' ? (
-          item.locked && pinActive ? (
+          (item.id === 'folder-pharse' && pinActive && !unlockedFolderIds?.has('folder-pharse')) ||
+          (item.locked && pinActive && !unlockedFolderIds?.has(item.id)) ? (
             <Lock size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
           ) : item.id === 'folder-catatan' ? (
             <FolderHeart size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
@@ -281,18 +296,22 @@ const Row = ({
       <div className="min-w-0 flex-1">
         {item.type === 'folder' ? (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name}>
+            {renderItemLabel()}
             {cleanText(item.name) || t('file.folder')}
           </div>
         ) : item.type === 'phrase' ? (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name}>
+            {renderItemLabel()}
             {cleanText(item.name) || 'Pharse'}
           </div>
         ) : item.type === 'note' ? (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.content || item.name}>
+            {renderItemLabel()}
             {cleanText(item.content) || cleanText(item.name) || t('file.note')}
           </div>
         ) : (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name || item.content}>
+            {renderItemLabel()}
             {getBookmarkDisplayTitle(item.name, item.content)}
           </div>
         )}

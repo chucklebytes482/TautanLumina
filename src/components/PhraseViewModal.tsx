@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Copy, Check, KeyRound } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { toast } from 'sonner';
+import { extractUrlFromLabel } from '../lib/titleExtractor';
 
 interface Props {
   item: FileSystemItem;
@@ -36,8 +37,30 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
             </div>
 
             <div className="min-w-0 flex-1">
-              <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100 truncate" title={displayTitle}>
-                {displayTitle}
+              <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100 truncate flex items-center" title={displayTitle}>
+                {item.label && item.label.trim() && (() => {
+                  const linkUrl = extractUrlFromLabel(item.label);
+                  if (linkUrl) {
+                    return (
+                      <a
+                        href={linkUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center text-[9px] font-bold leading-none px-1.5 py-[2.5px] rounded border border-neutral-700 text-neutral-900 bg-transparent dark:border-white dark:text-white dark:bg-white/10 mr-2 shrink-0 select-none tracking-wide hover:underline hover:opacity-85 active:scale-95 transition-all cursor-pointer"
+                        title={`Buka tautan: ${linkUrl}`}
+                      >
+                        {item.label.trim()}
+                      </a>
+                    );
+                  }
+                  return (
+                    <span className="inline-flex items-center text-[9px] font-bold leading-none px-1.5 py-[2.5px] rounded border border-neutral-700 text-neutral-900 bg-transparent dark:border-white dark:text-white dark:bg-white/10 mr-2 shrink-0 select-none tracking-wide">
+                      {item.label.trim()}
+                    </span>
+                  );
+                })()}
+                <span className="truncate">{displayTitle}</span>
               </h3>
             </div>
           </div>
