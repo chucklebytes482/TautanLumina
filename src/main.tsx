@@ -9,26 +9,31 @@ import { Toaster } from 'sonner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { I18nProvider } from './lib/i18n';
 
-// Migrasi localStorage lama (simpanteks:*) → nama baru (tautanlumina:*)
+// Bersihkan semua riwayat dan cache perubahan lama yang sudah tidak diperlukan di localStorage
 try {
-  const migrated = localStorage.getItem('tautanlumina:migrated');
-  if (!migrated) {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('simpanteks:')) {
-        const val = localStorage.getItem(key);
-        if (val !== null) localStorage.setItem(key.replace('simpanteks:', 'tautanlumina:'), val);
-      }
+  const keysToRemove: string[] = ['tautanlumina:deleted_ids'];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key) continue;
+    if (key.startsWith('simpanteks:')) {
+      keysToRemove.push(key);
     }
-    // Hapus key lama
-    const toDelete: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('simpanteks:')) toDelete.push(key);
+    if (
+      key === 'tautanlumina:theme' ||
+      key === 'tautanlumina:selected_theme' ||
+      key === 'tautanlumina:custom_theme' ||
+      key === 'tautanlumina:theme_pattern' ||
+      key === 'tautanlumina:theme_bg' ||
+      key === 'theme' ||
+      key === 'tautanlumina:migrated' ||
+      key === 'tautanlumina:deleted_ids' ||
+      key.includes('history') ||
+      key.includes('riwayat')
+    ) {
+      keysToRemove.push(key);
     }
-    toDelete.forEach((k) => localStorage.removeItem(k));
-    localStorage.setItem('tautanlumina:migrated', '1');
   }
+  keysToRemove.forEach((k) => localStorage.removeItem(k));
 } catch {
   /* ignore */
 }

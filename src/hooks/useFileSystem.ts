@@ -274,7 +274,9 @@ export const useFileSystem = () => {
       delete updates.name;
     }
     const merged = { ...it, ...updates, updatedAt: Date.now() };
-    if (updates.label !== undefined) {
+    if (it.type === 'folder') {
+      delete merged.label;
+    } else if (updates.label !== undefined) {
       if (!updates.label || !updates.label.trim()) {
         delete merged.label;
       } else {
@@ -350,10 +352,7 @@ export const useFileSystem = () => {
     if (finalIdsToDelete.length > 0) {
       await db.deleteItems(finalIdsToDelete);
       try {
-        const stored = localStorage.getItem('tautanlumina:deleted_ids');
-        const currentDeleted: string[] = stored ? JSON.parse(stored) : [];
-        const updatedDeleted = Array.from(new Set([...currentDeleted, ...finalIdsToDelete]));
-        localStorage.setItem('tautanlumina:deleted_ids', JSON.stringify(updatedDeleted));
+        localStorage.removeItem('tautanlumina:deleted_ids');
       } catch (e) {}
       setItems((prev) => prev.filter((it) => !finalIdsToDelete.includes(it.id)));
     }
@@ -611,6 +610,35 @@ export const useFileSystem = () => {
     } catch (e) {}
   }, []);
 
+  const purgeChangeHistory = useCallback(async () => {
+    try {
+      localStorage.removeItem('tautanlumina:deleted_ids');
+      const all = await db.getAllItems();
+      const toDeleteIds: string[] = [];
+      const validFolderIds = new Set(all.filter((it) => it.type === 'folder').map((it) => it.id));
+      all.forEach((it) => {
+        if (it.deletedAt) {
+          toDeleteIds.push(it.id);
+        } else if (
+          it.parentId &&
+          it.parentId !== 'folder-catatan' &&
+          it.parentId !== 'folder-hello-world' &&
+          it.parentId !== 'folder-pharse' &&
+          !validFolderIds.has(it.parentId)
+        ) {
+          toDeleteIds.push(it.id);
+        }
+      });
+      if (toDeleteIds.length > 0) {
+        await db.deleteItems(toDeleteIds);
+      }
+      await reload();
+      return true;
+    } catch {
+      return false;
+    }
+  }, [reload]);
+
   return {
     items,
     loaded,
@@ -639,5 +667,6 @@ export const useFileSystem = () => {
     isDescendant,
     clearAll,
     clearPharseFolder,
+    purgeChangeHistory,
   };
 };

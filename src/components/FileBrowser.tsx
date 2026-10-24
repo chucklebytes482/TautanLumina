@@ -219,6 +219,7 @@ const Row = ({
   }
 
   const renderItemLabel = () => {
+    if (item.type === 'folder') return null;
     if (!item.label || !item.label.trim()) return null;
     return (
       <span className="inline-flex items-center text-[8px] font-bold leading-none px-1.5 py-[1.5px] rounded border border-neutral-700 text-neutral-800 bg-transparent dark:border-white dark:text-white dark:bg-white/5 mr-1.5 align-middle shrink-0 select-none tracking-wide">

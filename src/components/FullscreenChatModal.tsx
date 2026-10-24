@@ -710,9 +710,9 @@ export const FullscreenChatModal: React.FC<FullscreenChatModalProps> = ({
     ).length;
   };
 
-  // Scroll chat to bottom
+  // Scroll chat to bottom (tanpa efek scroll animasi)
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
   };
 
   useEffect(() => {

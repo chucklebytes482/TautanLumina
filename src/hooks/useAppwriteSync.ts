@@ -146,7 +146,6 @@ export function useAppwriteSync(
       window.dispatchEvent(new Event('tautanlumina:user_changed'));
       toast.dismiss();
       toast.success(t('toast.loginSuccess'), { duration: 1500 });
-      smartSync(acc);
       return true;
     } catch (e: any) {
       toast.dismiss();
@@ -312,15 +311,14 @@ export function useAppwriteSync(
       const localPinHash = getStoredPinHash();
       const localPinUpdatedAt = getStoredPinUpdatedAt();
 
-      const localDeletedStored = localStorage.getItem('tautanlumina:deleted_ids');
-      const localDeletedIds: string[] = localDeletedStored ? JSON.parse(localDeletedStored) : [];
+      localStorage.removeItem('tautanlumina:deleted_ids');
 
       if (!cloudDoc) {
         const finalDataStr = JSON.stringify({ 
           app: 'plaintxtai', 
           version: 1, 
           items: currentLocalItems,
-          deletedIds: localDeletedIds,
+          deletedIds: [],
           apiKey: localApiKey,
           model: localModel,
           pinHash: localPinHash,
@@ -368,7 +366,7 @@ export function useAppwriteSync(
           ]
         );
         lastSyncedStrRef.current = finalDataStr;
-        if (toastId) toast.success(t('toast.syncCompleted'), { id: toastId, duration: 1500 });
+        if (toastId) toast.success('diperbarui', { id: toastId, duration: 1500 });
         return;
       }
 
@@ -425,7 +423,7 @@ export function useAppwriteSync(
         mergedPinUpdatedAt = localPinUpdatedAt;
       }
 
-      const permanentlyDeletedSet = new Set([...localDeletedIds, ...cloudDeletedIds]);
+      const permanentlyDeletedSet = new Set<string>(cloudDeletedIds);
 
       const itemMap = new Map<string, FileSystemItem>();
 
@@ -455,8 +453,7 @@ export function useAppwriteSync(
       const mergedApiKey = localApiKey || cloudApiKey;
       const mergedModel = localModel || cloudModel;
 
-      const finalDeletedArray = Array.from(permanentlyDeletedSet);
-      localStorage.setItem('tautanlumina:deleted_ids', JSON.stringify(finalDeletedArray));
+      localStorage.removeItem('tautanlumina:deleted_ids');
 
       // Skip redundant IndexedDB imports if local items are already in sync with mergedItems
       const currentLocalStr = JSON.stringify(currentLocalItems);
@@ -480,7 +477,7 @@ export function useAppwriteSync(
         app: 'plaintxtai', 
         version: 1, 
         items: mergedItems,
-        deletedIds: finalDeletedArray,
+        deletedIds: [],
         apiKey: mergedApiKey,
         model: mergedModel,
         pinHash: mergedPinHash,
@@ -490,7 +487,7 @@ export function useAppwriteSync(
       // Optimization: Skip remote update if cloud and local data string is unchanged
       if (finalDataStr === cloudDataJson) {
         lastSyncedStrRef.current = finalDataStr;
-        if (toastId) toast.success(t('toast.syncSuccess'), { id: toastId, duration: 1500 });
+        if (toastId) toast.success('diperbarui', { id: toastId, duration: 1500 });
         return;
       }
 
@@ -532,7 +529,7 @@ export function useAppwriteSync(
       }
 
       lastSyncedStrRef.current = finalDataStr;
-      if (toastId) toast.success(t('toast.syncSuccess'), { id: toastId, duration: 1500 });
+      if (toastId) toast.success('diperbarui', { id: toastId, duration: 1500 });
     } catch (e: any) {
       console.warn('SmartSync error details:', e);
       if (toastId) {
@@ -603,16 +600,41 @@ export function useAppwriteSync(
   }, [loaded, user]);
 
   useEffect(() => {
-    const handlePinChange = () => {
-      if (user) {
-        smartSync(user, true);
+    // Sinkronisasi dinonaktifkan di sini karena hanya berjalan bersamaan dengan fitur generate ulang
+  }, []);
+
+  const purgeSyncHistory = useCallback(async () => {
+    try {
+      localStorage.removeItem('tautanlumina:deleted_ids');
+      if (user && user.$id) {
+        const docId = user.$id;
+        const cloudDoc = await databases.getDocument(APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID, docId).catch(() => null);
+        if (cloudDoc && cloudDoc.data) {
+          let parsed: any;
+          try {
+            parsed = JSON.parse(cloudDoc.data);
+          } catch {
+            parsed = null;
+          }
+          if (parsed && typeof parsed === 'object') {
+            parsed.deletedIds = [];
+            const updatedDataStr = JSON.stringify(parsed);
+            if (updatedDataStr !== cloudDoc.data) {
+              await databases.updateDocument(APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID, docId, {
+                data: updatedDataStr,
+                email: user.email
+              });
+              lastSyncedStrRef.current = updatedDataStr;
+            }
+          }
+        }
       }
-    };
-    window.addEventListener('tautanlumina:pin_changed', handlePinChange);
-    return () => {
-      window.removeEventListener('tautanlumina:pin_changed', handlePinChange);
-    };
-  }, [user, smartSync]);
+      return true;
+    } catch (err) {
+      console.warn('Failed to purge sync history in cloud:', err);
+      return false;
+    }
+  }, [user]);
 
   return {
     user,
@@ -625,6 +647,7 @@ export function useAppwriteSync(
     updatePasswordRecovery,
     verifyPasswordAndResetPin,
     logout,
-    smartSync
+    smartSync,
+    purgeSyncHistory
   };
 }

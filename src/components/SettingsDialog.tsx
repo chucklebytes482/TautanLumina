@@ -11,7 +11,8 @@ import {
   Lock, 
   Shield, 
   ChevronRight,
-  LayoutGrid
+  LayoutGrid,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,6 +31,7 @@ interface Props {
   onExportJSON?: () => void;
   onExportHTML?: () => void;
   onImport?: () => void;
+  onPurgeHistory?: () => void;
   initialTab?: TabType;
 }
 
@@ -47,6 +49,7 @@ export const SettingsDialog = ({
   onExportJSON,
   onExportHTML,
   onImport, 
+  onPurgeHistory,
   initialTab
 }: Props) => {
   const { t } = useI18n();
@@ -195,6 +198,21 @@ export const SettingsDialog = ({
               <p className="text-xs text-neutral-500 mt-0.5">Pulihkan data dari file cadangan</p>
             </div>
           </button>
+
+          {onPurgeHistory && (
+            <button
+              onClick={onPurgeHistory}
+              className="w-full flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-xl hover:bg-red-50 hover:border-red-200 transition-colors text-left shadow-xs cursor-pointer group"
+            >
+              <div className="p-2 rounded-lg bg-red-50 text-red-600 group-hover:scale-105 transition-transform">
+                <Trash2 size={20} />
+              </div>
+              <div>
+                <p className="font-medium text-sm text-neutral-900 group-hover:text-red-600 transition-colors">Hapus Riwayat Perubahan</p>
+                <p className="text-xs text-neutral-500 mt-0.5">Bersihkan riwayat perubahan, sampah, dan pelacak ID yang tidak diperlukan</p>
+              </div>
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -269,7 +287,7 @@ export const SettingsDialog = ({
       </div>
 
       {/* Content Area Desktop */}
-      <div className="relative flex-1 bg-\[#faf8f5\] dark:bg-\[#161618\] bg-doodle h-full shadow-2xl flex flex-col animate-in fade-in slide-in-from-left-8 duration-300 delay-100 max-w-md hidden sm:flex">
+      <div className="relative flex-1 bg-[#faf8f5] dark:bg-[#161618] h-full shadow-2xl flex flex-col animate-in fade-in slide-in-from-left-8 duration-300 delay-100 max-w-md hidden sm:flex">
         <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
           <h2 className="text-xl font-semibold capitalize">{activeTab ? activeTab.replace('-', ' ') : t('menu.all')}</h2>
           <button onClick={onClose} className="sm:hidden p-2 text-neutral-400 hover:text-neutral-700 cursor-pointer">
@@ -282,7 +300,7 @@ export const SettingsDialog = ({
       </div>
 
       {/* Mobile Content Area Overlay */}
-      <div className={`sm:hidden fixed inset-0 z-50 bg-\[#faf8f5\] dark:bg-\[#161618\] bg-doodle transition-transform duration-300 ${activeTab ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`sm:hidden fixed inset-0 z-50 bg-[#faf8f5] dark:bg-[#161618] transition-transform duration-300 ${activeTab ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-neutral-100 flex items-center bg-transparent gap-3">
             <button onClick={() => setActiveTab(null as any)} className="p-1.5 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-full cursor-pointer">

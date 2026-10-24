@@ -80,6 +80,7 @@ export default function App() {
     importItems,
     clearAll,
     clearPharseFolder,
+    purgeChangeHistory,
   } = fs;
 
   const [query, setQuery] = useState('');
@@ -101,28 +102,42 @@ export default function App() {
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'sync' | null>(null);
   const [showChatPopup, setShowChatPopup] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
   });
 
   useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      setIsDarkTheme(e.matches);
+    const updateTheme = (matches: boolean) => {
+      setIsDarkTheme(matches);
+      if (matches) {
+        document.documentElement.classList.add('dark-theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark-theme', 'dark');
+      }
     };
-    mediaQuery.addEventListener('change', handleChange);
-    
-    if (isDarkTheme) {
-      document.documentElement.classList.add('dark-theme');
-      document.documentElement.classList.add('dark');
+
+    updateTheme(mediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      updateTheme(e.matches);
+    };
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
     } else {
-      document.documentElement.classList.remove('dark-theme');
-      document.documentElement.classList.remove('dark');
+      (mediaQuery as any).addListener(handleChange);
     }
 
     return () => {
-      mediaQuery.removeEventListener('change', handleChange);
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleChange);
+      } else {
+        (mediaQuery as any).removeListener(handleChange);
+      }
     };
-  }, [isDarkTheme]);
+  }, []);
 
   // PIN security states
   const pinActive = usePinState();
@@ -145,7 +160,7 @@ export default function App() {
 
   const [isOffline, setIsOffline] = useState<boolean>(() => typeof navigator !== 'undefined' ? !navigator.onLine : false);
 
-  const { user, loading, syncing, login, register, resetPassword, verifyPasswordAndResetPin, updatePasswordRecovery, verifyEmail, logout, smartSync } = useAppwriteSync(
+  const { user, loading, syncing, login, register, resetPassword, verifyPasswordAndResetPin, updatePasswordRecovery, verifyEmail, logout, smartSync, purgeSyncHistory } = useAppwriteSync(
     items,
     importJSON,
     exportJSON,
@@ -155,7 +170,6 @@ export default function App() {
   useEffect(() => {
     const handleOnline = () => {
       setIsOffline(false);
-      smartSync(true);
     };
     const handleOffline = () => {
       setIsOffline(true);
@@ -168,7 +182,7 @@ export default function App() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [smartSync]);
+  }, []);
 
   const guardOffline = useCallback(() => {
     if (typeof navigator !== 'undefined' && (!navigator.onLine || isOffline)) {
@@ -180,6 +194,21 @@ export default function App() {
   const handleLogout = async () => {
     await logout();
     await clearAll();
+  };
+
+  const handlePurgeHistory = async () => {
+    const ok = await customConfirm(
+      'Hapus riwayat perubahan, catatan sampah, dan pelacak ID yang tidak diperlukan dari penyimpanan lokal dan cloud? Data Anda tetap aman.'
+    );
+    if (!ok) return;
+
+    try {
+      await purgeChangeHistory();
+      await purgeSyncHistory();
+      showToast('Riwayat perubahan berhasil dibersihkan');
+    } catch {
+      showToast('Gagal membersihkan riwayat perubahan');
+    }
   };
 
   const selectMode = selectedIds.size > 0 || keepSelectMode;
@@ -386,7 +415,6 @@ export default function App() {
     const name = await customPrompt(t('modal.folderName'));
     if (name && name.trim()) {
       await createItem(name.trim(), 'folder', currentFolderId);
-      smartSync(true);
     }
   };
 
@@ -420,7 +448,6 @@ export default function App() {
 
     try {
       await createItem(autoTitle, 'file', currentFolderId, finalUrl);
-      smartSync(true);
       showToast('Bookmark disimpan');
     } catch (e: any) {
       showToast(e?.message || 'Gagal simpan');
@@ -434,7 +461,6 @@ export default function App() {
     
     const targetFolder = currentFolderId || 'folder-catatan';
     await createItem('', 'note', targetFolder, text.trim());
-    smartSync(true);
     showToast('Catatan disimpan');
   };
 
@@ -495,7 +521,6 @@ export default function App() {
 
     try {
       await createItem(firstWord, 'phrase', 'folder-pharse', cleanContent);
-      smartSync(true);
       navigateTo('folder-pharse');
       showToast('Pharse disimpan');
     } catch (e: any) {
@@ -574,7 +599,6 @@ export default function App() {
       onConfirm: async (target) => {
         try {
           await moveMany(ids, target);
-          smartSync(true);
           clearSelection();
           showToast('Dipindahkan');
         } catch (e: any) {
@@ -634,7 +658,6 @@ export default function App() {
       clearSelection();
       showToast('Dihapus');
       afterDelete?.();
-      smartSync(true);
     };
 
     if (await customConfirm(title)) {
@@ -694,12 +717,12 @@ export default function App() {
       }
     }
 
-    if (updatedCount > 0) {
-      smartSync(true);
-      sonnerToast.success('Judul diperbarui');
-    } else {
-      sonnerToast.info(sourceList.length === 0 ? 'Tidak ada bookmark' : 'Semua bookmark sudah diperbarui');
+    // Sinkronisasi hanya berjalan bersamaan dengan fitur generate ulang
+    if (user) {
+      await smartSync(user, true);
     }
+
+    showToast('diperbarui');
   };
 
   const handleConfirmMoveKeypad = async (targetNum: number) => {
@@ -847,11 +870,9 @@ export default function App() {
           if (isBookmark) {
             const count = await importHTML(content, false, targetFolder);
             showToast(`${count} bookmark diimpor`);
-            smartSync(true);
           } else {
             await importJSON(content, false, targetFolder);
             showToast('Berhasil diimpor');
-            smartSync(true);
           }
         } catch (err: any) {
           showToast(err?.message || 'Format tidak valid');
@@ -900,6 +921,7 @@ export default function App() {
 
   const handleSetLabel = async (item: FileSystemItem) => {
     if (guardOffline()) return;
+    if (item.type === 'folder') return;
     const promptTitle = item.label ? 'Ubah Label' : 'Tambah Label';
     const input = await customPrompt(promptTitle, item.label || '', {
       placeholder: 'Tulis label...',
@@ -909,11 +931,9 @@ export default function App() {
     const trimmed = input.trim();
     if (!trimmed) {
       await updateItem(item.id, { label: '' });
-      smartSync(true);
       showToast('Label dihapus');
     } else {
       await updateItem(item.id, { label: trimmed });
-      smartSync(true);
       showToast('Label disimpan');
     }
   };
@@ -973,11 +993,13 @@ export default function App() {
       },
     });
     list.push({ key: 'move', label: t('action.moveToFolder'), onClick: () => openMovePicker([item.id]) });
-    list.push({
-      key: 'label',
-      label: item.label ? 'Ubah Label' : 'Tambah Label',
-      onClick: () => handleSetLabel(item),
-    });
+    if (item.type !== 'folder') {
+      list.push({
+        key: 'label',
+        label: item.label ? 'Ubah Label' : 'Tambah Label',
+        onClick: () => handleSetLabel(item),
+      });
+    }
     if (item.type === 'folder' && item.id !== 'folder-pharse' && !isPharseFolderOrSubfolder(item.id)) {
       list.push({
         key: 'lock',
@@ -995,7 +1017,6 @@ export default function App() {
           const content = await customPrompt(t('modal.noteText'), item.content || '', { textarea: true, maxWidth: 'max-w-xl' });
           if (content !== null && content.trim() !== '') {
             await updateContent(item.id, content.trim());
-            smartSync(true);
             showToast('Catatan disimpan');
           }
         },
@@ -1059,7 +1080,6 @@ export default function App() {
                 aria-label={t('chat.title') || 'Chat & Pengumuman'}
               >
                 <MessageCircle size={20} className="text-[#FF4F00]" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-[#FF4F00] rounded-full animate-pulse" />
               </button>
             </div>
           </div>
@@ -1259,6 +1279,7 @@ export default function App() {
 
       {menuFor && (
         <ItemMenu
+          item={menuFor}
           title={
             menuFor.type === 'phrase'
               ? menuFor.name || 'Pharse'
@@ -1310,6 +1331,7 @@ export default function App() {
             onExportJSON={handleExportJSON}
             onExportHTML={handleExportHTML}
             onImport={handleImport}
+            onPurgeHistory={handlePurgeHistory}
           />
         )}
 
