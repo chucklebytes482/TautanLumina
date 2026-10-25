@@ -95,7 +95,7 @@ export default function App() {
   >(null);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | null>(null);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'data' | null>(null);
   const [showChatPopup, setShowChatPopup] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
     return typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
@@ -828,12 +828,43 @@ export default function App() {
     }
   };
 
-  const handleClearAllContent = async () => {
-    await clearAll();
-    if (clearCloudData) {
-      await clearCloudData();
-    }
-    clearSelection();
+  const handleExportJSON = () => {
+    const data = exportJSON();
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tautan-lumina.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Berhasil diekspor');
+  };
+
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json, .json';
+    input.onchange = async (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (file.size > 20 * 1024 * 1024) {
+        showToast('File terlalu besar');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = async (re) => {
+        const content = re.target?.result as string;
+        if (!content) return;
+        try {
+          await importJSON(content, true);
+          showToast('Cadangan berhasil dipulihkan');
+        } catch (err: any) {
+          showToast(err?.message || 'Format cadangan tidak valid');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
   };
 
 
@@ -1107,17 +1138,7 @@ export default function App() {
                 ))}
               </div>
 
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <button
-                  data-testid="clear-all-header-btn"
-                  onClick={handleClearAllContent}
-                  disabled={items.length === 0}
-                  className="p-1.5 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent transition-colors hover:bg-red-50 dark:hover:bg-neutral-800 text-neutral-400 hover:text-red-600 dark:hover:text-red-400 border border-transparent hover:border-red-200 dark:hover:border-neutral-700 flex items-center justify-center cursor-pointer"
-                  title="Hapus semua konten (1 klik)"
-                  aria-label="Hapus semua konten"
-                >
-                  <Trash2 size={16} />
-                </button>
+              <div className="flex items-center gap-3.5">
                 <button
                   data-testid="regenerate-header-btn"
                   onClick={bulkRegenerate}
@@ -1265,6 +1286,8 @@ export default function App() {
             }}
             onOpenPinMenu={handleOpenPinMenu}
             onResetPinPassword={() => setPinModalMode('reset_password')}
+            onExportJSON={handleExportJSON}
+            onImport={handleImport}
           />
         )}
 

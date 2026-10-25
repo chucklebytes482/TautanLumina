@@ -7,7 +7,10 @@ import {
   X, 
   Lock, 
   Shield, 
-  ChevronRight
+  ChevronRight,
+  Download,
+  Upload,
+  Database
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -21,10 +24,12 @@ interface Props {
   onClose: () => void;
   onOpenPinMenu?: () => void;
   onResetPinPassword?: () => void;
+  onExportJSON?: () => void;
+  onImport?: () => void;
   initialTab?: TabType;
 }
 
-type TabType = 'profile' | null;
+type TabType = 'profile' | 'data' | null;
 
 export const SettingsDialog = ({ 
   user, 
@@ -33,6 +38,8 @@ export const SettingsDialog = ({
   onClose, 
   onOpenPinMenu, 
   onResetPinPassword,
+  onExportJSON,
+  onImport,
   initialTab
 }: Props) => {
   const { t } = useI18n();
@@ -138,8 +145,46 @@ export const SettingsDialog = ({
     </div>
   );
 
+  const renderDataTab = () => (
+    <div className="space-y-4">
+      <h4 className="text-sm font-semibold text-neutral-800 border-b border-neutral-100 pb-2">Cadangan Data JSON</h4>
+      <div className="space-y-3 mt-4">
+        {onExportJSON && (
+          <button
+            onClick={onExportJSON}
+            className="w-full flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors text-left shadow-xs cursor-pointer group"
+          >
+            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 group-hover:scale-105 transition-transform">
+              <Download size={20} />
+            </div>
+            <div>
+              <p className="font-medium text-sm text-neutral-900">Ekspor JSON</p>
+              <p className="text-xs text-neutral-500 mt-0.5">Cadangkan seluruh data ke berkas JSON</p>
+            </div>
+          </button>
+        )}
+
+        {onImport && (
+          <button
+            onClick={onImport}
+            className="w-full flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors text-left shadow-xs cursor-pointer group"
+          >
+            <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600 group-hover:scale-105 transition-transform">
+              <Upload size={20} />
+            </div>
+            <div>
+              <p className="font-medium text-sm text-neutral-900">Impor JSON</p>
+              <p className="text-xs text-neutral-500 mt-0.5">Pulihkan seluruh data & posisi dari berkas cadangan JSON</p>
+            </div>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   const renderTabContent = (tab: TabType) => {
     if (tab === 'profile') return renderProfileTab();
+    if (tab === 'data') return renderDataTab();
     return null;
   };
 
@@ -176,6 +221,13 @@ export const SettingsDialog = ({
             </button>
           </div>
 
+          <div className="mb-6">
+            <div className="px-3 mb-2 text-[11px] font-bold tracking-widest text-neutral-400 uppercase">Data</div>
+            <div className="space-y-1">
+              {renderNavItem('data', Database, 'Cadangan Data')}
+            </div>
+          </div>
+
           <div>
             <div className="px-3 mb-2 text-[11px] font-bold tracking-widest text-neutral-400 uppercase">{t('menu.personal')}</div>
             <div className="space-y-1">
@@ -197,7 +249,7 @@ export const SettingsDialog = ({
               >
                 <ChevronRight size={18} className="rotate-180" />
               </button>
-              <h2 className="text-xl font-semibold capitalize">{t('menu.profile')}</h2>
+              <h2 className="text-xl font-semibold capitalize">{activeTab === 'data' ? 'Cadangan Data' : t('menu.profile')}</h2>
             </div>
             <button onClick={onClose} className="p-2 text-neutral-400 hover:text-neutral-700 cursor-pointer">
               <X size={20} />
@@ -216,7 +268,7 @@ export const SettingsDialog = ({
             <button onClick={() => setActiveTab(null)} className="p-1.5 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-full cursor-pointer">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </button>
-            <h2 className="text-lg font-semibold capitalize flex-1">{t('menu.profile')}</h2>
+            <h2 className="text-lg font-semibold capitalize flex-1">{activeTab === 'data' ? 'Cadangan Data' : t('menu.profile')}</h2>
             <button onClick={onClose} className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-full cursor-pointer">
               <X size={20} />
             </button>
