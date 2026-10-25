@@ -121,6 +121,24 @@ export const useFileSystem = () => {
         all = await db.getAllItems();
       }
 
+      // Bersihkan duplikat terutama di dalam folder pharse
+      const seenContent = new Set<string>();
+      const duplicateIds: string[] = [];
+      all.forEach(it => {
+        if (it.content && (it.type === 'phrase' || it.parentId === 'folder-pharse')) {
+          const key = `${it.type}:${it.content.trim().toLowerCase()}`;
+          if (seenContent.has(key)) {
+            duplicateIds.push(it.id);
+          } else {
+            seenContent.add(key);
+          }
+        }
+      });
+      if (duplicateIds.length > 0) {
+        await db.deleteItems(duplicateIds);
+        all = await db.getAllItems();
+      }
+
       setItems(all);
     } catch (e) {
       console.warn('Failed to load file system items:', e);

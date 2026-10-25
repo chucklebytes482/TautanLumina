@@ -95,7 +95,7 @@ export default function App() {
   >(null);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'data' | null>(null);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | null>(null);
   const [showChatPopup, setShowChatPopup] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
     return typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
@@ -828,44 +828,7 @@ export default function App() {
     }
   };
 
-  const handleExportJSON = () => {
-    const data = exportJSON();
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'tautan-lumina.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('Berhasil diekspor');
-  };
 
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'application/json, .json';
-    input.onchange = async (e: any) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      if (file.size > 20 * 1024 * 1024) {
-        showToast('File terlalu besar');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = async (re) => {
-        const content = re.target?.result as string;
-        if (!content) return;
-        try {
-          await importJSON(content, true);
-          showToast('Cadangan berhasil dipulihkan');
-        } catch (err: any) {
-          showToast(err?.message || 'Format cadangan tidak valid');
-        }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
-  };
 
 
 
@@ -1286,8 +1249,6 @@ export default function App() {
             }}
             onOpenPinMenu={handleOpenPinMenu}
             onResetPinPassword={() => setPinModalMode('reset_password')}
-            onExportJSON={handleExportJSON}
-            onImport={handleImport}
           />
         )}
 
