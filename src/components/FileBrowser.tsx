@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import { MoreVertical, Folder, Pin, Trash2, Lock, FileText, FolderHeart, FolderCode, StickyNote, Copy, KeyRound } from 'lucide-react';
+import { MoreVertical, Folder, Pin, Trash2, Lock, FileText, FolderHeart, StickyNote, Copy, KeyRound } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
 import { toast } from 'sonner';
@@ -14,8 +13,6 @@ interface Props {
   onOpenFolder: (id: string) => void;
   onOpenPhrase?: (item: FileSystemItem) => void;
   onMenu: (item: FileSystemItem, anchor: DOMRect) => void;
-  onDropOnFolder: (targetFolderId: string, draggedIds: string[]) => void;
-  onReorder: (draggedIds: string[], overId: string, position: 'before' | 'after') => void;
   onPin: (id: string, pinned: boolean) => void;
   onDelete: (id: string) => void;
   emptyLabel?: string;
@@ -33,8 +30,6 @@ export const FileBrowser = ({
   onOpenFolder,
   onOpenPhrase,
   onMenu,
-  onDropOnFolder,
-  onReorder,
   onPin,
   onDelete,
   emptyLabel,
@@ -45,16 +40,18 @@ export const FileBrowser = ({
 }: Props) => {
   const { t } = useI18n();
   const pinActive = usePinState();
-  const label = emptyLabel || t('empty.folder');
   if (items.length === 0) {
-    return (
-      <div
-        data-testid="empty-state"
-        className="py-16 text-center text-sm text-neutral-500"
-      >
-        {emptyLabel}
-      </div>
-    );
+    if (searchMode && emptyLabel) {
+      return (
+        <div
+          data-testid="empty-state"
+          className="py-16 text-center text-sm text-neutral-500"
+        >
+          {emptyLabel}
+        </div>
+      );
+    }
+    return <div data-testid="empty-state" className="py-6" />;
   }
 
   let noteCounter = 0;
@@ -75,8 +72,6 @@ export const FileBrowser = ({
             onToggleSelect={() => onToggleSelect(it.id)}
             onOpenFolder={() => onOpenFolder(it.id)}
             onMenu={(rect) => onMenu(it, rect)}
-            onDropOnFolder={(dragged) => onDropOnFolder(it.id, dragged)}
-            onReorder={(dragged, pos) => onReorder(dragged, it.id, pos)}
             onPin={(pinned) => onPin(it.id, pinned)}
             onDelete={() => onDelete(it.id)}
             allSelectedIds={selectedIds}
@@ -102,8 +97,6 @@ interface RowProps {
   onOpenFolder: () => void;
   onOpenPhrase?: (item: FileSystemItem) => void;
   onMenu: (rect: DOMRect) => void;
-  onDropOnFolder: (draggedIds: string[]) => void;
-  onReorder: (draggedIds: string[], position: 'before' | 'after') => void;
   onPin: (pinned: boolean) => void;
   onDelete: () => void;
   searchMode: boolean;
@@ -122,8 +115,6 @@ const Row = ({
   onOpenFolder,
   onOpenPhrase,
   onMenu,
-  onDropOnFolder,
-  onReorder,
   onPin,
   onDelete,
   searchMode,
@@ -134,12 +125,10 @@ const Row = ({
 }: RowProps) => {
   const { t } = useI18n();
   const pinActive = usePinState();
-  const [dropZone, setDropZone] = useState<'over' | 'left' | 'right' | null>(null);
-  const rowRef = useRef<HTMLLIElement>(null);
 
   const handleClick = () => {
     if (selectMode) {
-      if (item.id === 'folder-catatan' || item.id === 'folder-hello-world' || item.id === 'folder-pharse') {
+      if (item.id === 'folder-catatan' || item.id === 'folder-pharse') {
         return;
       }
       onToggleSelect();
@@ -169,50 +158,6 @@ const Row = ({
     }
   };
 
-  const handleDragStart = (e: React.DragEvent) => {
-    const ids = selected && allSelectedIds.size > 0 ? [...allSelectedIds] : [item.id];
-    e.dataTransfer.setData('text/plain', JSON.stringify(ids));
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const readIds = (e: React.DragEvent): string[] => {
-    try {
-      return JSON.parse(e.dataTransfer.getData('text/plain'));
-    } catch {
-      return [];
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    if (searchMode) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (!rowRef.current) return;
-    const rect = rowRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const canDropInside = item.type === 'folder' && item.id !== 'folder-catatan' && item.id !== 'folder-pharse';
-    if (canDropInside && x > rect.width * 0.25 && x < rect.width * 0.75) {
-      setDropZone('over');
-    } else if (x < rect.width * 0.5) {
-      setDropZone('left');
-    } else {
-      setDropZone('right');
-    }
-  };
-
-  const handleDragLeave = () => setDropZone(null);
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    const ids = readIds(e);
-    const zone = dropZone;
-    setDropZone(null);
-    if (!ids.length || ids.includes(item.id)) return;
-    if (zone === 'over' && item.type === 'folder') onDropOnFolder(ids);
-    else if (zone === 'left') onReorder(ids, 'before');
-    else if (zone === 'right') onReorder(ids, 'after');
-  };
-
   const isUrl = item.type === 'file' && item.content?.startsWith('http');
   let domain = '';
   if (isUrl) {
@@ -233,24 +178,15 @@ const Row = ({
 
   return (
     <li
-      ref={rowRef}
       data-testid={`item-row-${item.id}`}
-      draggable={!searchMode}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
       onClick={handleClick}
       className={[
         'flex items-center gap-1.5 px-2 py-2 border rounded-xl select-none no-select bg-white cursor-pointer transition-all hover:shadow-xs hover:border-[#ff4f00]/40',
         selected ? 'bg-[#fff0eb] border-[#ff4f00]' : 'border-[#e2ddd5]',
-        dropZone === 'over' ? 'ring-2 ring-[#ff4f00]' : '',
-        dropZone === 'left' ? 'border-l-4 border-l-[#ff4f00]' : '',
-        dropZone === 'right' ? 'border-r-4 border-r-[#ff4f00]' : '',
       ].join(' ')}
     >
       {/* Select Mode Checkbox */}
-      {selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-hello-world' && item.id !== 'folder-pharse' && (
+      {selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && (
         <span
           className={[
             'inline-block w-4 h-4 rounded border shrink-0 transition-colors',
@@ -264,7 +200,7 @@ const Row = ({
           }}
         />
       )}
-      {selectMode && (item.id === 'folder-catatan' || item.id === 'folder-hello-world' || item.id === 'folder-pharse') && (
+      {selectMode && (item.id === 'folder-catatan' || item.id === 'folder-pharse') && (
         <div className="w-4 h-4 shrink-0" />
       )}
 
@@ -276,8 +212,6 @@ const Row = ({
             <Lock size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
           ) : item.id === 'folder-catatan' ? (
             <FolderHeart size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
-          ) : item.id === 'folder-hello-world' ? (
-            <FolderCode size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
           ) : item.id === 'folder-pharse' ? (
             <KeyRound size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
           ) : (
@@ -322,7 +256,7 @@ const Row = ({
       </div>
 
       {/* Menu Button */}
-      {!selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-hello-world' && item.id !== 'folder-pharse' && (
+      {!selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && (
         <div className="flex items-center shrink-0">
           <button
             data-testid={`item-menu-${item.id}`}

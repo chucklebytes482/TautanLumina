@@ -2,8 +2,6 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
-import { polyfill as mobileDndPolyfill } from 'mobile-drag-drop';
-import 'mobile-drag-drop/default.css';
 import { DialogProvider } from './context/DialogContext';
 import { Toaster } from 'sonner';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -35,13 +33,6 @@ try {
   keysToRemove.forEach((k) => localStorage.removeItem(k));
 } catch {
   /* ignore */
-}
-
-// Safely initialize mobile drag drop polyfill
-try {
-  mobileDndPolyfill({ holdToDrag: 300 });
-} catch (err) {
-  console.warn('Polyfill init skipped:', err);
 }
 
 // Register Service Worker for PWA Offline Access

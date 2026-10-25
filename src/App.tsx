@@ -43,7 +43,6 @@ import { FileSystemItem } from './Types';
 import { extractTitleFromUrl, cleanText } from './lib/titleExtractor';
 import { hasPinSet, removePin, usePinState } from './lib/pin';
 import { isBip39EnglishWord } from './lib/bip39';
-import { isNetscapeBookmarkHTML } from './lib/bookmarkParser';
 
 import { FolderPicker } from './components/FolderPicker';
 import { SettingsDialog } from './components/SettingsDialog';
@@ -74,9 +73,7 @@ export default function App() {
     searchItems,
     pathOf,
     exportJSON,
-    exportHTML,
     importJSON,
-    importHTML,
     importItems,
     clearAll,
     clearPharseFolder,
@@ -98,7 +95,7 @@ export default function App() {
   >(null);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | 'sync' | null>(null);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | null>(null);
   const [showChatPopup, setShowChatPopup] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
     return typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
@@ -159,7 +156,7 @@ export default function App() {
 
   const [isOffline, setIsOffline] = useState<boolean>(() => typeof navigator !== 'undefined' ? !navigator.onLine : false);
 
-  const { user, loading, syncing, login, register, resetPassword, verifyPasswordAndResetPin, updatePasswordRecovery, verifyEmail, logout, smartSync } = useAppwriteSync(
+  const { user, loading, syncing, login, register, resetPassword, verifyPasswordAndResetPin, updatePasswordRecovery, verifyEmail, logout, smartSync, clearCloudData } = useAppwriteSync(
     items,
     importJSON,
     exportJSON,
@@ -184,11 +181,8 @@ export default function App() {
   }, []);
 
   const guardOffline = useCallback(() => {
-    if (typeof navigator !== 'undefined' && (!navigator.onLine || isOffline)) {
-      return true;
-    }
     return false;
-  }, [isOffline]);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -239,20 +233,27 @@ export default function App() {
   );
 
   const isNoteFolderOrSubfolder = useCallback(
-    (item: FileSystemItem): boolean => {
-      if (item.id === 'folder-catatan' || item.id === 'folder-hello-world') {
-        return true;
-      }
-      let cur: FileSystemItem | undefined = item;
+    (folderId: string | null): boolean => {
+      if (!folderId) return false;
+      if (folderId === 'folder-catatan') return true;
+      let cur = items.find((i) => i.id === folderId);
       while (cur && cur.parentId) {
-        if (cur.parentId === 'folder-catatan' || cur.parentId === 'folder-hello-world') {
-          return true;
-        }
+        if (cur.parentId === 'folder-catatan') return true;
         cur = items.find((i) => i.id === cur!.parentId);
       }
       return false;
     },
     [items]
+  );
+
+  const isFromNoteFolder = useCallback(
+    (id: string): boolean => {
+      const item = items.find((i) => i.id === id);
+      if (!item) return false;
+      if (item.type === 'note') return true;
+      return isNoteFolderOrSubfolder(item.parentId);
+    },
+    [items, isNoteFolderOrSubfolder]
   );
 
   const isFromPharseFolder = useCallback(
@@ -327,7 +328,7 @@ export default function App() {
     const f = items.find((i) => i.id === folderId);
     if (!f) return;
 
-    if (folderId === 'folder-catatan' || folderId === 'folder-hello-world' || folderId === 'folder-pharse' || isPharseFolderOrSubfolder(folderId)) {
+    if (folderId === 'folder-catatan' || folderId === 'folder-pharse' || isPharseFolderOrSubfolder(folderId)) {
       showToast('Tidak dapat diubah');
       return;
     }
@@ -516,7 +517,7 @@ export default function App() {
     if (listItems.length === 0) return;
     
     const selectableItems = listItems.filter((item) => {
-      const isSystem = item.id === 'folder-catatan' || item.id === 'folder-hello-world' || item.id === 'folder-pharse';
+      const isSystem = item.id === 'folder-catatan' || item.id === 'folder-pharse';
       const isLocked = item.type === 'folder' && item.locked;
       return !isSystem && !isLocked;
     });
@@ -564,9 +565,24 @@ export default function App() {
     movingIds.forEach(walk);
 
     const isPharseMoving = movingIds.some((id) => isFromPharseFolder(id));
-    if (!isPharseMoving) {
+    const isNoteMoving = movingIds.some((id) => isFromNoteFolder(id));
+
+    if (isPharseMoving) {
+      // Pharse diisolasi: nonaktifkan semua folder yang BUKAN di dalam pharse
+      items.filter((i) => i.type === 'folder' && !isPharseFolderOrSubfolder(i.id)).forEach((f) => {
+        disabled.add(f.id);
+      });
+    } else if (isNoteMoving) {
+      // Note diisolasi: nonaktifkan semua folder yang BUKAN di dalam note
+      items.filter((i) => i.type === 'folder' && !isNoteFolderOrSubfolder(i.id)).forEach((f) => {
+        disabled.add(f.id);
+      });
+    } else {
+      // Konten di luar note & pharse: nonaktifkan folder pharse dan note beserta semua subfoldernya
       disabled.add('folder-pharse');
       walk('folder-pharse');
+      disabled.add('folder-catatan');
+      walk('folder-catatan');
     }
 
     return disabled;
@@ -575,11 +591,20 @@ export default function App() {
   const openMovePicker = (ids: string[]) => {
     if (guardOffline()) return;
     const isPharseMoving = ids.some((id) => isFromPharseFolder(id));
+    const isNoteMoving = ids.some((id) => isFromNoteFolder(id));
+
+    let restrictedRootFolderId: string | undefined = undefined;
+    if (isPharseMoving) {
+      restrictedRootFolderId = 'folder-pharse';
+    } else if (isNoteMoving) {
+      restrictedRootFolderId = 'folder-catatan';
+    }
+
     setPickerConfig({
       title: t('action.moveItems').replace('{count}', ids.length.toString()),
       confirmLabel: t('action.move'),
       disabledIds: disabledFolderIds(ids),
-      restrictedRootFolderId: isPharseMoving ? 'folder-pharse' : undefined,
+      restrictedRootFolderId,
       onConfirm: async (target) => {
         try {
           await moveMany(ids, target);
@@ -597,7 +622,7 @@ export default function App() {
     opts?: { title?: string; afterDelete?: () => void },
   ) => {
     if (guardOffline()) return;
-    const filteredIds = ids.filter(id => id !== 'folder-catatan' && id !== 'folder-hello-world' && id !== 'folder-pharse');
+    const filteredIds = ids.filter(id => id !== 'folder-catatan' && id !== 'folder-pharse');
     if (filteredIds.length < ids.length && ids.length === 1) {
       showToast('Tidak dapat dihapus');
       return;
@@ -670,7 +695,7 @@ export default function App() {
         const current = queue.shift()!;
         if (current.type === 'file') {
           targetBookmarks.push(current);
-        } else if (current.type === 'folder' && !isNoteFolderOrSubfolder(current)) {
+        } else if (current.type === 'folder' && !isNoteFolderOrSubfolder(current.id) && !isPharseFolderOrSubfolder(current.id)) {
           const children = items.filter((i) => i.parentId === current.id);
           queue.push(...children);
         }
@@ -717,7 +742,7 @@ export default function App() {
       const bookmarkItems = listItems.filter((i) => i.type !== 'folder');
 
       if (isRoot) {
-        const systemFolderIds = ['folder-hello-world', 'folder-catatan', 'folder-pharse'];
+        const systemFolderIds = ['folder-catatan', 'folder-pharse'];
         if (isFolder) {
           const userFolders = folderItems.filter((i) => !systemFolderIds.includes(i.id));
           const currentIdx = userFolders.findIndex((i) => i.id === targetItem.id);
@@ -803,94 +828,15 @@ export default function App() {
     }
   };
 
-  const handleExportJSON = () => {
-    const data = exportJSON();
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'tautan-lumina.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('Berhasil diekspor');
-  };
-
-  const handleExportHTML = () => {
-    const data = exportHTML();
-    const blob = new Blob([data], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'tautan-lumina-bookmarks.html';
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('Berhasil diekspor');
-  };
-
-  const handleImport = () => {
-    if (guardOffline()) return;
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'application/json, text/html, .json, .html, .htm';
-    input.onchange = async (e: any) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      if (file.size > 10 * 1024 * 1024) {
-        showToast('File terlalu besar');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = async (re) => {
-        const content = re.target?.result as string;
-        if (!content) return;
-        try {
-          const isBookmark = isNetscapeBookmarkHTML(content) || file.name.endsWith('.html') || file.name.endsWith('.htm');
-          const targetFolder = 'folder-hello-world';
-          if (isBookmark) {
-            const count = await importHTML(content, false, targetFolder);
-            showToast(`${count} bookmark diimpor`);
-          } else {
-            await importJSON(content, false, targetFolder);
-            showToast('Berhasil diimpor');
-          }
-        } catch (err: any) {
-          showToast(err?.message || 'Format tidak valid');
-        }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
-  };
-
-  const onDropOnFolder = async (targetFolderId: string, draggedIds: string[]) => {
-    if (guardOffline()) return;
-    await moveMany(draggedIds, targetFolderId);
+  const handleClearAllContent = async () => {
+    await clearAll();
+    if (clearCloudData) {
+      await clearCloudData();
+    }
     clearSelection();
   };
 
-  const onReorder = async (draggedIds: string[], overId: string, position: 'before' | 'after') => {
-    if (guardOffline()) return;
-    const overItem = items.find((i) => i.id === overId);
-    if (!overItem) return;
-    const parentId = overItem.parentId;
-    const draggedInDifferentParent = draggedIds.filter((id) => {
-      const it = items.find((i) => i.id === id);
-      return it && it.parentId !== parentId;
-    });
-    if (draggedInDifferentParent.length) {
-      await moveMany(draggedInDifferentParent, parentId);
-    }
-    setTimeout(async () => {
-      const siblings = childrenOf(parentId).filter((i) => !draggedIds.includes(i.id));
-      const overIdx = siblings.findIndex((i) => i.id === overId);
-      const insertAt = position === 'before' ? overIdx : overIdx + 1;
-      const draggedItems = draggedIds
-        .map((id) => items.find((i) => i.id === id))
-        .filter(Boolean) as FileSystemItem[];
-      const ordered = [...siblings.slice(0, insertAt), ...draggedItems, ...siblings.slice(insertAt)];
-      await reorderInParent(parentId, ordered.map((i) => i.id));
-    }, 0);
-  };
+
 
   const handlePin = async (id: string, pinned: boolean) => {
     if (guardOffline()) return;
@@ -1161,7 +1107,17 @@ export default function App() {
                 ))}
               </div>
 
-              <div className="flex items-center gap-3.5">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <button
+                  data-testid="clear-all-header-btn"
+                  onClick={handleClearAllContent}
+                  disabled={items.length === 0}
+                  className="p-1.5 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent transition-colors hover:bg-red-50 dark:hover:bg-neutral-800 text-neutral-400 hover:text-red-600 dark:hover:text-red-400 border border-transparent hover:border-red-200 dark:hover:border-neutral-700 flex items-center justify-center cursor-pointer"
+                  title="Hapus semua konten (1 klik)"
+                  aria-label="Hapus semua konten"
+                >
+                  <Trash2 size={16} />
+                </button>
                 <button
                   data-testid="regenerate-header-btn"
                   onClick={bulkRegenerate}
@@ -1243,11 +1199,9 @@ export default function App() {
           onToggleSelect={toggleSelect}
           onOpenFolder={(id) => navigateTo(id)}
           onMenu={(it) => openItemMenu(it)}
-          onDropOnFolder={onDropOnFolder}
-          onReorder={onReorder}
           onPin={handlePin}
           onDelete={(id) => guardedDelete([id])}
-          emptyLabel={searchMode ? t('empty.search') : t('empty.folder')}
+          emptyLabel={searchMode ? t('empty.search') : undefined}
           searchMode={searchMode}
           pathOf={pathOf}
           currentFolderId={currentFolderId}
@@ -1278,7 +1232,12 @@ export default function App() {
             items={items}
             initialFolderId={
               pickerConfig.restrictedRootFolderId
-                ? (isPharseFolderOrSubfolder(currentFolderId) ? currentFolderId : pickerConfig.restrictedRootFolderId)
+                ? (
+                    (pickerConfig.restrictedRootFolderId === 'folder-pharse' && isPharseFolderOrSubfolder(currentFolderId)) ||
+                    (pickerConfig.restrictedRootFolderId === 'folder-catatan' && isNoteFolderOrSubfolder(currentFolderId))
+                      ? currentFolderId
+                      : pickerConfig.restrictedRootFolderId
+                  )
                 : currentFolderId
             }
             title={pickerConfig.title}
@@ -1299,7 +1258,6 @@ export default function App() {
           <SettingsDialog
             user={user}
             loading={loading}
-            syncing={syncing}
             logout={handleLogout}
             initialTab={settingsInitialTab || null}
             onClose={() => {
@@ -1307,9 +1265,6 @@ export default function App() {
             }}
             onOpenPinMenu={handleOpenPinMenu}
             onResetPinPassword={() => setPinModalMode('reset_password')}
-            onExportJSON={handleExportJSON}
-            onExportHTML={handleExportHTML}
-            onImport={handleImport}
           />
         )}
 
@@ -1317,7 +1272,7 @@ export default function App() {
           <PinModal
             mode={pinModalMode}
             folderToUnlock={folderPendingUnlock || undefined}
-            folders={items.filter((i) => i.type === 'folder' && i.id !== 'folder-catatan' && i.id !== 'folder-hello-world' && i.id !== 'folder-pharse' && !isPharseFolderOrSubfolder(i.id))}
+            folders={items.filter((i) => i.type === 'folder' && i.id !== 'folder-catatan' && i.id !== 'folder-pharse' && !isPharseFolderOrSubfolder(i.id))}
             onClose={() => {
               setPinModalMode(null);
               setFolderPendingUnlock(null);

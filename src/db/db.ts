@@ -1,16 +1,23 @@
 import { openDB, IDBPDatabase, deleteDB } from 'idb';
 import { FileSystemItem } from '../Types';
+import { isDevEnvironment } from '../lib/appwrite';
 
 const DB_NAME = 'tautanlumina';
 const LEGACY_DB_NAME = 'simpanteks';
 const DB_VERSION = 3;
 const STORE = 'items';
 
+const getBaseDBName = (userId: string | null) => {
+  const isDev = isDevEnvironment();
+  const prefix = isDev ? 'tautanlumina_dev_' : 'tautanlumina_';
+  return userId ? `${prefix}${userId}` : (isDev ? 'tautanlumina_dev_anon' : 'tautanlumina_anonymous');
+};
+
 let dbPromise: Promise<IDBPDatabase> | null = null;
-let currentDBName = 'tautanlumina_anonymous';
+let currentDBName = getBaseDBName(null);
 
 export const setDatabaseUser = async (userId: string | null) => {
-  const nextDBName = userId ? `tautanlumina_${userId}` : 'tautanlumina_anonymous';
+  const nextDBName = getBaseDBName(userId);
   if (currentDBName !== nextDBName) {
     const oldPromise = dbPromise;
     dbPromise = null;

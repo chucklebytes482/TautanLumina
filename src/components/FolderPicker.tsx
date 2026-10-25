@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X, ChevronRight, Home, ArrowLeft, Folder, FolderHeart, FolderCode, KeyRound } from 'lucide-react';
+import { X, ChevronRight, Home, ArrowLeft, Folder, FolderHeart, KeyRound } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { useDialog } from '../context/DialogContext';
 import { useI18n } from '../lib/i18n';
@@ -53,9 +53,8 @@ export const FolderPicker = ({
         .sort((a, b) => {
           if (current === null) {
             const sysRank = (id: string) => {
-              if (id === 'folder-hello-world') return 1;
-              if (id === 'folder-catatan') return 2;
-              if (id === 'folder-pharse') return 3;
+              if (id === 'folder-catatan') return 1;
+              if (id === 'folder-pharse') return 2;
               return 999;
             };
             const rA = sysRank(a.id);
@@ -123,7 +122,14 @@ export const FolderPicker = ({
               }}
               className="flex items-center gap-1 hover:text-[#FF4F00] font-medium transition-colors"
             >
-              <KeyRound size={12} className="text-[#FF4F00]" /> {items.find((i) => i.id === restrictedRootFolderId)?.name || 'Pharse'}
+              {restrictedRootFolderId === 'folder-pharse' ? (
+                <KeyRound size={12} className="text-[#FF4F00]" />
+              ) : restrictedRootFolderId === 'folder-catatan' ? (
+                <FolderHeart size={12} className="text-[#FF4F00]" />
+              ) : (
+                <Folder size={12} className="text-[#FF4F00]" />
+              )}
+              {items.find((i) => i.id === restrictedRootFolderId)?.name || (restrictedRootFolderId === 'folder-catatan' ? 'Note' : 'Pharse')}
             </button>
           ) : (
             <button
@@ -213,8 +219,6 @@ export const FolderPicker = ({
                       <div className="flex items-center gap-2 truncate">
                         {f.id === 'folder-catatan' ? (
                           <FolderHeart size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
-                        ) : f.id === 'folder-hello-world' ? (
-                          <FolderCode size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
                         ) : f.id === 'folder-pharse' ? (
                           <KeyRound size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
                         ) : (

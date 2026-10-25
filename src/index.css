@@ -265,17 +265,6 @@ li[data-testid^="item-row-"] {
 /* Kompakkan input */
 input, textarea, select, button { font: inherit; }
 
-/* Drag state */
-.dnd-over {
-  outline: 2px solid var(--selected-border);
-  outline-offset: -2px;
-  background: var(--selected);
-}
-
-.dnd-drag {
-  opacity: 0.4;
-}
-
 /* Modal container: top-anchored, keyboard-aware */
 .modal-root {
   position: fixed;

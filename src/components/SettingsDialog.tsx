@@ -3,15 +3,11 @@ import React, { useState } from 'react';
 import { 
   User, 
   LogOut, 
-  HardDrive, 
-  Download, 
-  Upload, 
   Loader2, 
   X, 
   Lock, 
   Shield, 
-  ChevronRight,
-  LayoutGrid
+  ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -21,32 +17,22 @@ import { usePinState } from '../lib/pin';
 interface Props {
   user: any;
   loading: boolean;
-  syncing: boolean;
   logout: () => Promise<void>;
   onClose: () => void;
   onOpenPinMenu?: () => void;
   onResetPinPassword?: () => void;
-  onExport?: () => void;
-  onExportJSON?: () => void;
-  onExportHTML?: () => void;
-  onImport?: () => void;
   initialTab?: TabType;
 }
 
-type TabType = 'profile' | 'sync' | null;
+type TabType = 'profile' | null;
 
 export const SettingsDialog = ({ 
   user, 
   loading, 
-  syncing, 
   logout, 
   onClose, 
   onOpenPinMenu, 
   onResetPinPassword,
-  onExport, 
-  onExportJSON,
-  onExportHTML,
-  onImport, 
   initialTab
 }: Props) => {
   const { t } = useI18n();
@@ -152,69 +138,9 @@ export const SettingsDialog = ({
     </div>
   );
 
-  const renderSyncTab = () => (
-    <div className="space-y-4">
-      <div>
-        <h4 className="text-sm font-semibold text-neutral-800 border-b border-neutral-100 pb-2">Cadangan & Berkas Data</h4>
-        <div className="space-y-3 mt-4">
-          <button
-            onClick={onExportJSON}
-            className="w-full flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors text-left shadow-xs cursor-pointer"
-          >
-            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
-              <Download size={20} />
-            </div>
-            <div>
-              <p className="font-medium text-sm text-neutral-900">Ekspor JSON</p>
-              <p className="text-xs text-neutral-500 mt-0.5">Cadangan lengkap format JSON</p>
-            </div>
-          </button>
-
-          <button
-            onClick={onExportHTML}
-            className="w-full flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors text-left shadow-xs cursor-pointer"
-          >
-            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
-              <Download size={20} />
-            </div>
-            <div>
-              <p className="font-medium text-sm text-neutral-900">Ekspor HTML</p>
-              <p className="text-xs text-neutral-500 mt-0.5">Format Netscape Bookmark untuk semua browser</p>
-            </div>
-          </button>
-
-          <button
-            onClick={onImport}
-            className="w-full flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors text-left shadow-xs cursor-pointer"
-          >
-            <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
-              <Upload size={20} />
-            </div>
-            <div>
-              <p className="font-medium text-sm text-neutral-900">Impor JSON atau HTML</p>
-              <p className="text-xs text-neutral-500 mt-0.5">Pulihkan data dari file cadangan</p>
-            </div>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   const renderTabContent = (tab: TabType) => {
     if (tab === 'profile') return renderProfileTab();
-    if (tab === 'sync') return renderSyncTab();
-
-    // Default / "Semua" Settings view when activeTab is null
-    return (
-      <div className="space-y-12 pb-6 divide-y divide-neutral-100">
-        <div className="space-y-4">
-          {renderProfileTab()}
-        </div>
-        <div className="pt-8 space-y-4">
-          {renderSyncTab()}
-        </div>
-      </div>
-    );
+    return null;
   };
 
   const renderNavItem = (id: TabType, Icon: any, label: string) => {
@@ -238,25 +164,16 @@ export const SettingsDialog = ({
   return (
     <div className="fixed inset-0 z-50 flex">
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-xs transition-opacity"></div>
+      <div onClick={onClose} className="absolute inset-0 bg-black/20 backdrop-blur-xs transition-opacity cursor-pointer"></div>
       
       {/* Drawer */}
-      <div className="relative bg-[#faf8f5] w-full max-w-[280px] h-full shadow-2xl flex flex-col animate-in fade-in slide-in-from-left-4 duration-300 border-r border-[#e2ddd5]">
+      <div className="relative bg-[#faf8f5] w-full max-w-[280px] h-full shadow-2xl flex flex-col animate-in fade-in slide-in-from-left-4 duration-300 border-r border-[#e2ddd5] z-10">
         <div className="flex-1 overflow-y-auto py-6 px-3">
           <div className="flex items-center justify-between px-2 mb-6">
             <h3 className="font-semibold text-lg text-neutral-800">{t('settings.menu')}</h3>
             <button onClick={onClose} className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-200 rounded-full transition-colors cursor-pointer">
               <X size={18} />
             </button>
-          </div>
-
-
-
-          <div className="mb-6">
-            <div className="px-3 mb-2 text-[11px] font-bold tracking-widest text-neutral-400 uppercase">{t('menu.general') || 'Umum'}</div>
-            <div className="space-y-1">
-              {renderNavItem('sync', HardDrive, 'Cadangkan')}
-            </div>
           </div>
 
           <div>
@@ -269,26 +186,37 @@ export const SettingsDialog = ({
       </div>
 
       {/* Content Area Desktop */}
-      <div className="relative flex-1 bg-[#faf8f5] dark:bg-[#161618] h-full shadow-2xl flex flex-col animate-in fade-in slide-in-from-left-8 duration-300 delay-100 max-w-md hidden sm:flex">
-        <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
-          <h2 className="text-xl font-semibold capitalize">{activeTab ? activeTab.replace('-', ' ') : t('menu.all')}</h2>
-          <button onClick={onClose} className="sm:hidden p-2 text-neutral-400 hover:text-neutral-700 cursor-pointer">
-            <X size={20} />
-          </button>
+      {activeTab && (
+        <div className="relative flex-1 bg-[#faf8f5] dark:bg-[#161618] h-full shadow-2xl flex flex-col animate-in fade-in slide-in-from-left-8 duration-300 delay-100 max-w-md hidden sm:flex border-r border-[#e2ddd5] z-10">
+          <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setActiveTab(null)}
+                className="p-1.5 text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer mr-1"
+                title="Tutup menu"
+              >
+                <ChevronRight size={18} className="rotate-180" />
+              </button>
+              <h2 className="text-xl font-semibold capitalize">{t('menu.profile')}</h2>
+            </div>
+            <button onClick={onClose} className="p-2 text-neutral-400 hover:text-neutral-700 cursor-pointer">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6">
+            {renderTabContent(activeTab)}
+          </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-6">
-          {renderTabContent(activeTab)}
-        </div>
-      </div>
+      )}
 
       {/* Mobile Content Area Overlay */}
       <div className={`sm:hidden fixed inset-0 z-50 bg-[#faf8f5] dark:bg-[#161618] transition-transform duration-300 ${activeTab ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-neutral-100 flex items-center bg-transparent gap-3">
-            <button onClick={() => setActiveTab(null as any)} className="p-1.5 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-full cursor-pointer">
+            <button onClick={() => setActiveTab(null)} className="p-1.5 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-full cursor-pointer">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </button>
-            <h2 className="text-lg font-semibold capitalize flex-1">{activeTab ? activeTab.replace('-', ' ') : t('menu.all')}</h2>
+            <h2 className="text-lg font-semibold capitalize flex-1">{t('menu.profile')}</h2>
             <button onClick={onClose} className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-full cursor-pointer">
               <X size={20} />
             </button>

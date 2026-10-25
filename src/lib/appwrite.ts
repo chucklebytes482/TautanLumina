@@ -53,6 +53,27 @@ export const account = new Account(client);
 export const databases = new Databases(client);
 export const storage = new Storage(client);
 
+export const isDevEnvironment = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.hostname.toLowerCase();
+  return (
+    Boolean(import.meta.env.DEV) ||
+    host.includes('ais-dev') ||
+    host.includes('localhost') ||
+    host.includes('127.0.0.1')
+  );
+};
+
+export const getSyncDocId = (userId: string): string => {
+  if (isDevEnvironment()) {
+    // Isolated document in development mode (AI Studio) to prevent sync to published web
+    const prefix = 'dev_';
+    const maxUserIdLen = 36 - prefix.length;
+    return `${prefix}${userId.slice(0, maxUserIdLen)}`;
+  }
+  return userId;
+};
+
 
 
 

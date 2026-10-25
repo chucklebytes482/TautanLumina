@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { ID, Permission, Role } from 'appwrite';
-import { account, databases, storage, APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID, APPWRITE_BUCKET_ID, ADMIN_EMAIL } from '../lib/appwrite';
+import { account, databases, storage, APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID, APPWRITE_BUCKET_ID, ADMIN_EMAIL, getSyncDocId } from '../lib/appwrite';
 import { toast } from 'sonner';
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
@@ -301,7 +301,7 @@ export function useAppwriteSync(
     const toastId = suppressToast ? null : toast.loading(t('toast.syncing'));
 
     try {
-      const docId = targetUser.$id;
+      const docId = getSyncDocId(targetUser.$id);
       const [cloudDoc, currentLocalItems] = await Promise.all([
         databases.getDocument(APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID, docId).catch((err: any) => {
           if (err.code !== 404 && err.code !== 403) throw err;
@@ -624,7 +624,7 @@ export function useAppwriteSync(
     try {
       localStorage.removeItem('tautanlumina:deleted_ids');
       if (user && user.$id) {
-        const docId = user.$id;
+        const docId = getSyncDocId(user.$id);
         const cloudDoc = await databases.getDocument(APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID, docId).catch(() => null);
         if (cloudDoc && cloudDoc.data) {
           let parsed: any;
@@ -653,6 +653,36 @@ export function useAppwriteSync(
     }
   }, [user]);
 
+  const clearCloudData = useCallback(async () => {
+    try {
+      if (user && user.$id) {
+        const docId = getSyncDocId(user.$id);
+        const cloudDoc = await databases.getDocument(APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID, docId).catch(() => null);
+        if (cloudDoc) {
+          const emptyData = JSON.stringify({
+            app: 'plaintxtai',
+            version: 1,
+            items: [],
+            deletedIds: [],
+            apiKey: '',
+            model: '',
+            pinHash: '',
+            pinUpdatedAt: 0
+          });
+          await databases.updateDocument(APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID, docId, {
+            data: emptyData,
+            email: user.email
+          });
+          lastSyncedStrRef.current = emptyData;
+        }
+      }
+      return true;
+    } catch (e) {
+      console.warn('Failed to clear cloud data:', e);
+      return false;
+    }
+  }, [user]);
+
   return {
     user,
     loading,
@@ -665,6 +695,7 @@ export function useAppwriteSync(
     verifyPasswordAndResetPin,
     logout,
     smartSync,
-    purgeSyncHistory
+    purgeSyncHistory,
+    clearCloudData
   };
 }
