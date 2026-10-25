@@ -125,11 +125,7 @@ export const getItem = async (id: string): Promise<FileSystemItem | undefined> =
 
 const normalizeItemForStorage = (item: FileSystemItem): FileSystemItem => {
   const copy: FileSystemItem = { ...item };
-  if (copy.type === 'phrase') {
-    copy.parentId = 'folder-pharse';
-  } else if (copy.type === 'note') {
-    copy.parentId = 'folder-catatan';
-  } else if (copy.type === 'folder') {
+  if (copy.type === 'folder') {
     delete copy.label;
   }
   return copy;

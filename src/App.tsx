@@ -443,17 +443,7 @@ export default function App() {
     const text = await customPrompt(t('modal.noteText'), '', { textarea: true, maxWidth: 'max-w-xl' });
     if (!text || !text.trim()) return;
     
-    const isInsideNoteFolder = (() => {
-      if (!currentFolderId) return false;
-      if (currentFolderId === 'folder-catatan') return true;
-      let cur = items.find((i) => i.id === currentFolderId);
-      while (cur && cur.parentId) {
-        if (cur.parentId === 'folder-catatan') return true;
-        cur = items.find((i) => i.id === cur!.parentId);
-      }
-      return false;
-    })();
-    const targetFolder = isInsideNoteFolder ? currentFolderId : 'folder-catatan';
+    const targetFolder = currentFolderId || 'folder-catatan';
     await createItem('', 'note', targetFolder, text.trim());
     showToast('Catatan disimpan');
   };
@@ -709,11 +699,6 @@ export default function App() {
           updatedCount = updates.length;
         }
       }
-    }
-
-    // Sinkronisasi hanya berjalan bersamaan dengan fitur generate ulang
-    if (user) {
-      await smartSync(user, true);
     }
 
     showToast('diperbarui');

@@ -26,7 +26,7 @@ const getInitialUser = () => {
 
 export function useAppwriteSync(
   items: FileSystemItem[],
-  importJSON: (jsonStr: string, replace: boolean) => Promise<void>,
+  importJSON: (jsonStr: string, replace: boolean, targetParentId?: string | null, isSyncPull?: boolean) => Promise<void>,
   exportJSON: () => string,
   loaded: boolean = true
 ) {
@@ -287,6 +287,10 @@ export function useAppwriteSync(
     const targetUser = userOverride || user;
     if (!targetUser) return;
 
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return;
+    }
+
     if (syncInProgressRef.current) {
       pendingQueuedSyncRef.current = true;
       return;
@@ -447,27 +451,13 @@ export function useAppwriteSync(
       }
 
       const mergedItems = Array.from(itemMap.values()).map(it => {
-        const copy: FileSystemItem = { ...it };
-        if (copy.type === 'folder') {
-          if (!copy.name?.trim()) copy.name = 'Folder';
-          delete copy.label;
-          if (!mergedPinHash && copy.locked) {
-            copy.locked = false;
-          }
-        } else if (copy.type === 'phrase') {
-          copy.parentId = 'folder-pharse';
-          const firstWord = (copy.content || '').trim().split(/\s+/)[0];
-          if (firstWord) copy.name = firstWord;
-        } else if (copy.type === 'note') {
-          copy.parentId = 'folder-catatan';
-          const trimmed = (copy.content || '').trim();
-          if (trimmed) copy.name = trimmed;
-        } else if (copy.type === 'file') {
-          if (copy.parentId === 'folder-pharse' || copy.parentId === 'folder-catatan') {
-            copy.parentId = 'folder-hello-world';
-          }
+        if (it.type === 'folder' && !it.name?.trim()) {
+          return { ...it, name: 'Folder' };
         }
-        return copy;
+        if (!mergedPinHash && it.type === 'folder' && it.locked) {
+          return { ...it, locked: false };
+        }
+        return it;
       });
 
       const mergedApiKey = localApiKey || cloudApiKey;
@@ -482,18 +472,11 @@ export function useAppwriteSync(
       const currentLocalStr = JSON.stringify(currentLocalItems);
       const mergedItemsStr = JSON.stringify(mergedItems);
       if (currentLocalStr !== mergedItemsStr) {
-        isApplyingRemoteSyncRef.current = true;
-        try {
-          await importJSON(JSON.stringify({ 
-            items: mergedItems, 
-            apiKey: mergedApiKey, 
-            model: mergedModel 
-          }), true);
-        } finally {
-          setTimeout(() => {
-            isApplyingRemoteSyncRef.current = false;
-          }, 100);
-        }
+        await importJSON(JSON.stringify({ 
+          items: mergedItems, 
+          apiKey: mergedApiKey, 
+          model: mergedModel 
+        }), true, undefined, true);
       }
 
       if (mergedApiKey) {
@@ -622,23 +605,20 @@ export function useAppwriteSync(
     }
   }, [user, importJSON, t]);
 
-  const initialItemsLoadedRef = useRef(false);
-  const isApplyingRemoteSyncRef = useRef(false);
-
+  // Sinkronisasi hanya berjalan saat aksi modifikasi data
   useEffect(() => {
-    initialItemsLoadedRef.current = false;
-  }, [user?.$id]);
+    if (!user) return;
 
-  useEffect(() => {
-    if (!loaded || !user) return;
-    if (!initialItemsLoadedRef.current) {
-      initialItemsLoadedRef.current = true;
-      return;
-    }
-    if (isApplyingRemoteSyncRef.current) return;
-    // Sinkronisasi otomatis berjalan di latar belakang saat aksi modifikasi data (tanpa toast)
-    smartSync(true);
-  }, [items, loaded, user, smartSync]);
+    const handleDataModified = () => {
+      if (!user) return;
+      smartSync(true);
+    };
+
+    window.addEventListener('tautanlumina:data_modified', handleDataModified);
+    return () => {
+      window.removeEventListener('tautanlumina:data_modified', handleDataModified);
+    };
+  }, [user, smartSync]);
 
   const purgeSyncHistory = useCallback(async () => {
     try {

@@ -10,6 +10,12 @@ const uid = () =>
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2) + Date.now().toString(36);
 
+export const notifyDataModified = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('tautanlumina:data_modified'));
+  }
+};
+
 export const useFileSystem = () => {
   const { t } = useI18n();
   const [items, setItems] = useState<FileSystemItem[]>([]);
@@ -101,48 +107,19 @@ export const useFileSystem = () => {
         all = all.filter(it => !orphanedItems.some(op => op.id === it.id));
       }
 
-      // Ensure all phrase items' names are automatically taken from the 1st word of content and parentId is folder-pharse
+      // Ensure all phrase items' names are automatically taken from the 1st word of content
       const phraseItems = all.filter(it => it.type === 'phrase' && it.content);
       const invalidPhrases: FileSystemItem[] = [];
       phraseItems.forEach(it => {
         const firstWord = it.content!.trim().split(/\s+/)[0];
-        let changed = false;
         if (firstWord && it.name !== firstWord) {
           it.name = firstWord;
-          changed = true;
-        }
-        if (it.parentId !== 'folder-pharse') {
-          it.parentId = 'folder-pharse';
-          changed = true;
-        }
-        if (changed) {
           it.updatedAt = Date.now();
           invalidPhrases.push(it);
         }
       });
       if (invalidPhrases.length > 0) {
         await db.saveItems(invalidPhrases);
-        all = await db.getAllItems();
-      }
-
-      // Ensure note items that are at root or in non-note system folders are inside folder-catatan
-      const isInsideCatatanFolder = (folderId: string | null | undefined): boolean => {
-        if (!folderId) return false;
-        if (folderId === 'folder-catatan') return true;
-        let cur = all.find((i) => i.id === folderId);
-        while (cur && cur.parentId) {
-          if (cur.parentId === 'folder-catatan') return true;
-          cur = all.find((i) => i.id === cur!.parentId);
-        }
-        return false;
-      };
-      const misplacedNotes = all.filter(it => it.type === 'note' && !isInsideCatatanFolder(it.parentId));
-      if (misplacedNotes.length > 0) {
-        misplacedNotes.forEach(it => {
-          it.parentId = 'folder-catatan';
-          it.updatedAt = Date.now();
-        });
-        await db.saveItems(misplacedNotes);
         all = await db.getAllItems();
       }
 
@@ -233,20 +210,10 @@ export const useFileSystem = () => {
         throw new Error('Pharse ini sudah ada');
       }
     }
-    const isInsideCatatan = (() => {
-      if (!parentId) return false;
-      if (parentId === 'folder-catatan') return true;
-      let cur = currentDbItems.find((i) => i.id === parentId);
-      while (cur && cur.parentId) {
-        if (cur.parentId === 'folder-catatan') return true;
-        cur = currentDbItems.find((i) => i.id === cur!.parentId);
-      }
-      return false;
-    })();
     const targetParentId = type === 'phrase'
       ? 'folder-pharse'
-      : type === 'note'
-      ? (isInsideCatatan ? parentId : 'folder-catatan')
+      : (type === 'note' && !parentId)
+      ? 'folder-catatan'
       : parentId;
     const firstWordFromContent = (content || '').trim().split(/\s+/)[0] || '';
     const itemName = type === 'note'
@@ -267,6 +234,7 @@ export const useFileSystem = () => {
     };
     await db.saveItem(item);
     await reload();
+    notifyDataModified();
     return item;
   };
 
@@ -279,6 +247,7 @@ export const useFileSystem = () => {
     }
     await db.saveItem({ ...it, content, updatedAt: Date.now() });
     await reload();
+    notifyDataModified();
   };
 
   const renameItem = async (id: string, name: string) => {
@@ -301,6 +270,7 @@ export const useFileSystem = () => {
     }
     await db.saveItem({ ...it, name: finalName, updatedAt: Date.now() });
     await reload();
+    notifyDataModified();
   };
 
   const updateItem = async (id: string, updates: Partial<FileSystemItem>) => {
@@ -324,6 +294,7 @@ export const useFileSystem = () => {
     }
     await db.saveItem(merged);
     await reload();
+    notifyDataModified();
   };
 
   const updateMany = async (itemUpdatesList: { id: string; updates: Partial<FileSystemItem> }[]) => {
@@ -341,6 +312,7 @@ export const useFileSystem = () => {
     if (updatedItems.length > 0) {
       await db.saveItems(updatedItems);
       await reload();
+      notifyDataModified();
     }
   };
 
@@ -399,6 +371,7 @@ export const useFileSystem = () => {
       setItems((prev) => prev.filter((it) => !finalIdsToDelete.includes(it.id)));
     }
     await reload();
+    notifyDataModified();
   };
 
   const clearPharseFolder = async () => {
@@ -417,6 +390,7 @@ export const useFileSystem = () => {
       } catch (e) {}
     }
     await reload();
+    notifyDataModified();
   };
 
   const isDescendant = (ancestorId: string, nodeId: string): boolean => {
@@ -477,6 +451,7 @@ export const useFileSystem = () => {
     if (updated.length) {
       await db.saveItems(updated);
       await reload();
+      notifyDataModified();
     }
   };
 
@@ -503,6 +478,7 @@ export const useFileSystem = () => {
     });
     await db.saveItems(copies);
     await reload();
+    notifyDataModified();
   };
 
   const duplicateItem = async (id: string) => {
@@ -528,6 +504,7 @@ export const useFileSystem = () => {
     if (updated.length) {
       await db.saveItems(updated);
       await reload();
+      notifyDataModified();
     }
   };
 
@@ -588,7 +565,12 @@ export const useFileSystem = () => {
     return exportNetscapeBookmarks(items);
   };
 
-  const importJSON = async (json: string, replace: boolean, targetParentId?: string | null) => {
+  const importJSON = async (
+    json: string, 
+    replace: boolean, 
+    targetParentId?: string | null,
+    isSyncPull: boolean = false
+  ) => {
     const data = JSON.parse(json);
     const incoming: FileSystemItem[] = Array.isArray(data) ? data : data.items || [];
     
@@ -604,6 +586,9 @@ export const useFileSystem = () => {
     }
 
     await importItems(incoming, replace, targetParentId);
+    if (!isSyncPull) {
+      notifyDataModified();
+    }
   };
 
   const importHTML = async (htmlContent: string, replace: boolean, targetParentId?: string | null) => {
@@ -612,6 +597,7 @@ export const useFileSystem = () => {
       throw new Error('No bookmarks found in HTML file');
     }
     await importItems(incoming, replace, targetParentId);
+    notifyDataModified();
     return incoming.length;
   };
 

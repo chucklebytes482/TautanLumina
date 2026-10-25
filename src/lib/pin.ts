@@ -21,6 +21,7 @@ export function getStoredPinUpdatedAt(): number {
 }
 
 export function setStoredPinHash(hash: string, updatedAt?: number): void {
+  const isCloudUpdate = !!updatedAt;
   const ts = updatedAt || Date.now();
   if (hash) {
     localStorage.setItem(PIN_KEY, hash);
@@ -29,6 +30,9 @@ export function setStoredPinHash(hash: string, updatedAt?: number): void {
   }
   localStorage.setItem(PIN_UPDATED_AT_KEY, ts.toString());
   window.dispatchEvent(new CustomEvent('tautanlumina:pin_changed', { detail: { hash, updatedAt: ts } }));
+  if (!isCloudUpdate && typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('tautanlumina:data_modified'));
+  }
 }
 
 export function hasPinSet(): boolean {
