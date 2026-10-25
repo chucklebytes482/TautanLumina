@@ -315,12 +315,8 @@ export function useAppwriteSync(
       const localPinHash = getStoredPinHash();
       const localPinUpdatedAt = getStoredPinUpdatedAt();
 
-      let localDeletedIds: string[] = [];
       try {
-        const stored = localStorage.getItem('tautanlumina:deleted_ids');
-        if (stored) {
-          localDeletedIds = JSON.parse(stored);
-        }
+        localStorage.removeItem('tautanlumina:deleted_ids');
       } catch (e) {}
 
       if (!cloudDoc) {
@@ -328,7 +324,7 @@ export function useAppwriteSync(
           app: 'plaintxtai', 
           version: 1, 
           items: currentLocalItems,
-          deletedIds: localDeletedIds,
+          deletedIds: [],
           apiKey: localApiKey,
           model: localModel,
           pinHash: localPinHash,
@@ -433,7 +429,7 @@ export function useAppwriteSync(
         mergedPinUpdatedAt = localPinUpdatedAt;
       }
 
-      const permanentlyDeletedSet = new Set<string>([...cloudDeletedIds, ...localDeletedIds]);
+      const permanentlyDeletedSet = new Set<string>();
 
       const itemMap = new Map<string, FileSystemItem>();
 
@@ -463,9 +459,9 @@ export function useAppwriteSync(
       const mergedApiKey = localApiKey || cloudApiKey;
       const mergedModel = localModel || cloudModel;
 
-      const updatedDeletedIds = Array.from(permanentlyDeletedSet).slice(-1000);
+      const updatedDeletedIds: string[] = [];
       try {
-        localStorage.setItem('tautanlumina:deleted_ids', JSON.stringify(updatedDeletedIds));
+        localStorage.removeItem('tautanlumina:deleted_ids');
       } catch (e) {}
 
       // Skip redundant IndexedDB imports if local items are already in sync with mergedItems
@@ -490,7 +486,7 @@ export function useAppwriteSync(
         app: 'plaintxtai', 
         version: 1, 
         items: mergedItems,
-        deletedIds: updatedDeletedIds,
+        deletedIds: [],
         apiKey: mergedApiKey,
         model: mergedModel,
         pinHash: mergedPinHash,
