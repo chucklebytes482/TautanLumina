@@ -352,7 +352,10 @@ export const useFileSystem = () => {
     if (finalIdsToDelete.length > 0) {
       await db.deleteItems(finalIdsToDelete);
       try {
-        localStorage.removeItem('tautanlumina:deleted_ids');
+        const stored = localStorage.getItem('tautanlumina:deleted_ids');
+        const currentDeleted: string[] = stored ? JSON.parse(stored) : [];
+        const updatedDeleted = Array.from(new Set([...currentDeleted, ...finalIdsToDelete]));
+        localStorage.setItem('tautanlumina:deleted_ids', JSON.stringify(updatedDeleted));
       } catch (e) {}
       setItems((prev) => prev.filter((it) => !finalIdsToDelete.includes(it.id)));
     }

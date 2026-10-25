@@ -80,7 +80,6 @@ export default function App() {
     importItems,
     clearAll,
     clearPharseFolder,
-    purgeChangeHistory,
   } = fs;
 
   const [query, setQuery] = useState('');
@@ -160,7 +159,7 @@ export default function App() {
 
   const [isOffline, setIsOffline] = useState<boolean>(() => typeof navigator !== 'undefined' ? !navigator.onLine : false);
 
-  const { user, loading, syncing, login, register, resetPassword, verifyPasswordAndResetPin, updatePasswordRecovery, verifyEmail, logout, smartSync, purgeSyncHistory } = useAppwriteSync(
+  const { user, loading, syncing, login, register, resetPassword, verifyPasswordAndResetPin, updatePasswordRecovery, verifyEmail, logout, smartSync } = useAppwriteSync(
     items,
     importJSON,
     exportJSON,
@@ -194,21 +193,6 @@ export default function App() {
   const handleLogout = async () => {
     await logout();
     await clearAll();
-  };
-
-  const handlePurgeHistory = async () => {
-    const ok = await customConfirm(
-      'Hapus riwayat perubahan, catatan sampah, dan pelacak ID yang tidak diperlukan dari penyimpanan lokal dan cloud? Data Anda tetap aman.'
-    );
-    if (!ok) return;
-
-    try {
-      await purgeChangeHistory();
-      await purgeSyncHistory();
-      showToast('Riwayat perubahan berhasil dibersihkan');
-    } catch {
-      showToast('Gagal membersihkan riwayat perubahan');
-    }
   };
 
   const selectMode = selectedIds.size > 0 || keepSelectMode;
@@ -1331,7 +1315,6 @@ export default function App() {
             onExportJSON={handleExportJSON}
             onExportHTML={handleExportHTML}
             onImport={handleImport}
-            onPurgeHistory={handlePurgeHistory}
           />
         )}
 

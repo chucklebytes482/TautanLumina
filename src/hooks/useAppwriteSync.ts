@@ -311,14 +311,20 @@ export function useAppwriteSync(
       const localPinHash = getStoredPinHash();
       const localPinUpdatedAt = getStoredPinUpdatedAt();
 
-      localStorage.removeItem('tautanlumina:deleted_ids');
+      let localDeletedIds: string[] = [];
+      try {
+        const stored = localStorage.getItem('tautanlumina:deleted_ids');
+        if (stored) {
+          localDeletedIds = JSON.parse(stored);
+        }
+      } catch (e) {}
 
       if (!cloudDoc) {
         const finalDataStr = JSON.stringify({ 
           app: 'plaintxtai', 
           version: 1, 
           items: currentLocalItems,
-          deletedIds: [],
+          deletedIds: localDeletedIds,
           apiKey: localApiKey,
           model: localModel,
           pinHash: localPinHash,
@@ -423,7 +429,7 @@ export function useAppwriteSync(
         mergedPinUpdatedAt = localPinUpdatedAt;
       }
 
-      const permanentlyDeletedSet = new Set<string>(cloudDeletedIds);
+      const permanentlyDeletedSet = new Set<string>([...cloudDeletedIds, ...localDeletedIds]);
 
       const itemMap = new Map<string, FileSystemItem>();
 
@@ -453,7 +459,10 @@ export function useAppwriteSync(
       const mergedApiKey = localApiKey || cloudApiKey;
       const mergedModel = localModel || cloudModel;
 
-      localStorage.removeItem('tautanlumina:deleted_ids');
+      const updatedDeletedIds = Array.from(permanentlyDeletedSet).slice(-1000);
+      try {
+        localStorage.setItem('tautanlumina:deleted_ids', JSON.stringify(updatedDeletedIds));
+      } catch (e) {}
 
       // Skip redundant IndexedDB imports if local items are already in sync with mergedItems
       const currentLocalStr = JSON.stringify(currentLocalItems);
@@ -477,7 +486,7 @@ export function useAppwriteSync(
         app: 'plaintxtai', 
         version: 1, 
         items: mergedItems,
-        deletedIds: [],
+        deletedIds: updatedDeletedIds,
         apiKey: mergedApiKey,
         model: mergedModel,
         pinHash: mergedPinHash,
@@ -592,16 +601,21 @@ export function useAppwriteSync(
     }
   }, [user, importJSON, t]);
 
-  useEffect(() => {
-    if (loaded && user && !autoSyncedUserRef.current) {
-      autoSyncedUserRef.current = user.$id;
-      // Dinonaktifkan: Tidak otomatis sinkron saat web dimuat/di-refresh
-    }
-  }, [loaded, user]);
+  const initialItemsLoadedRef = useRef(false);
 
   useEffect(() => {
-    // Sinkronisasi dinonaktifkan di sini karena hanya berjalan bersamaan dengan fitur generate ulang
-  }, []);
+    initialItemsLoadedRef.current = false;
+  }, [user?.$id]);
+
+  useEffect(() => {
+    if (!loaded || !user) return;
+    if (!initialItemsLoadedRef.current) {
+      initialItemsLoadedRef.current = true;
+      return;
+    }
+    // Sinkronisasi otomatis berjalan di latar belakang saat aksi modifikasi data (tanpa toast)
+    smartSync(true);
+  }, [items, loaded, user, smartSync]);
 
   const purgeSyncHistory = useCallback(async () => {
     try {

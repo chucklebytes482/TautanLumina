@@ -123,26 +123,7 @@ export const LoginScreen = ({ login, register, resetPassword, updatePasswordReco
   };
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] dark:bg-[#161618] bg-doodle text-neutral-900 dark:text-neutral-100 flex flex-col items-center justify-between p-3 sm:p-5 lg:p-8 relative overflow-x-hidden">
-      {/* Top Header Actions */}
-      <header className="w-full max-w-5xl flex items-center justify-between gap-2 z-20 mb-3 sm:mb-6">
-        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#FF4F00] rounded-xl sm:rounded-2xl flex items-center justify-center shadow-md shadow-[#FF4F00]/25 shrink-0 transition-transform hover:scale-105">
-            <AppLogo isDark={true} size={22} />
-          </div>
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="font-extrabold text-sm sm:text-xl tracking-tight text-neutral-900 dark:text-white truncate">
-              TautanLumina
-            </span>
-            <span className="text-[10px] font-bold text-[#FF4F00] bg-[#FF4F00]/10 dark:bg-[#FF4F00]/20 px-1.5 py-0.5 rounded-full border border-[#FF4F00]/20 shrink-0">
-              v1.0
-            </span>
-          </div>
-        </div>
-
-
-      </header>
-
+    <div className="min-h-screen bg-[#faf8f5] dark:bg-[#161618] bg-doodle text-neutral-900 dark:text-neutral-100 flex flex-col items-center justify-center p-3 sm:p-5 lg:p-8 relative overflow-x-hidden">
       {/* Main Landing Card */}
       <main className="w-full max-w-5xl bg-white/95 dark:bg-[#1e1e22]/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.45)] border border-[#e2ddd5] dark:border-[#2d2d35] overflow-hidden grid grid-cols-1 md:grid-cols-12 my-auto animate-in fade-in zoom-in-95 duration-300">
         

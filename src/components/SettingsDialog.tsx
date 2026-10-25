@@ -11,8 +11,7 @@ import {
   Lock, 
   Shield, 
   ChevronRight,
-  LayoutGrid,
-  Trash2
+  LayoutGrid
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -31,7 +30,6 @@ interface Props {
   onExportJSON?: () => void;
   onExportHTML?: () => void;
   onImport?: () => void;
-  onPurgeHistory?: () => void;
   initialTab?: TabType;
 }
 
@@ -49,7 +47,6 @@ export const SettingsDialog = ({
   onExportJSON,
   onExportHTML,
   onImport, 
-  onPurgeHistory,
   initialTab
 }: Props) => {
   const { t } = useI18n();
@@ -198,21 +195,6 @@ export const SettingsDialog = ({
               <p className="text-xs text-neutral-500 mt-0.5">Pulihkan data dari file cadangan</p>
             </div>
           </button>
-
-          {onPurgeHistory && (
-            <button
-              onClick={onPurgeHistory}
-              className="w-full flex items-center gap-3 p-4 bg-white border border-neutral-200 rounded-xl hover:bg-red-50 hover:border-red-200 transition-colors text-left shadow-xs cursor-pointer group"
-            >
-              <div className="p-2 rounded-lg bg-red-50 text-red-600 group-hover:scale-105 transition-transform">
-                <Trash2 size={20} />
-              </div>
-              <div>
-                <p className="font-medium text-sm text-neutral-900 group-hover:text-red-600 transition-colors">Hapus Riwayat Perubahan</p>
-                <p className="text-xs text-neutral-500 mt-0.5">Bersihkan riwayat perubahan, sampah, dan pelacak ID yang tidak diperlukan</p>
-              </div>
-            </button>
-          )}
         </div>
       </div>
     </div>

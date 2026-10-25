@@ -11,7 +11,7 @@ import { I18nProvider } from './lib/i18n';
 
 // Bersihkan semua riwayat dan cache perubahan lama yang sudah tidak diperlukan di localStorage
 try {
-  const keysToRemove: string[] = ['tautanlumina:deleted_ids'];
+  const keysToRemove: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (!key) continue;
@@ -26,7 +26,6 @@ try {
       key === 'tautanlumina:theme_bg' ||
       key === 'theme' ||
       key === 'tautanlumina:migrated' ||
-      key === 'tautanlumina:deleted_ids' ||
       key.includes('history') ||
       key.includes('riwayat')
     ) {
