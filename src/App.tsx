@@ -25,7 +25,8 @@ import {
   ExternalLink,
   Mail,
   Aperture,
-  KeyRound
+  KeyRound,
+  RefreshCw
 } from 'lucide-react';
 import { AppLogo } from './components/AppLogo';
 
@@ -1102,6 +1103,20 @@ export default function App() {
               </div>
 
               <div className="flex items-center gap-3.5">
+                <button
+                  data-testid="manual-sync-btn"
+                  onClick={async () => {
+                    if (guardOffline()) return;
+                    await smartSync();
+                    showToast('Disinkronkan');
+                  }}
+                  disabled={syncing}
+                  className="p-1.5 rounded-lg disabled:opacity-40 disabled:hover:bg-transparent transition-colors hover:bg-[#faf8f5] dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-transparent hover:border-[#e2ddd5] dark:hover:border-neutral-700 flex items-center justify-center cursor-pointer mr-1"
+                  title="Sinkronisasi Manual"
+                  aria-label="Sinkronisasi Manual"
+                >
+                  <RefreshCw size={18} className={`text-[#FF4F00] ${syncing ? 'animate-spin' : ''}`} />
+                </button>
                 <button
                   data-testid="regenerate-header-btn"
                   onClick={bulkRegenerate}
