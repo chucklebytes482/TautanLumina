@@ -124,14 +124,18 @@ export const getItem = async (id: string): Promise<FileSystemItem | undefined> =
 };
 
 export const saveItem = async (item: FileSystemItem): Promise<void> => {
-  await runOp((db) => db.put(STORE, item));
+  const normalized = item.type === 'phrase' ? { ...item, parentId: 'folder-pharse' } : item;
+  await runOp((db) => db.put(STORE, normalized));
 };
 
 export const saveItems = async (items: FileSystemItem[]): Promise<void> => {
   return runOp(async (db) => {
     if (items.length === 0) return;
     const tx = db.transaction(STORE, 'readwrite');
-    await Promise.all(items.map((it) => tx.store.put(it)));
+    await Promise.all(items.map((it) => {
+      const normalized = it.type === 'phrase' ? { ...it, parentId: 'folder-pharse' } : it;
+      return tx.store.put(normalized);
+    }));
     await tx.done;
   });
 };

@@ -101,13 +101,21 @@ export const useFileSystem = () => {
         all = all.filter(it => !orphanedItems.some(op => op.id === it.id));
       }
 
-      // Ensure all phrase items' names are automatically taken from the 1st word of content
+      // Ensure all phrase items' names are automatically taken from the 1st word of content and parentId is folder-pharse
       const phraseItems = all.filter(it => it.type === 'phrase' && it.content);
       const invalidPhrases: FileSystemItem[] = [];
       phraseItems.forEach(it => {
         const firstWord = it.content!.trim().split(/\s+/)[0];
+        let changed = false;
         if (firstWord && it.name !== firstWord) {
           it.name = firstWord;
+          changed = true;
+        }
+        if (it.parentId !== 'folder-pharse') {
+          it.parentId = 'folder-pharse';
+          changed = true;
+        }
+        if (changed) {
           it.updatedAt = Date.now();
           invalidPhrases.push(it);
         }
