@@ -447,13 +447,27 @@ export function useAppwriteSync(
       }
 
       const mergedItems = Array.from(itemMap.values()).map(it => {
-        if (it.type === 'folder' && !it.name?.trim()) {
-          return { ...it, name: 'Folder' };
+        const copy: FileSystemItem = { ...it };
+        if (copy.type === 'folder') {
+          if (!copy.name?.trim()) copy.name = 'Folder';
+          delete copy.label;
+          if (!mergedPinHash && copy.locked) {
+            copy.locked = false;
+          }
+        } else if (copy.type === 'phrase') {
+          copy.parentId = 'folder-pharse';
+          const firstWord = (copy.content || '').trim().split(/\s+/)[0];
+          if (firstWord) copy.name = firstWord;
+        } else if (copy.type === 'note') {
+          copy.parentId = 'folder-catatan';
+          const trimmed = (copy.content || '').trim();
+          if (trimmed) copy.name = trimmed;
+        } else if (copy.type === 'file') {
+          if (copy.parentId === 'folder-pharse' || copy.parentId === 'folder-catatan') {
+            copy.parentId = 'folder-hello-world';
+          }
         }
-        if (!mergedPinHash && it.type === 'folder' && it.locked) {
-          return { ...it, locked: false };
-        }
-        return it;
+        return copy;
       });
 
       const mergedApiKey = localApiKey || cloudApiKey;
@@ -468,11 +482,18 @@ export function useAppwriteSync(
       const currentLocalStr = JSON.stringify(currentLocalItems);
       const mergedItemsStr = JSON.stringify(mergedItems);
       if (currentLocalStr !== mergedItemsStr) {
-        await importJSON(JSON.stringify({ 
-          items: mergedItems, 
-          apiKey: mergedApiKey, 
-          model: mergedModel 
-        }), true);
+        isApplyingRemoteSyncRef.current = true;
+        try {
+          await importJSON(JSON.stringify({ 
+            items: mergedItems, 
+            apiKey: mergedApiKey, 
+            model: mergedModel 
+          }), true);
+        } finally {
+          setTimeout(() => {
+            isApplyingRemoteSyncRef.current = false;
+          }, 100);
+        }
       }
 
       if (mergedApiKey) {
@@ -602,6 +623,7 @@ export function useAppwriteSync(
   }, [user, importJSON, t]);
 
   const initialItemsLoadedRef = useRef(false);
+  const isApplyingRemoteSyncRef = useRef(false);
 
   useEffect(() => {
     initialItemsLoadedRef.current = false;
@@ -613,6 +635,7 @@ export function useAppwriteSync(
       initialItemsLoadedRef.current = true;
       return;
     }
+    if (isApplyingRemoteSyncRef.current) return;
     // Sinkronisasi otomatis berjalan di latar belakang saat aksi modifikasi data (tanpa toast)
     smartSync(true);
   }, [items, loaded, user, smartSync]);

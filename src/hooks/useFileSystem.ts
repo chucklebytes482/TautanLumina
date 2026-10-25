@@ -101,27 +101,43 @@ export const useFileSystem = () => {
         all = all.filter(it => !orphanedItems.some(op => op.id === it.id));
       }
 
-      // Ensure all phrase items' names are automatically taken from the 1st word of content and parentId is folder-pharse
-      const phraseItems = all.filter(it => it.type === 'phrase' && it.content);
-      const invalidPhrases: FileSystemItem[] = [];
-      phraseItems.forEach(it => {
-        const firstWord = it.content!.trim().split(/\s+/)[0];
-        let changed = false;
-        if (firstWord && it.name !== firstWord) {
-          it.name = firstWord;
-          changed = true;
+      // Ensure all phrase items are in folder-pharse and all note items are in folder-catatan
+      const itemsToFix: FileSystemItem[] = [];
+      all.forEach(it => {
+        let itemChanged = false;
+        if (it.type === 'phrase') {
+          const firstWord = (it.content || '').trim().split(/\s+/)[0];
+          if (firstWord && it.name !== firstWord) {
+            it.name = firstWord;
+            itemChanged = true;
+          }
+          if (it.parentId !== 'folder-pharse') {
+            it.parentId = 'folder-pharse';
+            itemChanged = true;
+          }
+        } else if (it.type === 'note') {
+          const trimmedContent = (it.content || '').trim();
+          if (trimmedContent && it.name !== trimmedContent) {
+            it.name = trimmedContent;
+            itemChanged = true;
+          }
+          if (it.parentId !== 'folder-catatan') {
+            it.parentId = 'folder-catatan';
+            itemChanged = true;
+          }
+        } else if (it.type === 'file') {
+          if (it.parentId === 'folder-pharse' || it.parentId === 'folder-catatan') {
+            it.parentId = 'folder-hello-world';
+            itemChanged = true;
+          }
         }
-        if (it.parentId !== 'folder-pharse') {
-          it.parentId = 'folder-pharse';
-          changed = true;
-        }
-        if (changed) {
+        if (itemChanged) {
           it.updatedAt = Date.now();
-          invalidPhrases.push(it);
+          itemsToFix.push(it);
         }
       });
-      if (invalidPhrases.length > 0) {
-        await db.saveItems(invalidPhrases);
+      if (itemsToFix.length > 0) {
+        await db.saveItems(itemsToFix);
         all = await db.getAllItems();
       }
 
@@ -214,8 +230,10 @@ export const useFileSystem = () => {
     }
     const targetParentId = type === 'phrase'
       ? 'folder-pharse'
-      : (type === 'note' && !parentId)
+      : type === 'note'
       ? 'folder-catatan'
+      : (parentId === 'folder-pharse' || parentId === 'folder-catatan' || isPharseFolder(parentId) || isCatatanFolder(parentId))
+      ? null
       : parentId;
     const firstWordFromContent = (content || '').trim().split(/\s+/)[0] || '';
     const itemName = type === 'note'
@@ -246,7 +264,8 @@ export const useFileSystem = () => {
       await deleteMany([id]);
       return;
     }
-    await db.saveItem({ ...it, content, updatedAt: Date.now() });
+    const updatedName = it.type === 'note' ? content.trim() : it.name;
+    await db.saveItem({ ...it, name: updatedName, content, updatedAt: Date.now() });
     await reload();
   };
 
@@ -403,8 +422,15 @@ export const useFileSystem = () => {
     return isDescendant('folder-pharse', folderId);
   };
 
+  const isCatatanFolder = (folderId: string | null): boolean => {
+    if (!folderId) return false;
+    if (folderId === 'folder-catatan') return true;
+    return isDescendant('folder-catatan', folderId);
+  };
+
   const moveMany = async (ids: string[], targetParentId: string | null) => {
     const isTargetPharse = isPharseFolder(targetParentId);
+    const isTargetCatatan = isCatatanFolder(targetParentId);
 
     const validIds = ids.filter((id) => {
       if (id === targetParentId) return false;
@@ -413,27 +439,19 @@ export const useFileSystem = () => {
       if (!it) return false;
       if (it.type === 'folder' && targetParentId && isDescendant(id, targetParentId)) return false;
 
-      const isPharseContent = it.type === 'phrase' || isPharseFolder(it.parentId);
-      if (isPharseContent) {
-        // Isi folder pharse dapat dipindahkan HANYA ke sub folder pharse (atau folder pharse)
-        return isTargetPharse;
-      } else {
-        // Item biasa selain pharse tidak boleh dimasukkan ke dalam folder pharse
-        return !isTargetPharse;
+      if (it.type === 'phrase') {
+        return targetParentId === 'folder-pharse';
       }
+      if (it.type === 'note') {
+        return targetParentId === 'folder-catatan';
+      }
+
+      // Item biasa (bookmark / folder) tidak boleh dimasukkan ke dalam folder pharse atau folder catatan
+      return !isTargetPharse && !isTargetCatatan;
     });
 
     if (ids.length > 0 && validIds.length === 0) {
-      const isAnyPharse = ids.some((id) => {
-        const it = items.find((i) => i.id === id);
-        return it && (it.type === 'phrase' || isPharseFolder(it.parentId));
-      });
-      if (isAnyPharse && !isTargetPharse) {
-        throw new Error('Isi folder pharse hanya dapat dipindahkan ke sub folder pharse');
-      }
-      if (!isAnyPharse && isTargetPharse) {
-        throw new Error('Item di luar pharse tidak dapat dipindahkan ke folder pharse');
-      }
+      throw new Error('Tidak dapat dipindahkan ke folder tujuan');
     }
     const targetSiblings = items.filter((i) => i.parentId === targetParentId);
     let base = targetSiblings.length ? Math.max(...targetSiblings.map((s) => s.order ?? 0)) + 1 : 0;
@@ -604,7 +622,14 @@ export const useFileSystem = () => {
         return {
           ...it,
           id: map[it.id],
-          parentId: hasParentInIncoming ? map[it.parentId!] : defaultParentId,
+          parentId:
+            it.type === 'phrase'
+              ? 'folder-pharse'
+              : it.type === 'note'
+              ? 'folder-catatan'
+              : hasParentInIncoming
+              ? map[it.parentId!]
+              : defaultParentId,
         };
       });
       await db.saveItems(remapped);

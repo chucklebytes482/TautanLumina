@@ -398,7 +398,13 @@ export default function App() {
     if (guardOffline()) return;
     const name = await customPrompt(t('modal.folderName'));
     if (name && name.trim()) {
-      await createItem(name.trim(), 'folder', currentFolderId);
+      const targetParent =
+        currentFolderId === 'folder-catatan' ||
+        currentFolderId === 'folder-pharse' ||
+        isPharseFolderOrSubfolder(currentFolderId)
+          ? null
+          : currentFolderId;
+      await createItem(name.trim(), 'folder', targetParent);
     }
   };
 
@@ -430,8 +436,15 @@ export default function App() {
     const extracted = extractTitleFromUrl(finalUrl);
     const autoTitle = (extracted && extracted.toLowerCase() !== 'bookmark') ? extracted : finalUrl;
 
+    const targetParent =
+      currentFolderId === 'folder-catatan' ||
+      currentFolderId === 'folder-pharse' ||
+      isPharseFolderOrSubfolder(currentFolderId)
+        ? null
+        : currentFolderId;
+
     try {
-      await createItem(autoTitle, 'file', currentFolderId, finalUrl);
+      await createItem(autoTitle, 'file', targetParent, finalUrl);
       showToast('Bookmark disimpan');
     } catch (e: any) {
       showToast(e?.message || 'Gagal simpan');
@@ -443,8 +456,7 @@ export default function App() {
     const text = await customPrompt(t('modal.noteText'), '', { textarea: true, maxWidth: 'max-w-xl' });
     if (!text || !text.trim()) return;
     
-    const targetFolder = currentFolderId || 'folder-catatan';
-    await createItem('', 'note', targetFolder, text.trim());
+    await createItem('', 'note', 'folder-catatan', text.trim());
     showToast('Catatan disimpan');
   };
 
@@ -505,7 +517,6 @@ export default function App() {
 
     try {
       await createItem(firstWord, 'phrase', 'folder-pharse', cleanContent);
-      navigateTo('folder-pharse');
       showToast('Pharse disimpan');
     } catch (e: any) {
       showToast(e?.message || 'Gagal simpan');
@@ -563,23 +574,21 @@ export default function App() {
     };
     movingIds.forEach(walk);
 
-    const isPharseMoving = movingIds.some((id) => isFromPharseFolder(id));
-    if (!isPharseMoving) {
-      disabled.add('folder-pharse');
-      walk('folder-pharse');
-    }
+    disabled.add('folder-pharse');
+    walk('folder-pharse');
+    disabled.add('folder-catatan');
+    walk('folder-catatan');
 
     return disabled;
   };
 
   const openMovePicker = (ids: string[]) => {
     if (guardOffline()) return;
-    const isPharseMoving = ids.some((id) => isFromPharseFolder(id));
     setPickerConfig({
       title: t('action.moveItems').replace('{count}', ids.length.toString()),
       confirmLabel: t('action.move'),
       disabledIds: disabledFolderIds(ids),
-      restrictedRootFolderId: isPharseMoving ? 'folder-pharse' : undefined,
+      restrictedRootFolderId: undefined,
       onConfirm: async (target) => {
         try {
           await moveMany(ids, target);
@@ -776,8 +785,8 @@ export default function App() {
           }
         }
       } else {
-        const targetIdx = Math.max(0, targetNum - 1);
         if (isFolder) {
+          const targetIdx = Math.max(0, Math.min(targetNum - 1, folderItems.length - 1));
           const currentFolderIdx = folderItems.findIndex((i) => i.id === targetItem.id);
           if (currentFolderIdx !== -1) {
             const newFolderItems = [...folderItems];
@@ -791,6 +800,7 @@ export default function App() {
             showToast('Dipindahkan');
           }
         } else {
+          const targetIdx = Math.max(0, Math.min(targetNum - 1, bookmarkItems.length - 1));
           const currentBookmarkIdx = bookmarkItems.findIndex((i) => i.id === targetItem.id);
           if (currentBookmarkIdx !== -1) {
             const newBookmarkItems = [...bookmarkItems];
@@ -869,8 +879,16 @@ export default function App() {
 
   const onDropOnFolder = async (targetFolderId: string, draggedIds: string[]) => {
     if (guardOffline()) return;
-    await moveMany(draggedIds, targetFolderId);
-    clearSelection();
+    if (targetFolderId === 'folder-pharse' || targetFolderId === 'folder-catatan') {
+      showToast('Tidak dapat dipindahkan ke folder tujuan');
+      return;
+    }
+    try {
+      await moveMany(draggedIds, targetFolderId);
+      clearSelection();
+    } catch (e: any) {
+      showToast(e?.message || 'Gagal dipindahkan');
+    }
   };
 
   const onReorder = async (draggedIds: string[], overId: string, position: 'before' | 'after') => {
@@ -883,7 +901,12 @@ export default function App() {
       return it && it.parentId !== parentId;
     });
     if (draggedInDifferentParent.length) {
-      await moveMany(draggedInDifferentParent, parentId);
+      try {
+        await moveMany(draggedInDifferentParent, parentId);
+      } catch (e: any) {
+        showToast(e?.message || 'Gagal dipindahkan');
+        return;
+      }
     }
     setTimeout(async () => {
       const siblings = childrenOf(parentId).filter((i) => !draggedIds.includes(i.id));
@@ -947,11 +970,6 @@ export default function App() {
         },
       });
       list.push({
-        key: 'move',
-        label: t('action.moveToFolder'),
-        onClick: () => openMovePicker([item.id]),
-      });
-      list.push({
         key: 'label',
         label: item.label ? 'Ubah Label' : 'Tambah Label',
         onClick: () => handleSetLabel(item),
@@ -976,7 +994,9 @@ export default function App() {
         });
       },
     });
-    list.push({ key: 'move', label: t('action.moveToFolder'), onClick: () => openMovePicker([item.id]) });
+    if (item.type !== 'note') {
+      list.push({ key: 'move', label: t('action.moveToFolder'), onClick: () => openMovePicker([item.id]) });
+    }
     if (item.type !== 'folder') {
       list.push({
         key: 'label',
@@ -1207,20 +1227,27 @@ export default function App() {
             {t('action.selected').replace('{count}', selectedIds.size.toString())}
           </div>
           <div className="flex-1" />
-          <button
-            data-testid="bulk-move-btn"
-            onClick={() => openMovePicker([...selectedIds])}
-            className="p-1.5 hover:bg-neutral-800 rounded-lg text-neutral-200 transition-colors"
-            aria-label={t('action.move')}
-            title={t('action.move')}
-          >
-            <Move size={16} />
-          </button>
+          {currentFolderId !== 'folder-pharse' &&
+            currentFolderId !== 'folder-catatan' &&
+            !Array.from(selectedIds).some((id) => {
+              const tType = items.find((i) => i.id === id)?.type;
+              return tType === 'phrase' || tType === 'note';
+            }) && (
+              <button
+                data-testid="bulk-move-btn"
+                onClick={() => openMovePicker([...selectedIds])}
+                className="p-1.5 hover:bg-neutral-800 rounded-lg text-neutral-200 transition-colors cursor-pointer"
+                aria-label={t('action.move')}
+                title={t('action.move')}
+              >
+                <Move size={16} />
+              </button>
+            )}
           {currentFolderId !== 'folder-pharse' && !Array.from(selectedIds).some(id => items.find(i => i.id === id)?.type === 'phrase') && (
             <button
               data-testid="bulk-delete-btn"
               onClick={bulkDelete}
-              className="p-1.5 hover:bg-neutral-800 rounded-lg text-red-400 transition-colors"
+              className="p-1.5 hover:bg-neutral-800 rounded-lg text-red-400 transition-colors cursor-pointer"
               aria-label={t('action.delete')}
               title={t('action.delete')}
             >

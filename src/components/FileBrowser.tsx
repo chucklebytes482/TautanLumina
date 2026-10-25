@@ -153,10 +153,12 @@ const Row = ({
       const textToCopy = item.content || item.name || '';
       navigator.clipboard.writeText(textToCopy)
         .then(() => {
-          toast.success(t('toast.copied'));
+          toast.dismiss();
+          toast.success(t('toast.copied'), { duration: 1500 });
         })
         .catch(() => {
-          toast.error(t('toast.copyFailed'));
+          toast.dismiss();
+          toast.error(t('toast.copyFailed'), { duration: 1500 });
         });
     } else {
        if (item.content?.startsWith('http')) {
@@ -188,7 +190,8 @@ const Row = ({
     if (!rowRef.current) return;
     const rect = rowRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    if (item.type === 'folder' && x > rect.width * 0.25 && x < rect.width * 0.75) {
+    const canDropInside = item.type === 'folder' && item.id !== 'folder-catatan' && item.id !== 'folder-pharse';
+    if (canDropInside && x > rect.width * 0.25 && x < rect.width * 0.75) {
       setDropZone('over');
     } else if (x < rect.width * 0.5) {
       setDropZone('left');

@@ -123,8 +123,20 @@ export const getItem = async (id: string): Promise<FileSystemItem | undefined> =
   return runOp((db) => db.get(STORE, id));
 };
 
+const normalizeItemForStorage = (item: FileSystemItem): FileSystemItem => {
+  const copy: FileSystemItem = { ...item };
+  if (copy.type === 'phrase') {
+    copy.parentId = 'folder-pharse';
+  } else if (copy.type === 'note') {
+    copy.parentId = 'folder-catatan';
+  } else if (copy.type === 'folder') {
+    delete copy.label;
+  }
+  return copy;
+};
+
 export const saveItem = async (item: FileSystemItem): Promise<void> => {
-  const normalized = item.type === 'phrase' ? { ...item, parentId: 'folder-pharse' } : item;
+  const normalized = normalizeItemForStorage(item);
   await runOp((db) => db.put(STORE, normalized));
 };
 
@@ -132,10 +144,7 @@ export const saveItems = async (items: FileSystemItem[]): Promise<void> => {
   return runOp(async (db) => {
     if (items.length === 0) return;
     const tx = db.transaction(STORE, 'readwrite');
-    await Promise.all(items.map((it) => {
-      const normalized = it.type === 'phrase' ? { ...it, parentId: 'folder-pharse' } : it;
-      return tx.store.put(normalized);
-    }));
+    await Promise.all(items.map((it) => tx.store.put(normalizeItemForStorage(it))));
     await tx.done;
   });
 };
