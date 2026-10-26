@@ -369,10 +369,11 @@ export const useFileSystem = () => {
     }
 
     const all = collectDescendants(activeIds);
-    // Pastikan item bertipe 'phrase' tidak pernah masuk dalam daftar hapus
     const finalIdsToDelete = all.filter(id => {
+      if (id === 'folder-catatan' || id === 'folder-pharse') return false;
       const it = items.find(item => item.id === id);
-      return it && it.type !== 'phrase';
+      if (it && it.type === 'phrase') return false;
+      return true;
     });
 
     if (finalIdsToDelete.length > 0) {
