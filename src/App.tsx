@@ -1165,17 +1165,7 @@ export default function App() {
           >
             <Move size={16} />
           </button>
-          {currentFolderId !== 'folder-pharse' && !Array.from(selectedIds).some(id => items.find(i => i.id === id)?.type === 'phrase') && (
-            <button
-              data-testid="bulk-delete-btn"
-              onClick={bulkDelete}
-              className="p-1.5 hover:bg-neutral-800 rounded-lg text-red-400 transition-colors"
-              aria-label={t('action.delete')}
-              title={t('action.delete')}
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
+
           <button
             data-testid="clear-selection-btn"
             onClick={clearSelection}

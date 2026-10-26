@@ -1,4 +1,4 @@
-import { MoreVertical, Folder, Pin, Trash2, Lock, FileText, FolderHeart, StickyNote, Copy, KeyRound } from 'lucide-react';
+import { MoreVertical, Folder, Pin, Lock, FileText, FolderHeart, StickyNote, Copy, KeyRound } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
 import { toast } from 'sonner';
@@ -255,21 +255,9 @@ const Row = ({
         )}
       </div>
 
-      {/* Menu & Delete Buttons */}
+      {/* Menu Button */}
       {!selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && (
-        <div className="flex items-center gap-0.5 shrink-0">
-          <button
-            data-testid={`item-delete-${item.id}`}
-            data-no-press="1"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="p-1.5 rounded-lg text-neutral-400 hover:text-red-600 hover:bg-red-50 transition-colors touch-manipulation min-w-[28px] min-h-[28px] flex items-center justify-center"
-            title={t('action.delete')}
-          >
-            <Trash2 size={16} />
-          </button>
+        <div className="flex items-center shrink-0">
           <button
             data-testid={`item-menu-${item.id}`}
             data-no-press="1"
