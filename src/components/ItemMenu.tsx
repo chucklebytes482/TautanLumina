@@ -43,11 +43,14 @@ const copyToClipboard = async (text: string): Promise<boolean> => {
   }
 };
 import { formatCleanUrl, extractUrlFromLabel } from '../lib/titleExtractor';
+import { toast } from 'sonner';
 
 export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const copyTimeoutRef = useRef<number | null>(null);
+  const [labelCopied, setLabelCopied] = useState(false);
+  const labelTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -57,6 +60,7 @@ export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
     return () => {
       window.removeEventListener('keydown', handler);
       if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current);
+      if (labelTimeoutRef.current) window.clearTimeout(labelTimeoutRef.current);
     };
   }, [onClose]);
 
@@ -70,6 +74,8 @@ export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
     const ok = await copyToClipboard(linkToCopy);
     if (ok) {
       setCopied(true);
+      toast.dismiss();
+      toast.success('Tautan disalin', { duration: 1500 });
       if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current);
       copyTimeoutRef.current = window.setTimeout(() => {
         setCopied(false);
@@ -77,30 +83,38 @@ export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
     }
   };
 
+  const handleCopyLabel = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!item?.label) return;
+    const textToCopy = formatCleanUrl(item.label) || item.label.trim();
+    const ok = await copyToClipboard(textToCopy);
+    if (ok) {
+      setLabelCopied(true);
+      toast.dismiss();
+      toast.success('Label disalin', { duration: 1500 });
+      if (labelTimeoutRef.current) window.clearTimeout(labelTimeoutRef.current);
+      labelTimeoutRef.current = window.setTimeout(() => {
+        setLabelCopied(false);
+      }, 1200);
+    }
+  };
+
   const renderLabelBadge = () => {
     if (!item?.label || !item.label.trim()) return null;
-    const linkUrl = extractUrlFromLabel(item.label);
-    const displayLabel = formatCleanUrl(item.label);
-
-    if (linkUrl) {
-      return (
-        <a
-          href={linkUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="inline-flex items-center text-[9px] font-bold leading-none px-1.5 py-[2.5px] rounded border border-neutral-700 text-neutral-900 bg-transparent dark:border-white dark:text-white dark:bg-white/10 mr-2 shrink-0 select-none tracking-wide hover:underline hover:opacity-85 active:scale-95 transition-all cursor-pointer"
-          title={`Buka tautan: ${linkUrl}`}
-        >
-          {displayLabel}
-        </a>
-      );
-    }
+    const displayLabel = formatCleanUrl(item.label) || item.label.trim();
 
     return (
-      <span className="inline-flex items-center text-[9px] font-bold leading-none px-1.5 py-[2.5px] rounded border border-neutral-700 text-neutral-900 bg-transparent dark:border-white dark:text-white dark:bg-white/10 mr-2 shrink-0 select-none tracking-wide">
-        {displayLabel}
-      </span>
+      <button
+        type="button"
+        onClick={handleCopyLabel}
+        title={`Klik untuk menyalin: ${displayLabel}`}
+        className="inline-flex items-center gap-1 text-[9px] font-bold leading-none px-1.5 py-[2.5px] rounded border border-neutral-700 text-neutral-900 bg-transparent dark:border-white dark:text-white dark:bg-white/10 mr-2 shrink-0 select-none tracking-wide hover:border-[#FF4F00] hover:text-[#FF4F00] active:scale-95 transition-all cursor-pointer"
+      >
+        <span>{displayLabel}</span>
+        {labelCopied && (
+          <Check size={11} className="shrink-0 text-emerald-600 dark:text-emerald-400 animate-in fade-in" />
+        )}
+      </button>
     );
   };
 

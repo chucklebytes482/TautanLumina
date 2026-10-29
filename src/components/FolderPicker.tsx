@@ -10,6 +10,7 @@ interface Props {
   title: string;
   confirmLabel: string;
   disabledIds?: Set<string>;
+  hiddenFolderIds?: Set<string>;
   restrictedRootFolderId?: string;
   onConfirm: (folderId: string | null) => void;
   onClose: () => void;
@@ -22,6 +23,7 @@ export const FolderPicker = ({
   title,
   confirmLabel,
   disabledIds,
+  hiddenFolderIds,
   restrictedRootFolderId,
   onConfirm,
   onClose,
@@ -49,7 +51,7 @@ export const FolderPicker = ({
   const folders = useMemo(
     () =>
       items
-        .filter((i) => i.type === 'folder' && i.parentId === current)
+        .filter((i) => i.type === 'folder' && i.parentId === current && !hiddenFolderIds?.has(i.id))
         .sort((a, b) => {
           if (current === null) {
             const sysRank = (id: string) => {
@@ -63,7 +65,7 @@ export const FolderPicker = ({
           }
           return (a.order ?? 0) - (b.order ?? 0);
         }),
-    [items, current],
+    [items, current, hiddenFolderIds],
   );
 
   const breadcrumbs = useMemo(() => {

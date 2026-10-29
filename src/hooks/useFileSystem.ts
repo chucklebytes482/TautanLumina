@@ -27,6 +27,7 @@ export const useFileSystem = () => {
       let all = await db.getAllItems();
       
       let changed = false;
+      // Pastikan folder-catatan selalu ada
       const existingCatatan = all.find(it => it.id === 'folder-catatan');
       if (!existingCatatan) {
         const folderCatatan: FileSystemItem = {
@@ -45,6 +46,37 @@ export const useFileSystem = () => {
         existingCatatan.updatedAt = Date.now();
         await db.saveItem(existingCatatan);
         changed = true;
+      }
+
+      // Pastikan sub folder permanen 'clipkey' selalu ada di dalam folder-catatan
+      const existingClipkey = all.find(it => it.id === 'folder-clipkey');
+      if (!existingClipkey) {
+        const folderClipkey: FileSystemItem = {
+          id: 'folder-clipkey',
+          parentId: 'folder-catatan',
+          name: 'clipkey',
+          type: 'folder',
+          order: 0,
+          createdAt: 0,
+          updatedAt: Date.now(),
+        };
+        await db.saveItem(folderClipkey);
+        changed = true;
+      } else {
+        let clipkeyUpdated = false;
+        if (existingClipkey.parentId !== 'folder-catatan') {
+          existingClipkey.parentId = 'folder-catatan';
+          clipkeyUpdated = true;
+        }
+        if (existingClipkey.name !== 'clipkey') {
+          existingClipkey.name = 'clipkey';
+          clipkeyUpdated = true;
+        }
+        if (clipkeyUpdated) {
+          existingClipkey.updatedAt = Date.now();
+          await db.saveItem(existingClipkey);
+          changed = true;
+        }
       }
 
       // Bersihkan & migrasikan folder-hello-world jika masih tersisa dari versi lama
@@ -104,6 +136,7 @@ export const useFileSystem = () => {
         it.parentId && 
         it.parentId !== 'folder-catatan' && 
         it.parentId !== 'folder-pharse' && 
+        it.parentId !== 'folder-clipkey' &&
         !allFolderIds.has(it.parentId)
       );
       if (orphanedItems.length > 0) {
@@ -176,11 +209,35 @@ export const useFileSystem = () => {
     };
   }, [reload]);
 
+  const getItemSortTitle = (it: FileSystemItem): string => {
+    if (it.type === 'file') {
+      return getBookmarkDisplayTitle(it.name, it.content);
+    }
+    if (it.type === 'folder') {
+      return it.id === 'folder-catatan' ? 'Catatan' : it.id === 'folder-clipkey' ? 'clipkey' : it.name;
+    }
+    if (it.type === 'phrase') {
+      return it.name || it.content || '';
+    }
+    return it.content || it.name || '';
+  };
+
   const childrenOf = useCallback(
     (pid: string | null) =>
       items
         .filter((i) => i.parentId === pid)
         .sort((a, b) => {
+          // Khusus sub folder clipkey: diurutkan berdasarkan posisi/order (reorder keypad), bukan qwerty
+          if (pid === 'folder-clipkey') {
+            const orderA = a.order ?? 0;
+            const orderB = b.order ?? 0;
+            if (orderA !== orderB) {
+              return orderA - orderB;
+            }
+            return (a.createdAt ?? 0) - (b.createdAt ?? 0);
+          }
+
+          // Selain folder clipkey: semuanya diurutkan berdasarkan urutan keyboard QWERTY
           if (pid === null) {
             const sysRank = (id: string) => {
               if (id === 'folder-catatan') return 1;
@@ -192,20 +249,21 @@ export const useFileSystem = () => {
             if (rankA !== rankB) {
               return rankA - rankB;
             }
+          } else if (pid === 'folder-catatan') {
+            // clipkey adalah sub folder permanen di posisi teratas catatan
+            if (a.id === 'folder-clipkey') return -1;
+            if (b.id === 'folder-clipkey') return 1;
           }
+
+          if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
 
           if (a.type === 'folder' && b.type !== 'folder') return -1;
           if (b.type === 'folder' && a.type !== 'folder') return 1;
 
-          if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-
-          // Bookmarks (type === 'file') otomatis diurutkan dengan urutan keyboard QWERTY
-          if (a.type === 'file' && b.type === 'file') {
-            const titleA = getBookmarkDisplayTitle(a.name, a.content);
-            const titleB = getBookmarkDisplayTitle(b.name, b.content);
-            const qwertyDiff = compareQwerty(titleA, titleB);
-            if (qwertyDiff !== 0) return qwertyDiff;
-          }
+          const titleA = getItemSortTitle(a);
+          const titleB = getItemSortTitle(b);
+          const qwertyDiff = compareQwerty(titleA, titleB);
+          if (qwertyDiff !== 0) return qwertyDiff;
 
           const orderA = a.order ?? 0;
           const orderB = b.order ?? 0;
@@ -289,7 +347,7 @@ export const useFileSystem = () => {
   };
 
   const renameItem = async (id: string, name: string) => {
-    if (id === 'folder-catatan' || id === 'folder-pharse') {
+    if (id === 'folder-catatan' || id === 'folder-pharse' || id === 'folder-clipkey') {
       throw new Error('Tidak dapat diubah');
     }
     const it = items.find((i) => i.id === id);
@@ -367,7 +425,7 @@ export const useFileSystem = () => {
 
   const deleteMany = async (ids: string[]) => {
     const activeIds = ids.filter(id => {
-      if (id === 'folder-catatan' || id === 'folder-pharse') return false;
+      if (id === 'folder-catatan' || id === 'folder-pharse' || id === 'folder-clipkey') return false;
       const it = items.find(i => i.id === id);
       if (it && it.type === 'phrase') return false; // Jangan pernah izinkan pharse dihapus
       return true;
@@ -393,7 +451,7 @@ export const useFileSystem = () => {
 
     const all = collectDescendants(activeIds);
     const finalIdsToDelete = all.filter(id => {
-      if (id === 'folder-catatan' || id === 'folder-pharse') return false;
+      if (id === 'folder-catatan' || id === 'folder-pharse' || id === 'folder-clipkey') return false;
       const it = items.find(item => item.id === id);
       if (it && it.type === 'phrase') return false;
       return true;
@@ -449,7 +507,7 @@ export const useFileSystem = () => {
 
   const isNoteFolder = (folderId: string | null): boolean => {
     if (!folderId) return false;
-    if (folderId === 'folder-catatan') return true;
+    if (folderId === 'folder-catatan' || folderId === 'folder-clipkey') return true;
     return isDescendant('folder-catatan', folderId);
   };
 
@@ -467,7 +525,7 @@ export const useFileSystem = () => {
 
     const validIds = ids.filter((id) => {
       if (id === targetParentId) return false;
-      if (id === 'folder-catatan' || id === 'folder-pharse') return false;
+      if (id === 'folder-catatan' || id === 'folder-pharse' || id === 'folder-clipkey') return false;
       const it = items.find((i) => i.id === id);
       if (!it) return false;
       if (it.type === 'folder' && targetParentId && isDescendant(id, targetParentId)) return false;
@@ -626,12 +684,10 @@ export const useFileSystem = () => {
           return false;
         })
         .sort((a, b) => {
-          if (a.type === 'file' && b.type === 'file') {
-            const titleA = getBookmarkDisplayTitle(a.name, a.content);
-            const titleB = getBookmarkDisplayTitle(b.name, b.content);
-            const qwertyDiff = compareQwerty(titleA, titleB);
-            if (qwertyDiff !== 0) return qwertyDiff;
-          }
+          const titleA = getItemSortTitle(a);
+          const titleB = getItemSortTitle(b);
+          const qwertyDiff = compareQwerty(titleA, titleB);
+          if (qwertyDiff !== 0) return qwertyDiff;
           return a.name.localeCompare(b.name);
         });
     },

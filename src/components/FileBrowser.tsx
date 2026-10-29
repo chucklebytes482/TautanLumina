@@ -128,7 +128,7 @@ const Row = ({
 
   const handleClick = () => {
     if (selectMode) {
-      if (item.id === 'folder-catatan' || item.id === 'folder-pharse') {
+      if (item.id === 'folder-catatan' || item.id === 'folder-pharse' || item.id === 'folder-clipkey') {
         return;
       }
       onToggleSelect();
@@ -161,7 +161,7 @@ const Row = ({
   const renderItemLabel = () => {
     if (item.type === 'folder') return null;
     if (!item.label || !item.label.trim()) return null;
-    const displayText = formatCleanUrl(item.label);
+    const displayText = formatCleanUrl(item.label) || item.label.trim();
     return (
       <span className="inline-flex items-center text-[8px] font-bold leading-none px-1.5 py-[1.5px] rounded border border-neutral-700 text-neutral-800 bg-transparent dark:border-white dark:text-white dark:bg-white/5 mr-1.5 align-middle shrink-0 select-none tracking-wide pointer-events-none">
         {displayText}
@@ -179,7 +179,7 @@ const Row = ({
       ].join(' ')}
     >
       {/* Select Mode Checkbox */}
-      {selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && (
+      {selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && item.id !== 'folder-clipkey' && (
         <span
           className={[
             'inline-block w-4 h-4 rounded border shrink-0 transition-colors',
@@ -193,7 +193,7 @@ const Row = ({
           }}
         />
       )}
-      {selectMode && (item.id === 'folder-catatan' || item.id === 'folder-pharse') && (
+      {selectMode && (item.id === 'folder-catatan' || item.id === 'folder-pharse' || item.id === 'folder-clipkey') && (
         <div className="w-4 h-4 shrink-0" />
       )}
 
@@ -222,9 +222,9 @@ const Row = ({
       {/* Info */}
       <div className="min-w-0 flex-1">
         {item.type === 'folder' ? (
-          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.id === 'folder-catatan' ? 'Catatan' : item.name}>
+          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.id === 'folder-catatan' ? 'Catatan' : item.id === 'folder-clipkey' ? 'clipkey' : item.name}>
             {renderItemLabel()}
-            {item.id === 'folder-catatan' ? 'Catatan' : (cleanText(item.name) || t('file.folder'))}
+            {item.id === 'folder-catatan' ? 'Catatan' : item.id === 'folder-clipkey' ? 'clipkey' : (cleanText(item.name) || t('file.folder'))}
           </div>
         ) : item.type === 'phrase' ? (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name}>
@@ -245,7 +245,7 @@ const Row = ({
       </div>
 
       {/* Menu Button */}
-      {!selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && (
+      {!selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && item.id !== 'folder-clipkey' && (
         <div className="flex items-center shrink-0">
           <button
             data-testid={`item-menu-${item.id}`}

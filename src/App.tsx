@@ -5,7 +5,6 @@ import {
   FolderPlus,
   BookmarkPlus,
   NotebookPen,
-  Sparkles,
   Home,
   ChevronRight,
   X,
@@ -90,6 +89,7 @@ export default function App() {
         title: string;
         confirmLabel: string;
         disabledIds?: Set<string>;
+        hiddenFolderIds?: Set<string>;
         restrictedRootFolderId?: string;
         onConfirm: (folderId: string | null) => Promise<void> | void;
       }
@@ -236,7 +236,7 @@ export default function App() {
   const isNoteFolderOrSubfolder = useCallback(
     (folderId: string | null): boolean => {
       if (!folderId) return false;
-      if (folderId === 'folder-catatan') return true;
+      if (folderId === 'folder-catatan' || folderId === 'folder-clipkey') return true;
       let cur = items.find((i) => i.id === folderId);
       while (cur && cur.parentId) {
         if (cur.parentId === 'folder-catatan') return true;
@@ -329,7 +329,7 @@ export default function App() {
     const f = items.find((i) => i.id === folderId);
     if (!f) return;
 
-    if (folderId === 'folder-catatan' || folderId === 'folder-pharse' || isPharseFolderOrSubfolder(folderId)) {
+    if (folderId === 'folder-catatan' || folderId === 'folder-pharse' || folderId === 'folder-clipkey' || isPharseFolderOrSubfolder(folderId)) {
       showToast('Tidak dapat diubah');
       return;
     }
@@ -524,7 +524,7 @@ export default function App() {
 
   const selectableItems = useMemo(() => {
     return listItems.filter((item) => {
-      const isSystem = item.id === 'folder-catatan' || item.id === 'folder-pharse';
+      const isSystem = item.id === 'folder-catatan' || item.id === 'folder-pharse' || item.id === 'folder-clipkey';
       const isLocked = item.type === 'folder' && item.locked;
       return !isSystem && !isLocked;
     });
@@ -570,6 +570,8 @@ export default function App() {
 
   const disabledFolderIds = (movingIds: string[]): Set<string> => {
     const disabled = new Set<string>(movingIds);
+    // folder-clipkey tidak dapat dipindahkan
+    disabled.add('folder-clipkey');
     const walk = (id: string) => {
       items.filter((i) => i.parentId === id).forEach((c) => {
         if (!disabled.has(c.id)) {
@@ -610,16 +612,34 @@ export default function App() {
     const isNoteMoving = ids.some((id) => isFromNoteFolder(id));
 
     let restrictedRootFolderId: string | undefined = undefined;
+    const hiddenFolderIds = new Set<string>();
+
     if (isPharseMoving) {
       restrictedRootFolderId = 'folder-pharse';
     } else if (isNoteMoving) {
       restrictedRootFolderId = 'folder-catatan';
+    } else {
+      // Bookmark & konten di luar note/pharse tidak bisa dipindahkan ke catatan atau pharse,
+      // sehingga folder catatan dan pharse beserta seluruh sub foldernya tidak perlu ditampilkan.
+      const walk = (id: string) => {
+        items.filter((i) => i.parentId === id).forEach((c) => {
+          if (!hiddenFolderIds.has(c.id)) {
+            hiddenFolderIds.add(c.id);
+            walk(c.id);
+          }
+        });
+      };
+      hiddenFolderIds.add('folder-catatan');
+      walk('folder-catatan');
+      hiddenFolderIds.add('folder-pharse');
+      walk('folder-pharse');
     }
 
     setPickerConfig({
       title: t('action.moveItems').replace('{count}', ids.length.toString()),
       confirmLabel: t('action.move'),
       disabledIds: disabledFolderIds(ids),
+      hiddenFolderIds,
       restrictedRootFolderId,
       onConfirm: async (target) => {
         try {
@@ -638,7 +658,7 @@ export default function App() {
     opts?: { title?: string; afterDelete?: () => void },
   ) => {
     if (guardOffline()) return;
-    const filteredIds = ids.filter(id => id !== 'folder-catatan' && id !== 'folder-pharse');
+    const filteredIds = ids.filter(id => id !== 'folder-catatan' && id !== 'folder-pharse' && id !== 'folder-clipkey');
     if (filteredIds.length < ids.length && ids.length === 1) {
       showToast('Tidak dapat dihapus');
       return;
@@ -695,56 +715,6 @@ export default function App() {
     guardedDelete(ids);
   };
 
-  const bulkRegenerate = async () => {
-    if (guardOffline()) return;
-    const sourceList = selectMode && selectedIds.size > 0
-      ? items.filter((i) => selectedIds.has(i.id))
-      : listItems;
-
-    let updatedCount = 0;
-
-    if (sourceList.length > 0) {
-      const targetBookmarks: FileSystemItem[] = [];
-      const queue = [...sourceList];
-
-      while (queue.length > 0) {
-        const current = queue.shift()!;
-        if (current.type === 'file') {
-          targetBookmarks.push(current);
-        } else if (current.type === 'folder' && !isNoteFolderOrSubfolder(current.id) && !isPharseFolderOrSubfolder(current.id)) {
-          const children = items.filter((i) => i.parentId === current.id);
-          queue.push(...children);
-        }
-      }
-
-      if (targetBookmarks.length > 0) {
-        const updates = targetBookmarks.map((bm) => {
-          const rawUrl = cleanText(bm.content) || cleanText(bm.name);
-          const finalUrl = rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`;
-          const extracted = extractTitleFromUrl(finalUrl);
-          const titleToUse = (extracted && extracted.toLowerCase() !== 'bookmark') ? extracted : finalUrl;
-          const updatesObj: Partial<FileSystemItem> = {
-            name: titleToUse,
-          };
-          if (!cleanText(bm.content)) {
-            updatesObj.content = finalUrl;
-          }
-          return {
-            id: bm.id,
-            updates: updatesObj,
-          };
-        });
-
-        if (updates.length > 0) {
-          await updateMany(updates);
-          updatedCount = updates.length;
-        }
-      }
-    }
-
-    showToast('diperbarui');
-  };
-
   const handleConfirmMoveKeypad = async (targetNum: number) => {
     if (!moveKeypadConfig) return;
     if (guardOffline()) return;
@@ -752,93 +722,16 @@ export default function App() {
     setMoveKeypadConfig(null);
 
     if (targetItem) {
-      const isRoot = !targetItem.parentId;
-      const isFolder = targetItem.type === 'folder';
-      const folderItems = listItems.filter((i) => i.type === 'folder');
-      const bookmarkItems = listItems.filter((i) => i.type !== 'folder');
-
-      if (isRoot) {
-        const systemFolderIds = ['folder-catatan', 'folder-pharse'];
-        if (isFolder) {
-          const userFolders = folderItems.filter((i) => !systemFolderIds.includes(i.id));
-          const currentIdx = userFolders.findIndex((i) => i.id === targetItem.id);
-          if (currentIdx !== -1) {
-            let destIdx = 0;
-            if (targetNum <= 1 || targetNum === 4) {
-              destIdx = 0;
-            } else if (targetNum > 4) {
-              destIdx = targetNum - 4;
-            } else {
-              destIdx = targetNum - 1;
-            }
-            destIdx = Math.max(0, Math.min(destIdx, userFolders.length - 1));
-
-            const newUserFolders = [...userFolders];
-            newUserFolders.splice(currentIdx, 1);
-            newUserFolders.splice(destIdx, 0, targetItem);
-
-            const sysFolders = folderItems.filter((i) => systemFolderIds.includes(i.id));
-            const reorderedIds = [
-              ...sysFolders.map((i) => i.id),
-              ...newUserFolders.map((i) => i.id),
-              ...bookmarkItems.map((i) => i.id),
-            ];
-            await reorderInParent(null, reorderedIds);
-            showToast('Dipindahkan');
-          }
-        } else {
-          const currentBookmarkIdx = bookmarkItems.findIndex((i) => i.id === targetItem.id);
-          if (currentBookmarkIdx !== -1) {
-            let destIdx = 0;
-            if (targetNum <= 1 || targetNum === 4) {
-              destIdx = 0;
-            } else if (targetNum > 4) {
-              destIdx = targetNum - 4;
-            } else {
-              destIdx = targetNum - 1;
-            }
-            destIdx = Math.max(0, Math.min(destIdx, bookmarkItems.length - 1));
-
-            const newBookmarkItems = [...bookmarkItems];
-            newBookmarkItems.splice(currentBookmarkIdx, 1);
-            newBookmarkItems.splice(destIdx, 0, targetItem);
-
-            const reorderedIds = [
-              ...folderItems.map((i) => i.id),
-              ...newBookmarkItems.map((i) => i.id),
-            ];
-            await reorderInParent(null, reorderedIds);
-            showToast('Dipindahkan');
-          }
-        }
-      } else {
+      const isInsideClipkey = targetItem.parentId === 'folder-clipkey' || currentFolderId === 'folder-clipkey';
+      if (isInsideClipkey) {
         const targetIdx = Math.max(0, targetNum - 1);
-        if (isFolder) {
-          const currentFolderIdx = folderItems.findIndex((i) => i.id === targetItem.id);
-          if (currentFolderIdx !== -1) {
-            const newFolderItems = [...folderItems];
-            newFolderItems.splice(currentFolderIdx, 1);
-            newFolderItems.splice(targetIdx, 0, targetItem);
-            const reorderedIds = [
-              ...newFolderItems.map((i) => i.id),
-              ...bookmarkItems.map((i) => i.id),
-            ];
-            await reorderInParent(targetItem.parentId, reorderedIds);
-            showToast('Dipindahkan');
-          }
-        } else {
-          const currentBookmarkIdx = bookmarkItems.findIndex((i) => i.id === targetItem.id);
-          if (currentBookmarkIdx !== -1) {
-            const newBookmarkItems = [...bookmarkItems];
-            newBookmarkItems.splice(currentBookmarkIdx, 1);
-            newBookmarkItems.splice(targetIdx, 0, targetItem);
-            const reorderedIds = [
-              ...folderItems.map((i) => i.id),
-              ...newBookmarkItems.map((i) => i.id),
-            ];
-            await reorderInParent(targetItem.parentId, reorderedIds);
-            showToast('Dipindahkan');
-          }
+        const currentIdx = listItems.findIndex((i) => i.id === targetItem.id);
+        if (currentIdx !== -1) {
+          const newList = [...listItems];
+          newList.splice(currentIdx, 1);
+          newList.splice(Math.min(targetIdx, newList.length), 0, targetItem);
+          await reorderInParent('folder-clipkey', newList.map((i) => i.id));
+          showToast('Dipindahkan');
         }
       }
     }
@@ -879,24 +772,28 @@ export default function App() {
 
   const menuActions = (item: FileSystemItem): MenuAction[] => {
     const list: MenuAction[] = [];
+    const isInsideClipkey = currentFolderId === 'folder-clipkey' || item.parentId === 'folder-clipkey';
 
-    if (item.type === 'phrase') {
+    // Fitur "Pindah ke posisi" HANYA ada di sub folder catatan bernama clipkey
+    if (isInsideClipkey) {
       list.push({
         key: 'reorder',
-        label: t('action.moveToNum'),
+        label: t('action.moveToNum') || 'Pindah ke posisi',
         onClick: () => {
           if (searchMode) {
             showToast('Tidak dapat dipindah');
             return;
           }
-          const sameTypeItems = listItems.filter((i) => i.type === 'phrase');
           setMoveKeypadConfig({
             targetItem: item,
             isBulk: false,
-            maxNum: sameTypeItems.length,
+            maxNum: listItems.length,
           });
         },
       });
+    }
+
+    if (item.type === 'phrase') {
       list.push({
         key: 'move',
         label: t('action.moveToFolder'),
@@ -910,25 +807,6 @@ export default function App() {
       return list;
     }
 
-    if (item.type !== 'file') {
-      list.push({
-        key: 'reorder',
-        label: t('action.moveToNum'),
-        onClick: () => {
-          if (searchMode) {
-            showToast('Tidak dapat dipindah');
-            return;
-          }
-          const isFolder = item.type === 'folder';
-          const sameTypeItems = listItems.filter((i) => isFolder ? i.type === 'folder' : i.type !== 'folder');
-          setMoveKeypadConfig({
-            targetItem: item,
-            isBulk: false,
-            maxNum: sameTypeItems.length,
-          });
-        },
-      });
-    }
     list.push({ key: 'move', label: t('action.moveToFolder'), onClick: () => openMovePicker([item.id]) });
     if (item.type !== 'folder') {
       list.push({
@@ -937,7 +815,7 @@ export default function App() {
         onClick: () => handleSetLabel(item),
       });
     }
-    if (item.type === 'folder' && item.id !== 'folder-pharse' && !isPharseFolderOrSubfolder(item.id)) {
+    if (item.type === 'folder' && item.id !== 'folder-pharse' && item.id !== 'folder-clipkey' && !isPharseFolderOrSubfolder(item.id)) {
       list.push({
         key: 'lock',
         label: (item.locked && hasPinSet()) ? (t('pin.unlockPin') || 'Buka PIN') : (t('pin.lockPin') || 'Kunci PIN'),
@@ -1113,7 +991,7 @@ export default function App() {
                       onClick={() => navigateTo(b.id)}
                       className="px-2.5 py-1 rounded-lg hover:bg-[#faf8f5] dark:hover:bg-neutral-800 truncate max-w-[140px] text-neutral-800 dark:text-neutral-200 transition-colors cursor-pointer"
                     >
-                      {b.id === 'folder-catatan' ? 'Catatan' : b.name}
+                      {b.id === 'folder-catatan' ? 'Catatan' : b.id === 'folder-clipkey' ? 'clipkey' : b.name}
                     </button>
                   </div>
                 ))}
@@ -1132,16 +1010,6 @@ export default function App() {
                   aria-label="Sinkronisasi Manual"
                 >
                   <RefreshCw size={18} className={`text-[#FF4F00] ${syncing ? 'animate-spin' : ''}`} />
-                </button>
-                <button
-                  data-testid="regenerate-header-btn"
-                  onClick={bulkRegenerate}
-                  disabled={listItems.length === 0}
-                  className="p-1.5 rounded-lg disabled:opacity-40 disabled:hover:bg-transparent transition-colors hover:bg-[#faf8f5] dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-transparent hover:border-[#e2ddd5] dark:hover:border-neutral-700 flex items-center justify-center cursor-pointer mr-1"
-                  title={t('action.regenerate') || 'Perbarui judul'}
-                  aria-label={t('action.regenerate') || 'Perbarui judul'}
-                >
-                  <Sparkles size={18} className="text-[#FF4F00]" />
                 </button>
                 <button
                   data-testid="select-all-header-btn"
@@ -1230,6 +1098,8 @@ export default function App() {
               ? (menuFor.content || '').split('\n').find((l) => l.trim()) || '(kosong)'
               : menuFor.id === 'folder-catatan'
               ? 'Catatan'
+              : menuFor.id === 'folder-clipkey'
+              ? 'clipkey'
               : menuFor.name || t('picker.newFolder')
           }
           actions={menuActions(menuFor)}
@@ -1253,6 +1123,7 @@ export default function App() {
             title={pickerConfig.title}
             confirmLabel={pickerConfig.confirmLabel}
             disabledIds={pickerConfig.disabledIds}
+            hiddenFolderIds={pickerConfig.hiddenFolderIds}
             restrictedRootFolderId={pickerConfig.restrictedRootFolderId}
             onConfirm={async (id) => {
               await pickerConfig.onConfirm(id);
@@ -1282,7 +1153,7 @@ export default function App() {
           <PinModal
             mode={pinModalMode}
             folderToUnlock={folderPendingUnlock || undefined}
-            folders={items.filter((i) => i.type === 'folder' && i.id !== 'folder-catatan' && i.id !== 'folder-pharse' && !isPharseFolderOrSubfolder(i.id))}
+            folders={items.filter((i) => i.type === 'folder' && i.id !== 'folder-catatan' && i.id !== 'folder-pharse' && i.id !== 'folder-clipkey' && !isPharseFolderOrSubfolder(i.id))}
             onClose={() => {
               setPinModalMode(null);
               setFolderPendingUnlock(null);

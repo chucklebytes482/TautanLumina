@@ -29,6 +29,23 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
     }
   };
 
+  const [labelCopied, setLabelCopied] = useState(false);
+
+  const handleCopyLabel = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!item.label) return;
+    const textToCopy = formatCleanUrl(item.label) || item.label.trim();
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      setLabelCopied(true);
+      toast.dismiss();
+      toast.success('Label disalin', { duration: 1500 });
+      setTimeout(() => setLabelCopied(false), 1500);
+    } catch {
+      toast.error('Gagal menyalin');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="bg-white dark:bg-neutral-900 rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-[#e2ddd5] dark:border-neutral-800 relative flex flex-col max-h-[90vh]">
@@ -38,26 +55,19 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
             <div className="min-w-0 flex-1">
               <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100 truncate flex items-center" title={displayTitle}>
                 {item.label && item.label.trim() && (() => {
-                  const linkUrl = extractUrlFromLabel(item.label);
-                  const displayLabel = formatCleanUrl(item.label);
-                  if (linkUrl) {
-                    return (
-                      <a
-                        href={linkUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center text-[9px] font-bold leading-none px-1.5 py-[2.5px] rounded border border-neutral-700 text-neutral-900 bg-transparent dark:border-white dark:text-white dark:bg-white/10 mr-2 shrink-0 select-none tracking-wide hover:underline hover:opacity-85 active:scale-95 transition-all cursor-pointer"
-                        title={`Buka tautan: ${linkUrl}`}
-                      >
-                        {displayLabel}
-                      </a>
-                    );
-                  }
+                  const displayLabel = formatCleanUrl(item.label) || item.label.trim();
                   return (
-                    <span className="inline-flex items-center text-[9px] font-bold leading-none px-1.5 py-[2.5px] rounded border border-neutral-700 text-neutral-900 bg-transparent dark:border-white dark:text-white dark:bg-white/10 mr-2 shrink-0 select-none tracking-wide">
-                      {displayLabel}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCopyLabel}
+                      title={`Klik untuk menyalin: ${displayLabel}`}
+                      className="inline-flex items-center gap-1 text-[9px] font-bold leading-none px-1.5 py-[2.5px] rounded border border-neutral-700 text-neutral-900 bg-transparent dark:border-white dark:text-white dark:bg-white/10 mr-2 shrink-0 select-none tracking-wide hover:border-[#FF4F00] hover:text-[#FF4F00] active:scale-95 transition-all cursor-pointer"
+                    >
+                      <span>{displayLabel}</span>
+                      {labelCopied && (
+                        <Check size={11} className="shrink-0 text-emerald-600 dark:text-emerald-400 animate-in fade-in" />
+                      )}
+                    </button>
                   );
                 })()}
                 <span className="truncate">{displayTitle}</span>
