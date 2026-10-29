@@ -42,7 +42,7 @@ const copyToClipboard = async (text: string): Promise<boolean> => {
     return false;
   }
 };
-import { formatCleanUrl } from '../lib/titleExtractor';
+import { formatCleanUrl, extractUrlFromLabel } from '../lib/titleExtractor';
 
 export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -60,7 +60,7 @@ export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
     };
   }, [onClose]);
 
-  const isBookmark = item?.type === 'file' || /^https?:\/\//i.test(title) || /^www\./i.test(title);
+  const isBookmark = item ? item.type === 'file' : (/^https?:\/\//i.test(title) || /^www\./i.test(title));
   const rawUrl = (item?.content || title || '').trim();
   const displayTitle = isBookmark ? formatCleanUrl(rawUrl) : title;
   const linkToCopy = isBookmark ? displayTitle : rawUrl;
@@ -77,6 +77,33 @@ export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
     }
   };
 
+  const renderLabelBadge = () => {
+    if (!item?.label || !item.label.trim()) return null;
+    const linkUrl = extractUrlFromLabel(item.label);
+    const displayLabel = formatCleanUrl(item.label);
+
+    if (linkUrl) {
+      return (
+        <a
+          href={linkUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center text-[9px] font-bold leading-none px-1.5 py-[2.5px] rounded border border-neutral-700 text-neutral-900 bg-transparent dark:border-white dark:text-white dark:bg-white/10 mr-2 shrink-0 select-none tracking-wide hover:underline hover:opacity-85 active:scale-95 transition-all cursor-pointer"
+          title={`Buka tautan: ${linkUrl}`}
+        >
+          {displayLabel}
+        </a>
+      );
+    }
+
+    return (
+      <span className="inline-flex items-center text-[9px] font-bold leading-none px-1.5 py-[2.5px] rounded border border-neutral-700 text-neutral-900 bg-transparent dark:border-white dark:text-white dark:bg-white/10 mr-2 shrink-0 select-none tracking-wide">
+        {displayLabel}
+      </span>
+    );
+  };
+
   return (
     <div className="modal-root" onClick={onClose} data-testid="item-menu">
       <div
@@ -86,27 +113,30 @@ export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
         style={{ maxWidth: 380 }}
       >
         <div className="flex items-center justify-between p-3 border-b border-[#e2ddd5] dark:border-neutral-800 bg-[#faf8f5] dark:bg-neutral-800/80">
-          {isBookmark ? (
-            <button
-              type="button"
-              onClick={handleCopyLink}
-              title={`Klik untuk menyalin: ${linkToCopy}`}
-              className={`inline-flex items-center gap-1.5 text-left text-sm font-bold truncate pr-2 py-0.5 rounded cursor-pointer select-none transition-colors duration-150 active:scale-[0.98] ${
-                copied
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : 'text-[#131313] dark:text-neutral-100 hover:text-[#FF4F00] dark:hover:text-[#FF4F00]'
-              }`}
-            >
-              <span className="truncate">{displayTitle}</span>
-              {copied && <Check size={13} className="shrink-0 text-emerald-600 dark:text-emerald-400 animate-in fade-in" />}
-            </button>
-          ) : (
-            <div className="text-sm font-bold text-[#131313] dark:text-neutral-100 truncate pr-2">{title}</div>
-          )}
+          <div className="flex items-center min-w-0 flex-1 pr-2">
+            {renderLabelBadge()}
+            {isBookmark ? (
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                title={`Klik untuk menyalin: ${linkToCopy}`}
+                className={`inline-flex items-center gap-1.5 text-left text-sm font-bold truncate py-0.5 rounded cursor-pointer select-none transition-colors duration-150 active:scale-[0.98] ${
+                  copied
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-[#131313] dark:text-neutral-100 hover:text-[#FF4F00] dark:hover:text-[#FF4F00]'
+                }`}
+              >
+                <span className="truncate">{displayTitle}</span>
+                {copied && <Check size={13} className="shrink-0 text-emerald-600 dark:text-emerald-400 animate-in fade-in" />}
+              </button>
+            ) : (
+              <div className="text-sm font-bold text-[#131313] dark:text-neutral-100 truncate">{title}</div>
+            )}
+          </div>
           <button
             data-testid="menu-close-btn"
             onClick={onClose}
-            className="p-1.5 hover:bg-white dark:hover:bg-neutral-700 rounded-lg transition-colors text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 border border-transparent hover:border-[#e2ddd5] dark:hover:border-neutral-700"
+            className="p-1.5 hover:bg-white dark:hover:bg-neutral-700 rounded-lg transition-colors text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 border border-transparent hover:border-[#e2ddd5] dark:hover:border-neutral-700 shrink-0"
           >
             <X size={16} />
           </button>
