@@ -412,14 +412,16 @@ export default function App() {
     });
     if (!inputUrl || !inputUrl.trim()) return;
 
-    // Aturan penambahan bookmark: jika tautan berisi spasi dan tidak ada titik, maka tidak boleh ditambahkan
-    if ((inputUrl.includes(' ') || /\s/.test(inputUrl)) && !inputUrl.includes('.')) {
+    const trimmed = cleanText(inputUrl);
+    if (!trimmed) return;
+
+    // Aturan penambahan bookmark:
+    // Wajib ada titik, minimal 2 huruf sebelum dan sesudah titik, dan tidak boleh mengandung spasi
+    const hasValidDot = /[a-zA-Z0-9-]*[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z][a-zA-Z0-9-]*\.[a-zA-Z]{2,}/i.test(trimmed);
+    if (!trimmed.includes('.') || trimmed.includes(' ') || /\s/.test(trimmed) || !hasValidDot) {
       showToast('bukan tautan');
       return;
     }
-
-    const trimmed = cleanText(inputUrl);
-    if (!trimmed) return;
 
     const finalUrl = trimmed.startsWith('http://') || trimmed.startsWith('https://')
       ? trimmed
