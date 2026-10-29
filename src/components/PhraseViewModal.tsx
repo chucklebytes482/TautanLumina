@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Copy, Check, KeyRound } from 'lucide-react';
+import { X, Copy, Check } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { toast } from 'sonner';
 import { extractUrlFromLabel } from '../lib/titleExtractor';
@@ -32,10 +32,6 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
-            <div className="w-8 h-8 rounded-lg bg-[#fff0eb] dark:bg-[#FF4F00]/20 text-[#FF4F00] flex items-center justify-center shrink-0 border border-[#FF4F00]/20">
-              <KeyRound size={16} />
-            </div>
-
             <div className="min-w-0 flex-1">
               <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100 truncate flex items-center" title={displayTitle}>
                 {item.label && item.label.trim() && (() => {

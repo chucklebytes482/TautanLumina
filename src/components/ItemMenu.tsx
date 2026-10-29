@@ -43,6 +43,15 @@ const copyToClipboard = async (text: string): Promise<boolean> => {
   }
 };
 
+const formatDisplayUrl = (url: string): string => {
+  if (!url) return '';
+  return url
+    .trim()
+    .replace(/^https?:\/\/(?:www\.)?/i, '')
+    .replace(/^www\./i, '')
+    .replace(/\/+$/, '');
+};
+
 export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
@@ -60,7 +69,9 @@ export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
   }, [onClose]);
 
   const isBookmark = item?.type === 'file' || /^https?:\/\//i.test(title);
-  const linkToCopy = (item?.content || title || '').trim();
+  const rawUrl = (item?.content || title || '').trim();
+  const displayTitle = isBookmark ? formatDisplayUrl(rawUrl) : title;
+  const linkToCopy = isBookmark ? displayTitle : rawUrl;
 
   const handleCopyLink = async () => {
     if (!linkToCopy) return;
@@ -87,14 +98,14 @@ export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
             <button
               type="button"
               onClick={handleCopyLink}
-              title="Klik untuk menyalin tautan"
+              title={`Klik untuk menyalin: ${linkToCopy}`}
               className={`inline-flex items-center gap-1.5 text-left text-sm font-bold truncate pr-2 py-0.5 rounded cursor-pointer select-none transition-colors duration-150 active:scale-[0.98] ${
                 copied
                   ? 'text-emerald-600 dark:text-emerald-400'
                   : 'text-[#131313] dark:text-neutral-100 hover:text-[#FF4F00] dark:hover:text-[#FF4F00]'
               }`}
             >
-              <span className="truncate">{title}</span>
+              <span className="truncate">{displayTitle}</span>
               {copied && <Check size={13} className="shrink-0 text-emerald-600 dark:text-emerald-400 animate-in fade-in" />}
             </button>
           ) : (

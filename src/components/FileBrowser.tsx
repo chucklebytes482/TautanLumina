@@ -158,14 +158,6 @@ const Row = ({
     }
   };
 
-  const isUrl = item.type === 'file' && item.content?.startsWith('http');
-  let domain = '';
-  if (isUrl) {
-    try {
-      domain = new URL(item.content!).hostname;
-    } catch {}
-  }
-
   const renderItemLabel = () => {
     if (item.type === 'folder') return null;
     if (!item.label || !item.label.trim()) return null;
@@ -204,31 +196,27 @@ const Row = ({
         <div className="w-4 h-4 shrink-0" />
       )}
 
-      {/* Icon / Favicon / Note Badge */}
-      <div className="shrink-0 w-6.5 h-6.5 flex items-center justify-center rounded-lg bg-[#faf8f5] border border-[#e2ddd5]/60 overflow-hidden relative">
-        {item.type === 'folder' ? (
-          (item.id === 'folder-pharse' && pinActive && !unlockedFolderIds?.has('folder-pharse')) ||
-          (item.locked && pinActive && !unlockedFolderIds?.has(item.id)) ? (
-            <Lock size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
-          ) : item.id === 'folder-catatan' ? (
-            <FolderHeart size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
-          ) : item.id === 'folder-pharse' ? (
-            <KeyRound size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
+      {/* Icon / Note Badge (bookmarks & phrase items have no icon) */}
+      {(item.type === 'folder' || item.type === 'note') && (
+        <div className="shrink-0 w-6.5 h-6.5 flex items-center justify-center rounded-lg bg-[#faf8f5] border border-[#e2ddd5]/60 overflow-hidden relative">
+          {item.type === 'folder' ? (
+            (item.id === 'folder-pharse' && pinActive && !unlockedFolderIds?.has('folder-pharse')) ||
+            (item.locked && pinActive && !unlockedFolderIds?.has(item.id)) ? (
+              <Lock size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
+            ) : item.id === 'folder-catatan' ? (
+              <FolderHeart size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
+            ) : item.id === 'folder-pharse' ? (
+              <KeyRound size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
+            ) : (
+              <Folder size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
+            )
           ) : (
-            <Folder size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
-          )
-        ) : item.type === 'phrase' ? (
-          <KeyRound size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
-        ) : item.type === 'note' ? (
-          <span className="text-[11px] font-bold text-[#ff4f00] font-mono select-none">
-            {noteNumber}
-          </span>
-        ) : isUrl && domain ? (
-          <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} alt="" className="w-3.5 h-3.5 object-contain" />
-        ) : (
-          <div className="w-3.5 h-3.5 bg-neutral-200 rounded-sm" />
-        )}
-      </div>
+            <span className="text-[11px] font-bold text-[#ff4f00] font-mono select-none">
+              {noteNumber}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Info */}
       <div className="min-w-0 flex-1">
