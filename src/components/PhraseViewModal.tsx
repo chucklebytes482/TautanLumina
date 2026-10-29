@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Copy, Check } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { toast } from 'sonner';
-import { extractUrlFromLabel } from '../lib/titleExtractor';
+import { extractUrlFromLabel, formatCleanUrl } from '../lib/titleExtractor';
 
 interface Props {
   item: FileSystemItem;
@@ -13,7 +13,10 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
   const [copied, setCopied] = useState(false);
 
   const words = (item.content || '').trim().split(/\s+/).filter(Boolean);
-  const displayTitle = item.name || words[0] || 'Pharse';
+  const rawTitle = item.name || words[0] || 'Pharse';
+  const displayTitle = /^https?:\/\//i.test(rawTitle) || /^www\./i.test(rawTitle)
+    ? formatCleanUrl(rawTitle)
+    : rawTitle;
 
   const handleCopy = async () => {
     try {
@@ -36,6 +39,7 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
               <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100 truncate flex items-center" title={displayTitle}>
                 {item.label && item.label.trim() && (() => {
                   const linkUrl = extractUrlFromLabel(item.label);
+                  const displayLabel = formatCleanUrl(item.label);
                   if (linkUrl) {
                     return (
                       <a
@@ -46,13 +50,13 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
                         className="inline-flex items-center text-[9px] font-bold leading-none px-1.5 py-[2.5px] rounded border border-neutral-700 text-neutral-900 bg-transparent dark:border-white dark:text-white dark:bg-white/10 mr-2 shrink-0 select-none tracking-wide hover:underline hover:opacity-85 active:scale-95 transition-all cursor-pointer"
                         title={`Buka tautan: ${linkUrl}`}
                       >
-                        {item.label.trim()}
+                        {displayLabel}
                       </a>
                     );
                   }
                   return (
                     <span className="inline-flex items-center text-[9px] font-bold leading-none px-1.5 py-[2.5px] rounded border border-neutral-700 text-neutral-900 bg-transparent dark:border-white dark:text-white dark:bg-white/10 mr-2 shrink-0 select-none tracking-wide">
-                      {item.label.trim()}
+                      {displayLabel}
                     </span>
                   );
                 })()}

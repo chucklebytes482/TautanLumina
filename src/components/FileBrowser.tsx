@@ -1,9 +1,9 @@
-import { MoreVertical, Folder, Pin, Lock, FileText, FolderHeart, StickyNote, Copy, KeyRound } from 'lucide-react';
+import { MoreVertical, Folder, Pin, Lock, FileText, NotebookPen, StickyNote, Copy, KeyRound } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
 import { toast } from 'sonner';
 import { usePinState } from '../lib/pin';
-import { cleanText, extractTitleFromUrl, getBookmarkDisplayTitle, extractUrlFromLabel } from '../lib/titleExtractor';
+import { cleanText, extractTitleFromUrl, getBookmarkDisplayTitle, extractUrlFromLabel, formatCleanUrl } from '../lib/titleExtractor';
 
 interface Props {
   items: FileSystemItem[];
@@ -161,9 +161,25 @@ const Row = ({
   const renderItemLabel = () => {
     if (item.type === 'folder') return null;
     if (!item.label || !item.label.trim()) return null;
+    const linkUrl = extractUrlFromLabel(item.label);
+    const displayText = formatCleanUrl(item.label);
+    if (linkUrl) {
+      return (
+        <a
+          href={linkUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center text-[8px] font-bold leading-none px-1.5 py-[1.5px] rounded border border-neutral-700 text-neutral-800 bg-transparent dark:border-white dark:text-white dark:bg-white/5 mr-1.5 align-middle shrink-0 select-none tracking-wide hover:underline hover:opacity-85 active:scale-95 transition-all cursor-pointer"
+          title={`Buka tautan: ${linkUrl}`}
+        >
+          {displayText}
+        </a>
+      );
+    }
     return (
       <span className="inline-flex items-center text-[8px] font-bold leading-none px-1.5 py-[1.5px] rounded border border-neutral-700 text-neutral-800 bg-transparent dark:border-white dark:text-white dark:bg-white/5 mr-1.5 align-middle shrink-0 select-none tracking-wide">
-        {item.label.trim()}
+        {displayText}
       </span>
     );
   };
@@ -204,7 +220,7 @@ const Row = ({
             (item.locked && pinActive && !unlockedFolderIds?.has(item.id)) ? (
               <Lock size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
             ) : item.id === 'folder-catatan' ? (
-              <FolderHeart size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
+              <NotebookPen size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
             ) : item.id === 'folder-pharse' ? (
               <KeyRound size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
             ) : (
@@ -221,14 +237,14 @@ const Row = ({
       {/* Info */}
       <div className="min-w-0 flex-1">
         {item.type === 'folder' ? (
-          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name}>
+          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.id === 'folder-catatan' ? 'Catatan' : item.name}>
             {renderItemLabel()}
-            {cleanText(item.name) || t('file.folder')}
+            {item.id === 'folder-catatan' ? 'Catatan' : (cleanText(item.name) || t('file.folder'))}
           </div>
         ) : item.type === 'phrase' ? (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name}>
             {renderItemLabel()}
-            {cleanText(item.name) || 'Pharse'}
+            {/^https?:\/\//i.test(item.name || '') || /^www\./i.test(item.name || '') ? formatCleanUrl(item.name) : (cleanText(item.name) || 'Pharse')}
           </div>
         ) : item.type === 'note' ? (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.content || item.name}>

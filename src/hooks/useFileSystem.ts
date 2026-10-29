@@ -3,6 +3,7 @@ import { FileSystemItem, FileSystemItemType } from '../Types';
 import * as db from '../db/db';
 import { useI18n } from '../lib/i18n';
 import { getStoredPinHash, getStoredPinUpdatedAt, setStoredPinHash } from '../lib/pin';
+import { compareQwerty, getBookmarkDisplayTitle } from '../lib/titleExtractor';
 
 const uid = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -26,18 +27,23 @@ export const useFileSystem = () => {
       let all = await db.getAllItems();
       
       let changed = false;
-      const catatanExists = all.some(it => it.id === 'folder-catatan');
-      if (!catatanExists) {
+      const existingCatatan = all.find(it => it.id === 'folder-catatan');
+      if (!existingCatatan) {
         const folderCatatan: FileSystemItem = {
           id: 'folder-catatan',
           parentId: null,
-          name: 'Note',
+          name: 'Catatan',
           type: 'folder',
           order: 0,
           createdAt: 0,
           updatedAt: Date.now(),
         };
         await db.saveItem(folderCatatan);
+        changed = true;
+      } else if (existingCatatan.name !== 'Catatan') {
+        existingCatatan.name = 'Catatan';
+        existingCatatan.updatedAt = Date.now();
+        await db.saveItem(existingCatatan);
         changed = true;
       }
 
@@ -139,6 +145,14 @@ export const useFileSystem = () => {
         all = await db.getAllItems();
       }
 
+      // Pastikan nama folder-catatan selalu 'Catatan'
+      const catatanItem = all.find(it => it.id === 'folder-catatan');
+      if (catatanItem && catatanItem.name !== 'Catatan') {
+        catatanItem.name = 'Catatan';
+        catatanItem.updatedAt = Date.now();
+        await db.saveItem(catatanItem);
+      }
+
       setItems(all);
     } catch (e) {
       console.warn('Failed to load file system items:', e);
@@ -184,6 +198,15 @@ export const useFileSystem = () => {
           if (b.type === 'folder' && a.type !== 'folder') return 1;
 
           if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+
+          // Bookmarks (type === 'file') otomatis diurutkan dengan urutan keyboard QWERTY
+          if (a.type === 'file' && b.type === 'file') {
+            const titleA = getBookmarkDisplayTitle(a.name, a.content);
+            const titleB = getBookmarkDisplayTitle(b.name, b.content);
+            const qwertyDiff = compareQwerty(titleA, titleB);
+            if (qwertyDiff !== 0) return qwertyDiff;
+          }
+
           const orderA = a.order ?? 0;
           const orderB = b.order ?? 0;
           if (orderA !== orderB) {
@@ -603,6 +626,12 @@ export const useFileSystem = () => {
           return false;
         })
         .sort((a, b) => {
+          if (a.type === 'file' && b.type === 'file') {
+            const titleA = getBookmarkDisplayTitle(a.name, a.content);
+            const titleB = getBookmarkDisplayTitle(b.name, b.content);
+            const qwertyDiff = compareQwerty(titleA, titleB);
+            if (qwertyDiff !== 0) return qwertyDiff;
+          }
           return a.name.localeCompare(b.name);
         });
     },

@@ -42,15 +42,7 @@ const copyToClipboard = async (text: string): Promise<boolean> => {
     return false;
   }
 };
-
-const formatDisplayUrl = (url: string): string => {
-  if (!url) return '';
-  return url
-    .trim()
-    .replace(/^https?:\/\/(?:www\.)?/i, '')
-    .replace(/^www\./i, '')
-    .replace(/\/+$/, '');
-};
+import { formatCleanUrl } from '../lib/titleExtractor';
 
 export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -68,9 +60,9 @@ export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
     };
   }, [onClose]);
 
-  const isBookmark = item?.type === 'file' || /^https?:\/\//i.test(title);
+  const isBookmark = item?.type === 'file' || /^https?:\/\//i.test(title) || /^www\./i.test(title);
   const rawUrl = (item?.content || title || '').trim();
-  const displayTitle = isBookmark ? formatDisplayUrl(rawUrl) : title;
+  const displayTitle = isBookmark ? formatCleanUrl(rawUrl) : title;
   const linkToCopy = isBookmark ? displayTitle : rawUrl;
 
   const handleCopyLink = async () => {

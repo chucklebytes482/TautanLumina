@@ -412,6 +412,12 @@ export default function App() {
     });
     if (!inputUrl || !inputUrl.trim()) return;
 
+    // Aturan penambahan bookmark: jika tautan berisi spasi dan tidak ada titik, maka tidak boleh ditambahkan
+    if ((inputUrl.includes(' ') || /\s/.test(inputUrl)) && !inputUrl.includes('.')) {
+      showToast('bukan tautan');
+      return;
+    }
+
     const trimmed = cleanText(inputUrl);
     if (!trimmed) return;
 
@@ -514,31 +520,38 @@ export default function App() {
     }
   };
 
-  const toggleSelectAllHeader = () => {
-    if (listItems.length === 0) return;
-    
-    const selectableItems = listItems.filter((item) => {
+  const selectableItems = useMemo(() => {
+    return listItems.filter((item) => {
       const isSystem = item.id === 'folder-catatan' || item.id === 'folder-pharse';
       const isLocked = item.type === 'folder' && item.locked;
       return !isSystem && !isLocked;
     });
+  }, [listItems]);
 
+  const allSelected = selectableItems.length > 0 && selectableItems.every((i) => selectedIds.has(i.id));
+
+  const toggleSelectAllHeader = () => {
     if (selectableItems.length === 0) return;
 
-    const selectableIds = selectableItems.map((i) => i.id);
-    const allSelected = selectableIds.every((id) => selectedIds.has(id));
+    if (!selectMode) {
+      // Masuk ke mode pilih tanpa langsung memilih semua item
+      setKeepSelectMode(true);
+      setSelectedIds(new Set());
+      showToast('Mode pilih aktif');
+      return;
+    }
+
+    // Jika sudah di dalam mode pilih, toggle pilih semua atau batalkan
     if (allSelected) {
-      setKeepSelectMode(true);
-      const next = new Set(selectedIds);
-      selectableIds.forEach((id) => next.delete(id));
-      setSelectedIds(next);
+      clearSelection();
     } else {
-      setKeepSelectMode(true);
-      const next = new Set(selectedIds);
-      selectableIds.forEach((id) => next.add(id));
+      const next = new Set<string>();
+      selectableItems.forEach((i) => next.add(i.id));
       setSelectedIds(next);
+      setKeepSelectMode(true);
     }
   };
+
 
   const toggleSelect = (id: string) => {
     setKeepSelectMode(true);
@@ -895,23 +908,25 @@ export default function App() {
       return list;
     }
 
-    list.push({
-      key: 'reorder',
-      label: t('action.moveToNum'),
-      onClick: () => {
-        if (searchMode) {
-          showToast('Tidak dapat dipindah');
-          return;
-        }
-        const isFolder = item.type === 'folder';
-        const sameTypeItems = listItems.filter((i) => isFolder ? i.type === 'folder' : i.type !== 'folder');
-        setMoveKeypadConfig({
-          targetItem: item,
-          isBulk: false,
-          maxNum: sameTypeItems.length,
-        });
-      },
-    });
+    if (item.type !== 'file') {
+      list.push({
+        key: 'reorder',
+        label: t('action.moveToNum'),
+        onClick: () => {
+          if (searchMode) {
+            showToast('Tidak dapat dipindah');
+            return;
+          }
+          const isFolder = item.type === 'folder';
+          const sameTypeItems = listItems.filter((i) => isFolder ? i.type === 'folder' : i.type !== 'folder');
+          setMoveKeypadConfig({
+            targetItem: item,
+            isBulk: false,
+            maxNum: sameTypeItems.length,
+          });
+        },
+      });
+    }
     list.push({ key: 'move', label: t('action.moveToFolder'), onClick: () => openMovePicker([item.id]) });
     if (item.type !== 'folder') {
       list.push({
@@ -1096,7 +1111,7 @@ export default function App() {
                       onClick={() => navigateTo(b.id)}
                       className="px-2.5 py-1 rounded-lg hover:bg-[#faf8f5] dark:hover:bg-neutral-800 truncate max-w-[140px] text-neutral-800 dark:text-neutral-200 transition-colors cursor-pointer"
                     >
-                      {b.name}
+                      {b.id === 'folder-catatan' ? 'Catatan' : b.name}
                     </button>
                   </div>
                 ))}
@@ -1134,7 +1149,8 @@ export default function App() {
                     'p-1.5 rounded-lg disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer',
                     selectMode ? 'bg-[#FF4F00] text-white' : 'hover:bg-[#faf8f5] dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-transparent hover:border-[#e2ddd5] dark:hover:border-neutral-700',
                   ].join(' ')}
-                  title={t('btn.selectAll')}
+                  title={selectMode ? (allSelected ? 'Batalkan pilihan semua' : 'Pilih semua') : 'Mode pilih'}
+                  aria-label={selectMode ? (allSelected ? 'Batalkan pilihan semua' : 'Pilih semua') : 'Mode pilih'}
                 >
                   <ListChecks size={18} />
                 </button>
@@ -1157,23 +1173,25 @@ export default function App() {
           </div>
           <div className="flex-1" />
           <button
+            data-testid="bulk-delete-btn"
+            onClick={bulkDelete}
+            disabled={selectedIds.size === 0}
+            className="p-1.5 hover:bg-neutral-800 disabled:opacity-40 disabled:hover:bg-transparent rounded-lg text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+            aria-label={t('action.delete')}
+            title={t('action.delete')}
+          >
+            <Trash2 size={16} />
+          </button>
+
+          <button
             data-testid="bulk-move-btn"
             onClick={() => openMovePicker([...selectedIds])}
-            className="p-1.5 hover:bg-neutral-800 rounded-lg text-neutral-200 transition-colors"
+            disabled={selectedIds.size === 0}
+            className="p-1.5 hover:bg-neutral-800 disabled:opacity-40 disabled:hover:bg-transparent rounded-lg text-neutral-200 transition-colors cursor-pointer"
             aria-label={t('action.move')}
             title={t('action.move')}
           >
             <Move size={16} />
-          </button>
-
-          <button
-            data-testid="clear-selection-btn"
-            onClick={clearSelection}
-            className="p-1.5 hover:bg-neutral-800 rounded-lg text-neutral-400 hover:text-white transition-colors"
-            aria-label={t('action.cancel')}
-            title={t('action.cancel')}
-          >
-            <X size={16} />
           </button>
         </div>
       )}
@@ -1208,6 +1226,8 @@ export default function App() {
               ? (menuFor.content || '').substring(0, 30) + ((menuFor.content || '').length > 30 ? '...' : '')
               : menuFor.type === 'file'
               ? (menuFor.content || '').split('\n').find((l) => l.trim()) || '(kosong)'
+              : menuFor.id === 'folder-catatan'
+              ? 'Catatan'
               : menuFor.name || t('picker.newFolder')
           }
           actions={menuActions(menuFor)}

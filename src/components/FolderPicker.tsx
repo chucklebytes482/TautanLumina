@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X, ChevronRight, Home, ArrowLeft, Folder, FolderHeart, KeyRound } from 'lucide-react';
+import { X, ChevronRight, Home, ArrowLeft, Folder, NotebookPen, KeyRound } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { useDialog } from '../context/DialogContext';
 import { useI18n } from '../lib/i18n';
@@ -125,11 +125,11 @@ export const FolderPicker = ({
               {restrictedRootFolderId === 'folder-pharse' ? (
                 <KeyRound size={12} className="text-[#FF4F00]" />
               ) : restrictedRootFolderId === 'folder-catatan' ? (
-                <FolderHeart size={12} className="text-[#FF4F00]" />
+                <NotebookPen size={12} className="text-[#FF4F00]" />
               ) : (
                 <Folder size={12} className="text-[#FF4F00]" />
               )}
-              {items.find((i) => i.id === restrictedRootFolderId)?.name || (restrictedRootFolderId === 'folder-catatan' ? 'Note' : 'Pharse')}
+              {items.find((i) => i.id === restrictedRootFolderId)?.name || (restrictedRootFolderId === 'folder-catatan' ? 'Catatan' : 'Pharse')}
             </button>
           ) : (
             <button
@@ -218,13 +218,13 @@ export const FolderPicker = ({
                     >
                       <div className="flex items-center gap-2 truncate">
                         {f.id === 'folder-catatan' ? (
-                          <FolderHeart size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
+                          <NotebookPen size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
                         ) : f.id === 'folder-pharse' ? (
                           <KeyRound size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
                         ) : (
                           <Folder size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
                         )}
-                        <span className="truncate">{f.name}</span>
+                        <span className="truncate">{f.id === 'folder-catatan' ? 'Catatan' : f.name}</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {isSelected && (

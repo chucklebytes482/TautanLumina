@@ -57,18 +57,30 @@ export const extractTitleFromUrl = (url: string): string => {
   return cleanText(result) || 'Bookmark';
 };
 
+export const formatCleanUrl = (url?: string | null): string => {
+  if (!url) return '';
+  return url
+    .trim()
+    .replace(/^https?:\/\/(?:www\.)?/i, '')
+    .replace(/^www\./i, '')
+    .replace(/\/+$/, '');
+};
+
 export const getBookmarkDisplayTitle = (name?: string, content?: string): string => {
   const cleanName = cleanText(name);
   const cleanUrl = cleanText(content);
 
   // If user explicitly provided a title (and it's not generic 'Bookmark')
   if (cleanName && cleanName.toLowerCase() !== 'bookmark') {
+    if (/^https?:\/\//i.test(cleanName) || /^www\./i.test(cleanName)) {
+      return formatCleanUrl(cleanName);
+    }
     return cleanName;
   }
 
-  // If name is empty, display the URL directly
+  // If name is empty, display the cleaned URL
   if (cleanUrl) {
-    return cleanUrl.startsWith('http') ? cleanUrl : `https://${cleanUrl}`;
+    return formatCleanUrl(cleanUrl);
   }
 
   return cleanName || 'Bookmark';
@@ -94,4 +106,40 @@ export const extractUrlFromLabel = (label?: string | null): string | null => {
     return url.startsWith('http') ? url : `https://${url}`;
   }
   return null;
+};
+
+const QWERTY_ORDER = 'qwertyuiopasdfghjklzxcvbnm';
+
+const getCharRank = (ch: string): number => {
+  const lower = ch.toLowerCase();
+  const qIdx = QWERTY_ORDER.indexOf(lower);
+  if (qIdx !== -1) {
+    return 100 + qIdx; // letters in QWERTY keyboard order: 100..125
+  }
+  // Digits 0-9
+  if (lower >= '0' && lower <= '9') {
+    return 50 + (lower.charCodeAt(0) - 48); // digits 50..59
+  }
+  // All other characters (symbols, punctuation)
+  return lower.charCodeAt(0);
+};
+
+export const compareQwerty = (a?: string | null, b?: string | null): number => {
+  const strA = cleanText(a);
+  const strB = cleanText(b);
+  const len = Math.min(strA.length, strB.length);
+
+  for (let i = 0; i < len; i++) {
+    const rankA = getCharRank(strA[i]);
+    const rankB = getCharRank(strB[i]);
+    if (rankA !== rankB) {
+      return rankA - rankB;
+    }
+  }
+
+  if (strA.length !== strB.length) {
+    return strA.length - strB.length;
+  }
+
+  return strA.localeCompare(strB);
 };
