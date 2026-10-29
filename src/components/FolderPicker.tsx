@@ -180,11 +180,6 @@ export const FolderPicker = ({
                     <Home size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
                     <span className="truncate">Root (Halaman Utama)</span>
                   </div>
-                  {selectedFolderId === null && (
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#FF4F00] text-white shrink-0">
-                      Tujuan
-                    </span>
-                  )}
                 </button>
               </li>
             )}
@@ -229,11 +224,6 @@ export const FolderPicker = ({
                         <span className="truncate">{f.id === 'folder-catatan' ? 'Catatan' : f.name}</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        {isSelected && (
-                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#FF4F00] text-white">
-                            Tujuan
-                          </span>
-                        )}
                         {subfolderCount > 0 && !disabled && (
                           <span
                             onClick={(e) => {
@@ -267,9 +257,7 @@ export const FolderPicker = ({
               + Folder
             </button>
           )}
-          <div className="flex-1 min-w-0 text-[11px] text-neutral-500 truncate px-1">
-            Ke: <span className="font-semibold text-neutral-800">{selectedFolder ? selectedFolder.name : 'Root'}</span>
-          </div>
+          <div className="flex-1" />
           <button
             type="button"
             data-testid="picker-cancel-btn"

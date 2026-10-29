@@ -57,11 +57,15 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
                       type="button"
                       onClick={handleCopyLabel}
                       title={`Klik untuk menyalin: ${displayLabel}`}
-                      className="inline-flex items-center gap-1 text-[9px] font-bold leading-none px-1.5 py-[2.5px] rounded border border-neutral-700 text-neutral-900 bg-transparent dark:border-white dark:text-white dark:bg-white/10 mr-2 shrink-0 select-none tracking-wide hover:border-[#FF4F00] hover:text-[#FF4F00] active:scale-95 transition-all cursor-pointer"
+                      className={`inline-flex items-center gap-1 text-xs font-semibold mr-2 shrink-0 select-none cursor-pointer transition-colors duration-150 active:scale-95 ${
+                        labelCopied
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-neutral-500 dark:text-neutral-400 hover:text-[#FF4F00] dark:hover:text-[#FF4F00]'
+                      }`}
                     >
                       <span>{displayLabel}</span>
                       {labelCopied && (
-                        <Check size={11} className="shrink-0 text-emerald-600 dark:text-emerald-400 animate-in fade-in" />
+                        <Check size={12} className="shrink-0 text-emerald-600 dark:text-emerald-400 animate-in fade-in" />
                       )}
                     </button>
                   );
