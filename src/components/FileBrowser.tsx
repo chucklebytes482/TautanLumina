@@ -1,7 +1,7 @@
-import { MoreVertical, Folder, Pin, Lock, FileText, NotebookPen, StickyNote, Copy, KeyRound } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { MoreVertical, Folder, Pin, Lock, FileText, NotebookPen, StickyNote, Copy, KeyRound, Check } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
-import { toast } from 'sonner';
 import { usePinState } from '../lib/pin';
 import { cleanText, extractTitleFromUrl, getBookmarkDisplayTitle, formatCleanUrl } from '../lib/titleExtractor';
 
@@ -125,6 +125,14 @@ const Row = ({
 }: RowProps) => {
   const { t } = useI18n();
   const pinActive = usePinState();
+  const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
 
   const handleClick = () => {
     if (selectMode) {
@@ -140,15 +148,16 @@ const Row = ({
     }
     else if (item.type === 'note') {
       const textToCopy = item.content || item.name || '';
+      if (!textToCopy) return;
       navigator.clipboard.writeText(textToCopy)
         .then(() => {
-          toast.dismiss();
-          toast.success(t('toast.copied'), { duration: 1500 });
+          setCopied(true);
+          if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current);
+          copyTimeoutRef.current = window.setTimeout(() => {
+            setCopied(false);
+          }, 1200);
         })
-        .catch(() => {
-          toast.dismiss();
-          toast.error(t('toast.copyFailed'), { duration: 1500 });
-        });
+        .catch(() => {});
     } else {
        if (item.content?.startsWith('http')) {
          window.open(item.content, '_blank');
@@ -199,7 +208,9 @@ const Row = ({
 
       {/* Icon / Note Badge (bookmarks & phrase items have no icon) */}
       {(item.type === 'folder' || item.type === 'note') && (
-        <div className="shrink-0 w-6.5 h-6.5 flex items-center justify-center rounded-lg bg-[#faf8f5] border border-[#e2ddd5]/60 overflow-hidden relative">
+        <div className={`shrink-0 w-6.5 h-6.5 flex items-center justify-center rounded-lg border overflow-hidden relative transition-colors ${
+          copied ? 'bg-emerald-50 border-emerald-500/40 dark:bg-emerald-950/40 dark:border-emerald-500/50' : 'bg-[#faf8f5] border-[#e2ddd5]/60'
+        }`}>
           {item.type === 'folder' ? (
             (item.id === 'folder-pharse' && pinActive && !unlockedFolderIds?.has('folder-pharse')) ||
             (item.locked && pinActive && !unlockedFolderIds?.has(item.id)) ? (
@@ -211,6 +222,8 @@ const Row = ({
             ) : (
               <Folder size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
             )
+          ) : copied ? (
+            <Check size={13} className="text-emerald-600 dark:text-emerald-400 animate-in fade-in" strokeWidth={2.5} />
           ) : (
             <span className="text-[11px] font-bold text-[#ff4f00] font-mono select-none">
               {noteNumber}

@@ -62,6 +62,7 @@ export default function App() {
     currentItems,
     createItem,
     updateContent,
+    renameItem,
     updateItem,
     updateMany,
     deleteMany,
@@ -805,6 +806,35 @@ export default function App() {
         onClick: () => handleSetLabel(item),
       });
       return list;
+    }
+
+    const isPermanentFolder = item.type === 'folder' && (item.id === 'folder-catatan' || item.id === 'folder-pharse' || item.id === 'folder-clipkey');
+
+    if (item.type === 'folder' && !isPermanentFolder) {
+      list.push({
+        key: 'rename',
+        label: t('action.rename') || 'Ubah Nama',
+        onClick: async () => {
+          if (guardOffline()) return;
+          const newName = await customPrompt(t('modal.folderName') || 'Nama Folder', item.name, {
+            placeholder: 'Nama Folder...',
+          });
+          if (newName !== null) {
+            const trimmed = newName.trim();
+            if (!trimmed) {
+              showToast('Nama folder tidak boleh kosong');
+              return;
+            }
+            if (trimmed === item.name) return;
+            try {
+              await renameItem(item.id, trimmed);
+              showToast('Nama folder diubah');
+            } catch (err: any) {
+              showToast(err?.message || 'Gagal mengubah nama');
+            }
+          }
+        },
+      });
     }
 
     list.push({ key: 'move', label: t('action.moveToFolder'), onClick: () => openMovePicker([item.id]) });

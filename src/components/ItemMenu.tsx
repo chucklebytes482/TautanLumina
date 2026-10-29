@@ -43,7 +43,6 @@ const copyToClipboard = async (text: string): Promise<boolean> => {
   }
 };
 import { formatCleanUrl, extractUrlFromLabel } from '../lib/titleExtractor';
-import { toast } from 'sonner';
 
 export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -74,8 +73,6 @@ export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
     const ok = await copyToClipboard(linkToCopy);
     if (ok) {
       setCopied(true);
-      toast.dismiss();
-      toast.success('Tautan disalin', { duration: 1500 });
       if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current);
       copyTimeoutRef.current = window.setTimeout(() => {
         setCopied(false);
@@ -90,8 +87,6 @@ export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
     const ok = await copyToClipboard(textToCopy);
     if (ok) {
       setLabelCopied(true);
-      toast.dismiss();
-      toast.success('Label disalin', { duration: 1500 });
       if (labelTimeoutRef.current) window.clearTimeout(labelTimeoutRef.current);
       labelTimeoutRef.current = window.setTimeout(() => {
         setLabelCopied(false);

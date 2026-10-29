@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, Copy, Check } from 'lucide-react';
 import { FileSystemItem } from '../Types';
-import { toast } from 'sonner';
 import { extractUrlFromLabel, formatCleanUrl } from '../lib/titleExtractor';
 
 interface Props {
@@ -22,10 +21,9 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
     try {
       await navigator.clipboard.writeText(item.content || '');
       setCopied(true);
-      toast.success('Pharse disalin');
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Gagal menyalin');
+      // silent fallback
     }
   };
 
@@ -38,11 +36,9 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
     try {
       await navigator.clipboard.writeText(textToCopy);
       setLabelCopied(true);
-      toast.dismiss();
-      toast.success('Label disalin', { duration: 1500 });
       setTimeout(() => setLabelCopied(false), 1500);
     } catch {
-      toast.error('Gagal menyalin');
+      // silent fallback
     }
   };
 
