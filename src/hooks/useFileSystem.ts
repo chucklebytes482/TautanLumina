@@ -4,6 +4,7 @@ import * as db from '../db/db';
 import { useI18n } from '../lib/i18n';
 import { getStoredPinHash, getStoredPinUpdatedAt, setStoredPinHash } from '../lib/pin';
 import { compareQwerty, getBookmarkDisplayTitle, getMainDomain } from '../lib/titleExtractor';
+import { groupBookmarksByDomain } from '../lib/domainGrouper';
 
 const uid = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -186,6 +187,18 @@ export const useFileSystem = () => {
         await db.saveItem(catatanItem);
       }
 
+      // Otomatis masukkan bookmark dengan domain yang sama ke dalam folder baru dengan nama domain utamanya
+      const groupRes = groupBookmarksByDomain(all, uid);
+      if (groupRes.hasChanges) {
+        if (groupRes.createdFolders.length > 0) {
+          await db.saveItems(groupRes.createdFolders);
+        }
+        if (groupRes.modifiedItems.length > 0) {
+          await db.saveItems(groupRes.modifiedItems);
+        }
+        all = groupRes.updatedAll;
+      }
+
       setItems(all);
     } catch (e) {
       console.warn('Failed to load file system items:', e);
@@ -322,11 +335,67 @@ export const useFileSystem = () => {
         throw new Error('Pharse ini sudah ada');
       }
     }
-    const targetParentId = type === 'phrase'
+    let targetParentId = type === 'phrase'
       ? 'folder-pharse'
       : (type === 'note' && !parentId)
       ? 'folder-catatan'
       : parentId;
+
+    if (type === 'file') {
+      const domain = getMainDomain(content || name);
+      if (domain && domain.includes('.')) {
+        const lowerDomain = domain.toLowerCase();
+        const parentFolder = targetParentId ? currentDbItems.find((it) => it.id === targetParentId) : null;
+        if (parentFolder?.name?.trim().toLowerCase() !== lowerDomain) {
+          // 1. Jika sudah ada folder dengan nama domain ini di targetParentId, langsung masukkan ke dalamnya
+          const existingDomainFolder = currentDbItems.find(
+            (it) =>
+              !it.deletedAt &&
+              it.type === 'folder' &&
+              it.parentId === targetParentId &&
+              it.name?.trim().toLowerCase() === lowerDomain
+          );
+          if (existingDomainFolder) {
+            targetParentId = existingDomainFolder.id;
+          } else {
+            // 2. Jika sudah ada bookmark dengan domain yang sama di targetParentId, buat folder baru dan masukkan keduanya
+            const siblingsWithSameDomain = currentDbItems.filter(
+              (it) =>
+                !it.deletedAt &&
+                it.type === 'file' &&
+                it.parentId === targetParentId &&
+                getMainDomain(it.content || it.name).toLowerCase() === lowerDomain
+            );
+            if (siblingsWithSameDomain.length > 0) {
+              const newFolderId = uid();
+              const siblings = currentDbItems.filter((it) => it.parentId === targetParentId);
+              const nextFolderOrder = siblings.length
+                ? Math.max(...siblings.map((s) => (typeof s.order === 'number' ? s.order : 0))) + 1
+                : 0;
+              const newDomainFolder: FileSystemItem = {
+                id: newFolderId,
+                parentId: targetParentId,
+                name: lowerDomain,
+                type: 'folder',
+                order: nextFolderOrder,
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+              };
+              await db.saveItem(newDomainFolder);
+              const updatedSiblings = siblingsWithSameDomain.map((sib, sIdx) => ({
+                ...sib,
+                parentId: newFolderId,
+                order: sIdx,
+                updatedAt: Date.now(),
+              }));
+              await db.saveItems(updatedSiblings);
+              targetParentId = newFolderId;
+            }
+          }
+        }
+      }
+    }
+
     const firstWordFromContent = (content || '').trim().split(/\s+/)[0] || '';
     const itemName = type === 'note'
       ? content.trim()
