@@ -66,6 +66,57 @@ export const formatCleanUrl = (url?: string | null): string => {
     .replace(/\/+$/, '');
 };
 
+const COMMON_CC_SLD_PREFIXES = new Set([
+  'co', 'com', 'org', 'net', 'edu', 'gov', 'go', 'ac', 'sch',
+  'mil', 'web', 'or', 'my', 'biz', 'gen', 'res', 'ne', 'ltd', 'plc', 'me'
+]);
+
+export const getMainDomain = (raw?: string | null): string => {
+  if (!raw) return '';
+  let str = cleanText(raw);
+  if (!str) return '';
+
+  // Remove protocol
+  str = str.replace(/^https?:\/*\/*/i, '').replace(/^ftp:\/*\/*/i, '');
+
+  // Strip path, query params, hash
+  str = str.split('/')[0].split('?')[0].split('#')[0];
+
+  // Strip port
+  str = str.split(':')[0];
+
+  // Clean and lowercase
+  str = str.trim().toLowerCase();
+
+  if (!str || !str.includes('.')) {
+    return str;
+  }
+
+  // Handle IP addresses (e.g. 127.0.0.1)
+  if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(str)) {
+    return str;
+  }
+
+  const parts = str.split('.').filter(Boolean);
+  if (parts.length <= 2) {
+    return parts.join('.');
+  }
+
+  // Check for common second-level domains (ccSLD like .co.id, .co.uk, .com.au)
+  const secondLast = parts[parts.length - 2];
+  const last = parts[parts.length - 1];
+  const isCcTLD = last.length === 2 && COMMON_CC_SLD_PREFIXES.has(secondLast);
+
+  if (isCcTLD) {
+    if (parts.length >= 3) {
+      return parts.slice(-3).join('.');
+    }
+    return parts.join('.');
+  }
+
+  return parts.slice(-2).join('.');
+};
+
 export const getBookmarkDisplayTitle = (name?: string, content?: string): string => {
   const cleanName = cleanText(name);
   const cleanUrl = cleanText(content);

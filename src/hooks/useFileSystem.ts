@@ -3,7 +3,7 @@ import { FileSystemItem, FileSystemItemType } from '../Types';
 import * as db from '../db/db';
 import { useI18n } from '../lib/i18n';
 import { getStoredPinHash, getStoredPinUpdatedAt, setStoredPinHash } from '../lib/pin';
-import { compareQwerty, getBookmarkDisplayTitle } from '../lib/titleExtractor';
+import { compareQwerty, getBookmarkDisplayTitle, getMainDomain } from '../lib/titleExtractor';
 
 const uid = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -209,17 +209,29 @@ export const useFileSystem = () => {
     };
   }, [reload]);
 
-  const getItemSortTitle = (it: FileSystemItem): string => {
+  const getItemSortKeys = (it: FileSystemItem): { primary: string; secondary: string } => {
     if (it.type === 'file') {
-      return getBookmarkDisplayTitle(it.name, it.content);
+      // Pengurutan didasarkan pada domain utama saja (misal facebook.com)
+      // agar semua web dari domain yang sama (misal Facebook) berurutan
+      const domain = getMainDomain(it.content || it.name);
+      const display = getBookmarkDisplayTitle(it.name, it.content);
+      return {
+        primary: domain || display,
+        secondary: display || it.content || '',
+      };
     }
     if (it.type === 'folder') {
-      return it.id === 'folder-catatan' ? 'Catatan' : it.id === 'folder-clipkey' ? 'clipkey' : it.name;
+      const name = it.id === 'folder-catatan' ? 'Catatan' : it.id === 'folder-clipkey' ? 'clipkey' : it.name;
+      return { primary: name, secondary: '' };
     }
     if (it.type === 'phrase') {
-      return it.name || it.content || '';
+      return { primary: it.name || it.content || '', secondary: it.content || '' };
     }
-    return it.content || it.name || '';
+    return { primary: it.content || it.name || '', secondary: '' };
+  };
+
+  const getItemSortTitle = (it: FileSystemItem): string => {
+    return getItemSortKeys(it).primary;
   };
 
   const childrenOf = useCallback(
@@ -260,10 +272,14 @@ export const useFileSystem = () => {
           if (a.type === 'folder' && b.type !== 'folder') return -1;
           if (b.type === 'folder' && a.type !== 'folder') return 1;
 
-          const titleA = getItemSortTitle(a);
-          const titleB = getItemSortTitle(b);
-          const qwertyDiff = compareQwerty(titleA, titleB);
-          if (qwertyDiff !== 0) return qwertyDiff;
+          const keyA = getItemSortKeys(a);
+          const keyB = getItemSortKeys(b);
+
+          const primaryDiff = compareQwerty(keyA.primary, keyB.primary);
+          if (primaryDiff !== 0) return primaryDiff;
+
+          const secondaryDiff = compareQwerty(keyA.secondary, keyB.secondary);
+          if (secondaryDiff !== 0) return secondaryDiff;
 
           const orderA = a.order ?? 0;
           const orderB = b.order ?? 0;
@@ -684,10 +700,12 @@ export const useFileSystem = () => {
           return false;
         })
         .sort((a, b) => {
-          const titleA = getItemSortTitle(a);
-          const titleB = getItemSortTitle(b);
-          const qwertyDiff = compareQwerty(titleA, titleB);
-          if (qwertyDiff !== 0) return qwertyDiff;
+          const keyA = getItemSortKeys(a);
+          const keyB = getItemSortKeys(b);
+          const primaryDiff = compareQwerty(keyA.primary, keyB.primary);
+          if (primaryDiff !== 0) return primaryDiff;
+          const secondaryDiff = compareQwerty(keyA.secondary, keyB.secondary);
+          if (secondaryDiff !== 0) return secondaryDiff;
           return a.name.localeCompare(b.name);
         });
     },
