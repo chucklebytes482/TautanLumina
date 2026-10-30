@@ -40,7 +40,7 @@ import { useI18n } from './lib/i18n';
 import { ADMIN_EMAIL } from './lib/appwrite';
 
 import { FileSystemItem } from './Types';
-import { extractTitleFromUrl, cleanText } from './lib/titleExtractor';
+import { extractTitleFromUrl, cleanText, getMainDomain } from './lib/titleExtractor';
 import { hasPinSet, removePin, usePinState } from './lib/pin';
 import { isBip39EnglishWord } from './lib/bip39';
 
@@ -809,8 +809,13 @@ export default function App() {
     }
 
     const isPermanentFolder = item.type === 'folder' && (item.id === 'folder-catatan' || item.id === 'folder-pharse' || item.id === 'folder-clipkey');
+    const isAutoDomainFolder = item.type === 'folder' && (
+      Boolean(item.autoDomain) ||
+      Boolean(item.name && item.name.includes('.') && getMainDomain(item.name) === item.name.trim().toLowerCase())
+    );
 
-    if (item.type === 'folder' && !isPermanentFolder) {
+    // Fitur ganti nama tidak ditampilkan untuk folder permanen dan folder yang dibuat otomatis
+    if (item.type === 'folder' && !isPermanentFolder && !isAutoDomainFolder) {
       list.push({
         key: 'rename',
         label: t('action.rename') || 'Ubah Nama',

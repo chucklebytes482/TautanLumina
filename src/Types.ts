@@ -14,5 +14,6 @@ export interface FileSystemItem {
   pinned?: boolean;
   category?: string;
   locked?: boolean;
+  autoDomain?: boolean;
 }
 

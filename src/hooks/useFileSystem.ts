@@ -377,6 +377,7 @@ export const useFileSystem = () => {
                 parentId: targetParentId,
                 name: lowerDomain,
                 type: 'folder',
+                autoDomain: true,
                 order: nextFolderOrder,
                 createdAt: Date.now(),
                 updatedAt: Date.now(),
@@ -437,6 +438,9 @@ export const useFileSystem = () => {
     }
     const it = items.find((i) => i.id === id);
     if (!it) return;
+    if (it.type === 'folder' && (it.autoDomain || (it.name && it.name.includes('.') && getMainDomain(it.name) === it.name.trim().toLowerCase()))) {
+      throw new Error('Folder otomatis tidak dapat diubah namanya');
+    }
     if (it.type === 'phrase') {
       throw new Error('Judul pharse tidak dapat diedit');
     }

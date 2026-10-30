@@ -91,6 +91,7 @@ export const groupBookmarksByDomain = (
           parentId,
           name: lowerDomain,
           type: 'folder',
+          autoDomain: true,
           order: nextOrder,
           createdAt: Date.now(),
           updatedAt: Date.now(),
@@ -99,6 +100,14 @@ export const groupBookmarksByDomain = (
         createdFolders.push(targetFolder);
         all.push(targetFolder);
         foldersUnderParent.push(targetFolder);
+      } else if (targetFolder && !targetFolder.autoDomain) {
+        targetFolder.autoDomain = true;
+        targetFolder.updatedAt = Date.now();
+        modifiedMap.set(targetFolder.id, targetFolder);
+        const tfIdx = all.findIndex((i) => i.id === targetFolder!.id);
+        if (tfIdx !== -1) {
+          all[tfIdx] = targetFolder;
+        }
       }
 
       // If a target folder exists (either previously or newly created), move the files into it
