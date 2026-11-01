@@ -159,7 +159,7 @@ export default function App() {
 
   const [isOffline, setIsOffline] = useState<boolean>(() => typeof navigator !== 'undefined' ? !navigator.onLine : false);
 
-  const { user, loading, syncing, login, register, resetPassword, verifyPasswordAndResetPin, updatePasswordRecovery, verifyEmail, logout, smartSync, clearCloudData } = useAppwriteSync(
+  const { user, loading, syncing, login, register, resetPassword, verifyPasswordAndResetPin, updatePasswordRecovery, verifyEmail, logout, logoutOtherDevices, smartSync, clearCloudData } = useAppwriteSync(
     items,
     importJSON,
     exportJSON,
@@ -1176,6 +1176,7 @@ export default function App() {
             user={user}
             loading={loading}
             logout={handleLogout}
+            onLogoutOtherDevices={logoutOtherDevices}
             initialTab={settingsInitialTab || null}
             onClose={() => {
               setSettingsOpen(false);

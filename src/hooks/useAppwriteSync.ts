@@ -279,6 +279,36 @@ export function useAppwriteSync(
     }
   };
 
+  const logoutOtherDevices = async () => {
+    try {
+      const currentSession = await account.getSession('current');
+      const sessionList = await account.listSessions();
+      const otherSessions = sessionList.sessions.filter((s) => s.$id !== currentSession.$id);
+
+      if (otherSessions.length === 0) {
+        toast.dismiss();
+        toast.info(t('settings.noOtherSessions') || 'Tidak ada sesi perangkat lain yang aktif', { duration: 2000 });
+        return true;
+      }
+
+      await Promise.all(
+        otherSessions.map((s) => account.deleteSession(s.$id).catch((e) => console.warn('Failed to delete session', s.$id, e)))
+      );
+
+      toast.dismiss();
+      toast.success(
+        t('settings.loggedOutOtherDevices') || `Berhasil keluar dari ${otherSessions.length} perangkat lain`,
+        { duration: 2500 }
+      );
+      return true;
+    } catch (e: any) {
+      console.error('Failed to logout other devices:', e);
+      toast.dismiss();
+      toast.error(t('settings.logoutOtherDevicesError') || 'Gagal mengeluarkan perangkat lain', { duration: 2000 });
+      return false;
+    }
+  };
+
   const syncInProgressRef = useRef(false);
   const pendingQueuedSyncRef = useRef(false);
   const debounceTimerRef = useRef<any>(null);
@@ -695,6 +725,7 @@ export function useAppwriteSync(
     updatePasswordRecovery,
     verifyPasswordAndResetPin,
     logout,
+    logoutOtherDevices,
     smartSync,
     purgeSyncHistory,
     clearCloudData
