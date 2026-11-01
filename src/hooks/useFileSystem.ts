@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { FileSystemItem, FileSystemItemType } from '../Types';
 import * as db from '../db/db';
 import { useI18n } from '../lib/i18n';
@@ -22,8 +22,15 @@ export const useFileSystem = () => {
   const [items, setItems] = useState<FileSystemItem[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const isReloadingRef = useRef(false);
+  const pendingReloadRef = useRef(false);
 
   const reload = useCallback(async () => {
+    if (isReloadingRef.current) {
+      pendingReloadRef.current = true;
+      return;
+    }
+    isReloadingRef.current = true;
     try {
       let all = await db.getAllItems();
       
@@ -174,6 +181,9 @@ export const useFileSystem = () => {
       // Otomatis masukkan bookmark dengan domain yang sama ke dalam folder baru dengan nama domain utamanya
       const groupRes = groupBookmarksByDomain(all, uid);
       if (groupRes.hasChanges) {
+        if (groupRes.deletedFolders && groupRes.deletedFolders.length > 0) {
+          await db.deleteItems(groupRes.deletedFolders);
+        }
         if (groupRes.createdFolders.length > 0) {
           await db.saveItems(groupRes.createdFolders);
         }
@@ -188,6 +198,11 @@ export const useFileSystem = () => {
       console.warn('Failed to load file system items:', e);
     } finally {
       setLoaded(true);
+      isReloadingRef.current = false;
+      if (pendingReloadRef.current) {
+        pendingReloadRef.current = false;
+        reload();
+      }
     }
   }, []);
 

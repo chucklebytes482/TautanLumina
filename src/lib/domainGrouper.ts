@@ -4,6 +4,7 @@ import { getMainDomain } from './titleExtractor';
 export interface DomainGroupResult {
   modifiedItems: FileSystemItem[];
   createdFolders: FileSystemItem[];
+  deletedFolders: string[];
   hasChanges: boolean;
   updatedAll: FileSystemItem[];
 }
@@ -15,6 +16,7 @@ export const groupBookmarksByDomain = (
   let all = [...items];
   const modifiedMap = new Map<string, FileSystemItem>();
   const createdFolders: FileSystemItem[] = [];
+  const deletedFolders: string[] = [];
 
   const isDescendantOf = (ancestorId: string, id: string | null): boolean => {
     let cur = id;
@@ -31,10 +33,93 @@ export const groupBookmarksByDomain = (
   const isExcludedFolder = (folderId: string | null): boolean => {
     if (!folderId) return false;
     if (folderId === 'folder-catatan' || folderId === 'folder-pharse' || folderId === 'folder-clipkey') return true;
-    return isDescendantOf('folder-catatan', folderId) || isDescendantOf('folder-pharse', folderId) || isDescendantOf('folder-clipkey', folderId);
+    return (
+      isDescendantOf('folder-catatan', folderId) ||
+      isDescendantOf('folder-pharse', folderId) ||
+      isDescendantOf('folder-clipkey', folderId)
+    );
   };
 
-  // Find all distinct parentIds among active bookmark files
+  // =========================================================================
+  // FASE 1: DEDUP FOLDER DENGAN NAMA SAMA DI BAWAH INDUK (PARENT) YANG SAMA
+  // =========================================================================
+  const folderParents = new Set<string | null>();
+  all.forEach((item) => {
+    if (item.type === 'folder' && !item.deletedAt && !isExcludedFolder(item.id)) {
+      folderParents.add(item.parentId);
+    }
+  });
+
+  folderParents.forEach((parentId) => {
+    const foldersUnderParent = all.filter(
+      (it) =>
+        it.type === 'folder' &&
+        !it.deletedAt &&
+        it.parentId === parentId &&
+        it.id !== 'folder-clipkey' &&
+        it.id !== 'folder-pharse' &&
+        it.id !== 'folder-catatan'
+    );
+
+    // Kelompokkan folder berdasarkan nama (case-insensitive)
+    const nameMap = new Map<string, FileSystemItem[]>();
+    foldersUnderParent.forEach((f) => {
+      const lowerName = f.name.trim().toLowerCase();
+      if (!lowerName) return;
+      if (!nameMap.has(lowerName)) {
+        nameMap.set(lowerName, []);
+      }
+      nameMap.get(lowerName)!.push(f);
+    });
+
+    nameMap.forEach((duplicates) => {
+      if (duplicates.length <= 1) return;
+
+      // Pilih folder utama: yang paling lama dibuat atau pertama
+      // Prioritaskan yang autoDomain jika ada
+      const primary = duplicates.reduce((prev, curr) => {
+        if (prev.autoDomain && !curr.autoDomain) return prev;
+        if (!prev.autoDomain && curr.autoDomain) return curr;
+        return (prev.createdAt || 0) <= (curr.createdAt || 0) ? prev : curr;
+      });
+
+      const anyAutoDomain = duplicates.some((d) => d.autoDomain);
+      if (anyAutoDomain && !primary.autoDomain) {
+        primary.autoDomain = true;
+        primary.updatedAt = Date.now();
+        modifiedMap.set(primary.id, primary);
+      }
+
+      // Untuk setiap folder duplikat (selain primary):
+      const others = duplicates.filter((d) => d.id !== primary.id);
+      others.forEach((dup) => {
+        deletedFolders.push(dup.id);
+
+        // Pindahkan semua item anak yang ada di dalam duplicate folder ke primary folder
+        all.forEach((child) => {
+          if (child.parentId === dup.id) {
+            const updatedChild: FileSystemItem = {
+              ...child,
+              parentId: primary.id,
+              updatedAt: Date.now(),
+            };
+            modifiedMap.set(child.id, updatedChild);
+            const childIdx = all.findIndex((i) => i.id === child.id);
+            if (childIdx !== -1) {
+              all[childIdx] = updatedChild;
+            }
+          }
+        });
+
+        // Hapus duplicate folder dari array all
+        all = all.filter((i) => i.id !== dup.id);
+      });
+    });
+  });
+
+  // =========================================================================
+  // FASE 2: KELOMPOKKAN BOOKMARK DENGAN DOMAIN SAMA KE DALAM FOLDER
+  // =========================================================================
   const fileParents = new Set<string | null>();
   all.forEach((item) => {
     if (item.type === 'file' && !item.deletedAt && !isExcludedFolder(item.parentId)) {
@@ -51,7 +136,7 @@ export const groupBookmarksByDomain = (
       (i) => i.type === 'file' && !i.deletedAt && i.parentId === parentId
     );
 
-    // Active folders directly under this parent
+    // Active folders directly under this parent (sudah bersih dari duplikat di Fase 1)
     const foldersUnderParent = all.filter(
       (i) => i.type === 'folder' && !i.deletedAt && i.parentId === parentId
     );
@@ -74,11 +159,12 @@ export const groupBookmarksByDomain = (
     });
 
     domainMap.forEach((domainFiles, lowerDomain) => {
+      // Cari folder yang sudah ada dengan nama domain yang sama
       let targetFolder = foldersUnderParent.find(
         (f) => f.name.trim().toLowerCase() === lowerDomain
       );
 
-      // If no folder exists yet, create one if 2 or more files share this domain
+      // Jika belum ada folder dan terdapat 2 atau lebih bookmark dari domain ini, buat satu folder baru
       if (!targetFolder && domainFiles.length >= 2) {
         const newFolderId = uidFn();
         const siblings = all.filter((i) => i.parentId === parentId);
@@ -110,7 +196,7 @@ export const groupBookmarksByDomain = (
         }
       }
 
-      // If a target folder exists (either previously or newly created), move the files into it
+      // Jika targetFolder tersedia (sudah ada sebelumnya atau baru dibuat), pindahkan file-file ke dalamnya
       if (targetFolder) {
         domainFiles.forEach((file, idx) => {
           if (file.parentId !== targetFolder!.id) {
@@ -132,11 +218,12 @@ export const groupBookmarksByDomain = (
   });
 
   const modifiedItems = Array.from(modifiedMap.values());
-  const hasChanges = modifiedItems.length > 0 || createdFolders.length > 0;
+  const hasChanges = modifiedItems.length > 0 || createdFolders.length > 0 || deletedFolders.length > 0;
 
   return {
     modifiedItems,
     createdFolders,
+    deletedFolders,
     hasChanges,
     updatedAll: all,
   };
