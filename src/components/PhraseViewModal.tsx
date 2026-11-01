@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { X, Copy, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import { FileSystemItem } from '../Types';
-import { extractUrlFromLabel, formatCleanUrl } from '../lib/titleExtractor';
+import { formatCleanUrl } from '../lib/titleExtractor';
 
 interface Props {
   item: FileSystemItem;
@@ -10,12 +11,16 @@ interface Props {
 
 export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
   const [copied, setCopied] = useState(false);
+  const [headerCopied, setHeaderCopied] = useState(false);
 
   const words = (item.content || '').trim().split(/\s+/).filter(Boolean);
   const rawTitle = item.name || words[0] || 'Pharse';
   const displayTitle = /^https?:\/\//i.test(rawTitle) || /^www\./i.test(rawTitle)
     ? formatCleanUrl(rawTitle)
     : rawTitle;
+
+  const cleanLabel = item.label && item.label.trim() ? (formatCleanUrl(item.label) || item.label.trim()) : '';
+  const fullHeaderText = cleanLabel ? `${cleanLabel} ${displayTitle}` : displayTitle;
 
   const handleCopy = async () => {
     try {
@@ -27,16 +32,13 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
     }
   };
 
-  const [labelCopied, setLabelCopied] = useState(false);
-
-  const handleCopyLabel = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!item.label) return;
-    const textToCopy = formatCleanUrl(item.label) || item.label.trim();
+  const handleCopyHeader = async () => {
     try {
-      await navigator.clipboard.writeText(textToCopy);
-      setLabelCopied(true);
-      setTimeout(() => setLabelCopied(false), 1500);
+      await navigator.clipboard.writeText(fullHeaderText);
+      setHeaderCopied(true);
+      toast.dismiss();
+      toast.success('Label & judul disalin', { duration: 1500 });
+      setTimeout(() => setHeaderCopied(false), 2000);
     } catch {
       // silent fallback
     }
@@ -49,29 +51,31 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
         <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
             <div className="min-w-0 flex-1">
-              <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100 truncate flex items-center" title={displayTitle}>
-                {item.label && item.label.trim() && (() => {
-                  const displayLabel = formatCleanUrl(item.label) || item.label.trim();
-                  return (
-                    <button
-                      type="button"
-                      onClick={handleCopyLabel}
-                      title={`Klik untuk menyalin: ${displayLabel}`}
-                      className={`inline-flex items-center gap-1 text-xs font-semibold mr-2 shrink-0 select-none cursor-pointer transition-colors duration-150 active:scale-95 ${
-                        labelCopied
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : 'text-neutral-500 dark:text-neutral-400 hover:text-[#FF4F00] dark:hover:text-[#FF4F00]'
-                      }`}
-                    >
-                      <span>{displayLabel}</span>
-                      {labelCopied && (
-                        <Check size={12} className="shrink-0 text-emerald-600 dark:text-emerald-400 animate-in fade-in" />
-                      )}
-                    </button>
-                  );
-                })()}
-                <span className="truncate">{displayTitle}</span>
-              </h3>
+              <button
+                type="button"
+                onClick={handleCopyHeader}
+                title={`Klik untuk menyalin: ${fullHeaderText}`}
+                className="group flex items-center gap-2 max-w-full text-left cursor-pointer transition-transform active:scale-[0.98] select-none"
+              >
+                <div className="flex items-center gap-2 truncate">
+                  {cleanLabel && (
+                    <span className="text-[#FF4F00] text-sm sm:text-base font-bold shrink-0">
+                      {cleanLabel}
+                    </span>
+                  )}
+                  <span className="text-base font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-[#FF4F00] transition-colors truncate">
+                    {displayTitle}
+                  </span>
+                </div>
+                {headerCopied ? (
+                  <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 shrink-0 font-medium bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md animate-in fade-in">
+                    <Check size={13} className="shrink-0" />
+                    <span className="hidden sm:inline">Disalin</span>
+                  </span>
+                ) : (
+                  <Copy size={13} className="opacity-0 group-hover:opacity-100 text-neutral-400 group-hover:text-[#FF4F00] transition-opacity shrink-0" />
+                )}
+              </button>
             </div>
           </div>
 
