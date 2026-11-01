@@ -269,6 +269,7 @@ export function useAppwriteSync(
       localStorage.removeItem('tautanlumina:current_user_email');
       localStorage.removeItem('tautanlumina:cached_user');
       localStorage.removeItem('tautanlumina:cached_user_id');
+      localStorage.removeItem('tautanlumina:deleted_ids');
       window.dispatchEvent(new Event('tautanlumina:user_changed'));
       toast.dismiss();
       toast.info(t('toast.loggedOut'), { duration: 1500 });

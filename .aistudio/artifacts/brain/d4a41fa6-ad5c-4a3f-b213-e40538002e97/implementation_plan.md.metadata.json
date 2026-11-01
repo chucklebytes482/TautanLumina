@@ -1,0 +1,6 @@
+{
+  "summary":  "Revisi rencana implementasi agar saat logout hanya isi (konten) dari folder clipboard dan folder pharse yang dihapus dari perangkat/browser, sedangkan kedua foldernya tetap ada dan seluruh bookmark/folder lainnya tetap aman.",
+  "updatedAt":  "2026-11-01T07:01:20.735041035Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

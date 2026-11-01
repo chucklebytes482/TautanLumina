@@ -28,34 +28,25 @@ export const useFileSystem = () => {
       let all = await db.getAllItems();
       
       let changed = false;
-      // Pastikan folder-catatan selalu ada
+      // Migrasi: hapus folder-catatan dan pindahkan folder-clipkey ke root (parentId: null)
       const existingCatatan = all.find(it => it.id === 'folder-catatan');
-      if (!existingCatatan) {
-        const folderCatatan: FileSystemItem = {
-          id: 'folder-catatan',
-          parentId: null,
-          name: 'Catatan',
-          type: 'folder',
-          order: 0,
-          createdAt: 0,
-          updatedAt: Date.now(),
-        };
-        await db.saveItem(folderCatatan);
-        changed = true;
-      } else if (existingCatatan.name !== 'Catatan') {
-        existingCatatan.name = 'Catatan';
-        existingCatatan.updatedAt = Date.now();
-        await db.saveItem(existingCatatan);
+      if (existingCatatan) {
+        // Hapus semua catatan di luar clipkey yang ada di dalam folder-catatan
+        const orphanCatatanChildren = all.filter(it => it.parentId === 'folder-catatan' && it.id !== 'folder-clipkey');
+        if (orphanCatatanChildren.length > 0) {
+          await db.deleteItems(orphanCatatanChildren.map(c => c.id));
+        }
+        await db.deleteItems(['folder-catatan']);
         changed = true;
       }
 
-      // Pastikan sub folder permanen 'clipkey' selalu ada di dalam folder-catatan
+      // Pastikan folder permanen 'clipboard' selalu ada di root (parentId: null)
       const existingClipkey = all.find(it => it.id === 'folder-clipkey');
       if (!existingClipkey) {
         const folderClipkey: FileSystemItem = {
           id: 'folder-clipkey',
-          parentId: 'folder-catatan',
-          name: 'clipkey',
+          parentId: null,
+          name: 'clipboard',
           type: 'folder',
           order: 0,
           createdAt: 0,
@@ -65,12 +56,12 @@ export const useFileSystem = () => {
         changed = true;
       } else {
         let clipkeyUpdated = false;
-        if (existingClipkey.parentId !== 'folder-catatan') {
-          existingClipkey.parentId = 'folder-catatan';
+        if (existingClipkey.parentId !== null) {
+          existingClipkey.parentId = null;
           clipkeyUpdated = true;
         }
-        if (existingClipkey.name !== 'clipkey') {
-          existingClipkey.name = 'clipkey';
+        if (existingClipkey.name !== 'clipboard') {
+          existingClipkey.name = 'clipboard';
           clipkeyUpdated = true;
         }
         if (clipkeyUpdated) {
@@ -135,7 +126,6 @@ export const useFileSystem = () => {
       const allFolderIds = new Set(all.filter(it => it.type === 'folder').map(it => it.id));
       const orphanedItems = all.filter(it => 
         it.parentId && 
-        it.parentId !== 'folder-catatan' && 
         it.parentId !== 'folder-pharse' && 
         it.parentId !== 'folder-clipkey' &&
         !allFolderIds.has(it.parentId)
@@ -179,13 +169,7 @@ export const useFileSystem = () => {
         all = await db.getAllItems();
       }
 
-      // Pastikan nama folder-catatan selalu 'Catatan'
-      const catatanItem = all.find(it => it.id === 'folder-catatan');
-      if (catatanItem && catatanItem.name !== 'Catatan') {
-        catatanItem.name = 'Catatan';
-        catatanItem.updatedAt = Date.now();
-        await db.saveItem(catatanItem);
-      }
+
 
       // Otomatis masukkan bookmark dengan domain yang sama ke dalam folder baru dengan nama domain utamanya
       const groupRes = groupBookmarksByDomain(all, uid);
@@ -234,7 +218,7 @@ export const useFileSystem = () => {
       };
     }
     if (it.type === 'folder') {
-      const name = it.id === 'folder-catatan' ? 'Catatan' : it.id === 'folder-clipkey' ? 'clipkey' : it.name;
+      const name = it.id === 'folder-catatan' ? 'Catatan' : it.id === 'folder-clipkey' ? 'clipboard' : it.name;
       return { primary: name, secondary: '' };
     }
     if (it.type === 'phrase') {
@@ -265,7 +249,7 @@ export const useFileSystem = () => {
           // Selain folder clipkey: semuanya diurutkan berdasarkan urutan keyboard QWERTY
           if (pid === null) {
             const sysRank = (id: string) => {
-              if (id === 'folder-catatan') return 1;
+              if (id === 'folder-clipkey') return 1;
               if (id === 'folder-pharse') return 2;
               return 999;
             };
@@ -274,10 +258,6 @@ export const useFileSystem = () => {
             if (rankA !== rankB) {
               return rankA - rankB;
             }
-          } else if (pid === 'folder-catatan') {
-            // clipkey adalah sub folder permanen di posisi teratas catatan
-            if (a.id === 'folder-clipkey') return -1;
-            if (b.id === 'folder-clipkey') return 1;
           }
 
           if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
@@ -337,8 +317,8 @@ export const useFileSystem = () => {
     }
     let targetParentId = type === 'phrase'
       ? 'folder-pharse'
-      : (type === 'note' && !parentId)
-      ? 'folder-catatan'
+      : (type === 'note')
+      ? (parentId && (parentId === 'folder-clipkey' || isDescendant('folder-clipkey', parentId)) ? parentId : 'folder-clipkey')
       : parentId;
 
     if (type === 'file') {
@@ -560,6 +540,50 @@ export const useFileSystem = () => {
     notifyDataModified();
   };
 
+  const clearClipboardAndPharseContents = useCallback(async () => {
+    const allDbItems = await db.getAllItems();
+    const isInsideFolder = (ancestorId: string, nodeId: string | null): boolean => {
+      let cur = allDbItems.find((i) => i.id === nodeId);
+      while (cur && cur.parentId) {
+        if (cur.parentId === ancestorId) return true;
+        cur = allDbItems.find((i) => i.id === cur!.parentId);
+      }
+      return false;
+    };
+
+    const targetIds = allDbItems
+      .filter((it) => {
+        // Jangan pernah menghapus folder permanen clipboard atau pharse itu sendiri
+        if (it.id === 'folder-clipkey' || it.id === 'folder-pharse') return false;
+        
+        // Hapus semua isi di dalam folder clipboard
+        const insideClipboard = it.parentId === 'folder-clipkey' || isInsideFolder('folder-clipkey', it.parentId);
+        // Hapus semua isi di dalam folder pharse
+        const insidePharse = it.parentId === 'folder-pharse' || isInsideFolder('folder-pharse', it.parentId);
+        // Hapus item bertipe phrase
+        const isPhraseType = it.type === 'phrase';
+
+        return insideClipboard || insidePharse || isPhraseType;
+      })
+      .map((it) => it.id);
+
+    if (targetIds.length > 0) {
+      await db.deleteItems(targetIds);
+    }
+
+    if (
+      currentFolderId === 'folder-clipkey' || 
+      currentFolderId === 'folder-pharse' || 
+      isInsideFolder('folder-clipkey', currentFolderId) || 
+      isInsideFolder('folder-pharse', currentFolderId)
+    ) {
+      setCurrentFolderId(null);
+    }
+
+    await reload();
+    notifyDataModified();
+  }, [currentFolderId, reload]);
+
   const clearPharseFolder = async () => {
     const allDbItems = await db.getAllItems();
     const pharseItemIds = allDbItems
@@ -596,8 +620,8 @@ export const useFileSystem = () => {
 
   const isNoteFolder = (folderId: string | null): boolean => {
     if (!folderId) return false;
-    if (folderId === 'folder-catatan' || folderId === 'folder-clipkey') return true;
-    return isDescendant('folder-catatan', folderId);
+    if (folderId === 'folder-clipkey') return true;
+    return isDescendant('folder-clipkey', folderId);
   };
 
   const isPharseItem = (it: FileSystemItem): boolean => {
@@ -728,7 +752,7 @@ export const useFileSystem = () => {
   const reorderInParent = async (parentId: string | null, orderedIds: string[]) => {
     let finalIds = [...orderedIds];
     if (parentId === null) {
-      const systemIds = ['folder-catatan', 'folder-pharse'];
+      const systemIds = ['folder-clipkey', 'folder-pharse'];
       const nonSystem = finalIds.filter((id) => !systemIds.includes(id));
       finalIds = [...systemIds, ...nonSystem];
     }
@@ -849,12 +873,18 @@ export const useFileSystem = () => {
   };
 
   const importItems = async (incoming: FileSystemItem[], replace: boolean = true, targetParentId?: string | null) => {
-    // Bersihkan folder-hello-world jika terbawa dari file cadangan lama
+    // Bersihkan folder-hello-world & folder-catatan jika terbawa dari file cadangan lama
     const sanitizedIncoming = incoming
-      .filter((it) => it.id !== 'folder-hello-world')
+      .filter((it) => it.id !== 'folder-hello-world' && it.id !== 'folder-catatan')
       .map((it) => {
         if (it.parentId === 'folder-hello-world') {
           return { ...it, parentId: null };
+        }
+        if (it.parentId === 'folder-catatan') {
+          return { ...it, parentId: it.type === 'note' ? 'folder-clipkey' : null };
+        }
+        if (it.id === 'folder-clipkey') {
+          return { ...it, parentId: null, name: 'clipboard' };
         }
         return it;
       });
@@ -863,7 +893,7 @@ export const useFileSystem = () => {
       await db.clearItems();
       await db.saveItems(sanitizedIncoming);
     } else {
-      const nonSystemIncoming = sanitizedIncoming.filter((it) => it.id !== 'folder-catatan' && it.id !== 'folder-pharse');
+      const nonSystemIncoming = sanitizedIncoming.filter((it) => it.id !== 'folder-pharse' && it.id !== 'folder-clipkey');
       const currentDb = await db.getAllItems();
       const currentIds = new Set(currentDb.map(it => it.id));
 
@@ -911,8 +941,8 @@ export const useFileSystem = () => {
           toDeleteIds.push(it.id);
         } else if (
           it.parentId &&
-          it.parentId !== 'folder-catatan' &&
           it.parentId !== 'folder-pharse' &&
+          it.parentId !== 'folder-clipkey' &&
           !validFolderIds.has(it.parentId)
         ) {
           toDeleteIds.push(it.id);
@@ -956,6 +986,7 @@ export const useFileSystem = () => {
     isNoteFolder,
     clearAll,
     clearPharseFolder,
+    clearClipboardAndPharseContents,
     purgeChangeHistory,
   };
 };

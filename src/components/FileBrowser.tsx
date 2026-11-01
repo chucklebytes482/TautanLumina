@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MoreVertical, Folder, Pin, Lock, FileText, NotebookPen, StickyNote, Copy, KeyRound, Check } from 'lucide-react';
+import { MoreVertical, Folder, Pin, Lock, FileText, ClipboardList, StickyNote, Copy, KeyRound, Check } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
 import { usePinState } from '../lib/pin';
@@ -215,8 +215,8 @@ const Row = ({
             (item.id === 'folder-pharse' && pinActive && !unlockedFolderIds?.has('folder-pharse')) ||
             (item.locked && pinActive && !unlockedFolderIds?.has(item.id)) ? (
               <Lock size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
-            ) : item.id === 'folder-catatan' ? (
-              <NotebookPen size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
+            ) : (item.id === 'folder-clipkey' || item.id === 'folder-catatan') ? (
+              <ClipboardList size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
             ) : item.id === 'folder-pharse' ? (
               <KeyRound size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
             ) : (
@@ -235,9 +235,9 @@ const Row = ({
       {/* Info */}
       <div className="min-w-0 flex-1">
         {item.type === 'folder' ? (
-          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.id === 'folder-catatan' ? 'Catatan' : item.id === 'folder-clipkey' ? 'clipkey' : item.name}>
+          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.id === 'folder-clipkey' ? 'clipboard' : item.name}>
             {renderItemLabel()}
-            {item.id === 'folder-catatan' ? 'Catatan' : item.id === 'folder-clipkey' ? 'clipkey' : (cleanText(item.name) || t('file.folder'))}
+            {item.id === 'folder-clipkey' ? 'clipboard' : (cleanText(item.name) || t('file.folder'))}
           </div>
         ) : item.type === 'phrase' ? (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name}>

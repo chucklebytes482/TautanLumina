@@ -31,7 +31,7 @@ export const groupBookmarksByDomain = (
   const isExcludedFolder = (folderId: string | null): boolean => {
     if (!folderId) return false;
     if (folderId === 'folder-catatan' || folderId === 'folder-pharse' || folderId === 'folder-clipkey') return true;
-    return isDescendantOf('folder-catatan', folderId) || isDescendantOf('folder-pharse', folderId);
+    return isDescendantOf('folder-catatan', folderId) || isDescendantOf('folder-pharse', folderId) || isDescendantOf('folder-clipkey', folderId);
   };
 
   // Find all distinct parentIds among active bookmark files

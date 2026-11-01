@@ -4,7 +4,7 @@ import {
   Search,
   FolderPlus,
   BookmarkPlus,
-  NotebookPen,
+  ClipboardList,
   Home,
   ChevronRight,
   X,
@@ -78,6 +78,7 @@ export default function App() {
     importItems,
     clearAll,
     clearPharseFolder,
+    clearClipboardAndPharseContents,
   } = fs;
 
   const [query, setQuery] = useState('');
@@ -187,8 +188,10 @@ export default function App() {
   }, []);
 
   const handleLogout = async () => {
+    setViewingPhraseItem(null);
+    await clearClipboardAndPharseContents();
     await logout();
-    await clearAll();
+    await clearClipboardAndPharseContents();
   };
 
   const selectMode = selectedIds.size > 0 || keepSelectMode;
@@ -237,10 +240,10 @@ export default function App() {
   const isNoteFolderOrSubfolder = useCallback(
     (folderId: string | null): boolean => {
       if (!folderId) return false;
-      if (folderId === 'folder-catatan' || folderId === 'folder-clipkey') return true;
+      if (folderId === 'folder-clipkey') return true;
       let cur = items.find((i) => i.id === folderId);
       while (cur && cur.parentId) {
-        if (cur.parentId === 'folder-catatan') return true;
+        if (cur.parentId === 'folder-clipkey') return true;
         cur = items.find((i) => i.id === cur!.parentId);
       }
       return false;
@@ -451,12 +454,12 @@ export default function App() {
 
   const handleNewNote = async () => {
     if (guardOffline()) return;
-    const text = await customPrompt(t('modal.noteText'), '', { textarea: true, maxWidth: 'max-w-xl' });
+    const text = await customPrompt('Clipboard Baru', '', { textarea: true, maxWidth: 'max-w-xl' });
     if (!text || !text.trim()) return;
     
-    const targetFolder = currentFolderId || 'folder-catatan';
+    const targetFolder = isNoteFolderOrSubfolder(currentFolderId) ? currentFolderId : 'folder-clipkey';
     await createItem('', 'note', targetFolder, text.trim());
-    showToast('Catatan disimpan');
+    showToast('Clipboard disimpan');
   };
 
   const handleNewPhrase = async () => {
@@ -597,11 +600,11 @@ export default function App() {
         disabled.add(f.id);
       });
     } else {
-      // Konten di luar note & pharse: nonaktifkan folder pharse dan note beserta semua subfoldernya
+      // Konten di luar note & pharse: nonaktifkan folder pharse dan clipkey beserta semua subfoldernya
       disabled.add('folder-pharse');
       walk('folder-pharse');
-      disabled.add('folder-catatan');
-      walk('folder-catatan');
+      disabled.add('folder-clipkey');
+      walk('folder-clipkey');
     }
 
     return disabled;
@@ -618,10 +621,10 @@ export default function App() {
     if (isPharseMoving) {
       restrictedRootFolderId = 'folder-pharse';
     } else if (isNoteMoving) {
-      restrictedRootFolderId = 'folder-catatan';
+      restrictedRootFolderId = 'folder-clipkey';
     } else {
-      // Bookmark & konten di luar note/pharse tidak bisa dipindahkan ke catatan atau pharse,
-      // sehingga folder catatan dan pharse beserta seluruh sub foldernya tidak perlu ditampilkan.
+      // Bookmark & konten di luar note/pharse tidak bisa dipindahkan ke clipkey atau pharse,
+      // sehingga folder clipkey dan pharse beserta seluruh sub foldernya tidak perlu ditampilkan.
       const walk = (id: string) => {
         items.filter((i) => i.parentId === id).forEach((c) => {
           if (!hiddenFolderIds.has(c.id)) {
@@ -630,8 +633,8 @@ export default function App() {
           }
         });
       };
-      hiddenFolderIds.add('folder-catatan');
-      walk('folder-catatan');
+      hiddenFolderIds.add('folder-clipkey');
+      walk('folder-clipkey');
       hiddenFolderIds.add('folder-pharse');
       walk('folder-pharse');
     }
@@ -991,10 +994,10 @@ export default function App() {
                   data-testid="new-note-btn"
                   onClick={handleNewNote}
                   className="p-2.5 border border-[#e2ddd5] dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 dark:text-neutral-200 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
-                  title={t('btn.newNote') || "Catatan Baru"}
-                  aria-label={t('btn.newNote') || "Catatan Baru"}
+                  title="Clipboard"
+                  aria-label="Clipboard"
                 >
-                  <NotebookPen size={20} />
+                  <ClipboardList size={20} />
                 </button>
                 <button
                   data-testid="new-phrase-btn"
@@ -1026,7 +1029,7 @@ export default function App() {
                       onClick={() => navigateTo(b.id)}
                       className="px-2.5 py-1 rounded-lg hover:bg-[#faf8f5] dark:hover:bg-neutral-800 truncate max-w-[140px] text-neutral-800 dark:text-neutral-200 transition-colors cursor-pointer"
                     >
-                      {b.id === 'folder-catatan' ? 'Catatan' : b.id === 'folder-clipkey' ? 'clipkey' : b.name}
+                      {b.id === 'folder-clipkey' ? 'clipboard' : b.name}
                     </button>
                   </div>
                 ))}
@@ -1131,10 +1134,8 @@ export default function App() {
               ? (menuFor.content || '').substring(0, 30) + ((menuFor.content || '').length > 30 ? '...' : '')
               : menuFor.type === 'file'
               ? (menuFor.content || '').split('\n').find((l) => l.trim()) || '(kosong)'
-              : menuFor.id === 'folder-catatan'
-              ? 'Catatan'
               : menuFor.id === 'folder-clipkey'
-              ? 'clipkey'
+              ? 'clipboard'
               : menuFor.name || t('picker.newFolder')
           }
           actions={menuActions(menuFor)}
@@ -1149,7 +1150,7 @@ export default function App() {
               pickerConfig.restrictedRootFolderId
                 ? (
                     (pickerConfig.restrictedRootFolderId === 'folder-pharse' && isPharseFolderOrSubfolder(currentFolderId)) ||
-                    (pickerConfig.restrictedRootFolderId === 'folder-catatan' && isNoteFolderOrSubfolder(currentFolderId))
+                    (pickerConfig.restrictedRootFolderId === 'folder-clipkey' && isNoteFolderOrSubfolder(currentFolderId))
                       ? currentFolderId
                       : pickerConfig.restrictedRootFolderId
                   )
