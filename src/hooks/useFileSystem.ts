@@ -361,7 +361,7 @@ export const useFileSystem = () => {
                 it.parentId === targetParentId &&
                 getMainDomain(it.content || it.name).toLowerCase() === lowerDomain
             );
-            if (siblingsWithSameDomain.length > 0) {
+            if (siblingsWithSameDomain.length >= 3) {
               const newFolderId = uid();
               const siblings = currentDbItems.filter((it) => it.parentId === targetParentId);
               const nextFolderOrder = siblings.length

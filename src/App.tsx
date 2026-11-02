@@ -411,44 +411,99 @@ export default function App() {
   const handleNewFile = async () => {
     if (guardOffline()) return;
 
-    const inputUrl = await customPrompt(t('modal.bookmarkUrl') || 'URL Bookmark', '', {
-      placeholder: 'https://...',
-    });
-    if (!inputUrl || !inputUrl.trim()) return;
+    let textToProcess = '';
 
-    const trimmed = cleanText(inputUrl);
-    if (!trimmed) return;
+    // 1-click paste: attempt to read directly from clipboard immediately
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
+        const clip = await navigator.clipboard.readText();
+        if (clip && clip.trim()) {
+          textToProcess = clip.trim();
+        }
+      }
+    } catch (err) {
+      console.warn('Clipboard read error/denied for bookmark:', err);
+    }
 
-    // Aturan penambahan bookmark:
-    // Wajib ada titik, minimal 2 huruf sebelum dan sesudah titik, dan tidak boleh mengandung spasi
-    const hasValidDot = /[a-zA-Z0-9-]*[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z][a-zA-Z0-9-]*\.[a-zA-Z]{2,}/i.test(trimmed);
-    if (!trimmed.includes('.') || trimmed.includes(' ') || /\s/.test(trimmed) || !hasValidDot) {
+    // Jika papan klip kosong atau izin ditolak, sediakan prompt manual
+    if (!textToProcess) {
+      const inputUrl = await customPrompt(t('modal.bookmarkUrl') || 'URL Bookmark', '', {
+        placeholder: 'https://...',
+      });
+      if (!inputUrl || !inputUrl.trim()) return;
+      textToProcess = inputUrl.trim();
+    }
+
+    const cleaned = cleanText(textToProcess);
+    const urlMatch = cleaned.match(/https?:\/\/[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*/i);
+    const rawUrl = urlMatch ? urlMatch[0].replace(/[),;.]+$/, '') : cleaned;
+
+    // Aturan penambahan bookmark: wajib ada titik dan format domain valid
+    const hasValidDot = /[a-zA-Z0-9-]*[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z][a-zA-Z0-9-]*\.[a-zA-Z]{2,}/i.test(rawUrl);
+    if (!rawUrl.includes('.') || rawUrl.includes(' ') || /\s/.test(rawUrl) || !hasValidDot) {
       showToast('bukan tautan');
       return;
     }
 
-    const finalUrl = trimmed.startsWith('http://') || trimmed.startsWith('https://')
-      ? trimmed
-      : `https://${trimmed}`;
+    const finalCopiedUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+      ? rawUrl
+      : `https://${rawUrl}`;
 
-    // Deteksi anti-duplikat langsung dari seluruh isi yang dimasukkan
-    const normUrl = finalUrl.trim().replace(/\/+$/, '');
-    const isDuplicate = items.some(
-      (it) => !it.deletedAt && it.type === 'file' && (it.content?.trim().replace(/\/+$/, '') === normUrl)
+    const mainDomain = getMainDomain(finalCopiedUrl);
+    if (!mainDomain || !mainDomain.includes('.')) {
+      showToast('bukan tautan');
+      return;
+    }
+
+    const mainDomainUrl = `https://${mainDomain}`;
+
+    const normMain = mainDomainUrl.trim().replace(/\/+$/, '').toLowerCase();
+    const normCopied = finalCopiedUrl.trim().replace(/\/+$/, '').toLowerCase();
+
+    // Deteksi anti-duplikat langsung dari seluruh isi
+    const isMainDuplicate = items.some(
+      (it) => !it.deletedAt && it.type === 'file' && (it.content?.trim().replace(/\/+$/, '').toLowerCase() === normMain)
     );
-    if (isDuplicate) {
+    const isCopiedDuplicate = items.some(
+      (it) => !it.deletedAt && it.type === 'file' && (it.content?.trim().replace(/\/+$/, '').toLowerCase() === normCopied)
+    );
+
+    if (isMainDuplicate && isCopiedDuplicate) {
       showToast('Tautan ini sudah ada');
       return;
     }
 
-    const extracted = extractTitleFromUrl(finalUrl);
-    const autoTitle = (extracted && extracted.toLowerCase() !== 'bookmark') ? extracted : finalUrl;
+    let addedCount = 0;
 
-    try {
-      await createItem(autoTitle, 'file', currentFolderId, finalUrl);
+    // 1. Otomatis simpan URL domain utama jika belum ada dan berbeda dari URL yang disalin
+    if (!isMainDuplicate && normMain !== normCopied) {
+      const extractedMain = extractTitleFromUrl(mainDomainUrl);
+      const autoTitleMain = (extractedMain && extractedMain.toLowerCase() !== 'bookmark') ? extractedMain : mainDomain;
+      try {
+        await createItem(autoTitleMain, 'file', currentFolderId, mainDomainUrl);
+        addedCount++;
+      } catch (e: any) {
+        console.warn('Failed to add main domain bookmark:', e);
+      }
+    }
+
+    // 2. Simpan URL yang disalin
+    if (!isCopiedDuplicate) {
+      const extractedCopied = extractTitleFromUrl(finalCopiedUrl);
+      const autoTitleCopied = (extractedCopied && extractedCopied.toLowerCase() !== 'bookmark') ? extractedCopied : finalCopiedUrl;
+      try {
+        await createItem(autoTitleCopied, 'file', currentFolderId, finalCopiedUrl);
+        addedCount++;
+      } catch (e: any) {
+        showToast(e?.message || 'Gagal simpan');
+        return;
+      }
+    }
+
+    if (addedCount > 1) {
+      showToast('Domain utama & bookmark disimpan');
+    } else if (addedCount === 1) {
       showToast('Bookmark disimpan');
-    } catch (e: any) {
-      showToast(e?.message || 'Gagal simpan');
     }
   };
 
@@ -985,8 +1040,8 @@ export default function App() {
                   data-testid="new-file-btn"
                   onClick={handleNewFile}
                   className="p-2.5 border border-[#e2ddd5] dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 dark:text-neutral-200 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
-                  title={t("btn.newBookmark") || "Bookmark Baru"}
-                  aria-label={t("btn.newBookmark") || "Bookmark Baru"}
+                  title={t("btn.newBookmark") || "Bookmark (1x Klik Tempel)"}
+                  aria-label={t("btn.newBookmark") || "Bookmark (1x Klik Tempel)"}
                 >
                   <BookmarkPlus size={20} />
                 </button>

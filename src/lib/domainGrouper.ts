@@ -1,6 +1,8 @@
 import { FileSystemItem } from '../Types';
 import { getMainDomain } from './titleExtractor';
 
+export const MIN_AUTO_DOMAIN_BOOKMARKS = 4;
+
 export interface DomainGroupResult {
   modifiedItems: FileSystemItem[];
   createdFolders: FileSystemItem[];
@@ -75,8 +77,6 @@ export const groupBookmarksByDomain = (
     nameMap.forEach((duplicates) => {
       if (duplicates.length <= 1) return;
 
-      // Pilih folder utama: yang paling lama dibuat atau pertama
-      // Prioritaskan yang autoDomain jika ada
       const primary = duplicates.reduce((prev, curr) => {
         if (prev.autoDomain && !curr.autoDomain) return prev;
         if (!prev.autoDomain && curr.autoDomain) return curr;
@@ -90,12 +90,10 @@ export const groupBookmarksByDomain = (
         modifiedMap.set(primary.id, primary);
       }
 
-      // Untuk setiap folder duplikat (selain primary):
       const others = duplicates.filter((d) => d.id !== primary.id);
       others.forEach((dup) => {
         deletedFolders.push(dup.id);
 
-        // Pindahkan semua item anak yang ada di dalam duplicate folder ke primary folder
         all.forEach((child) => {
           if (child.parentId === dup.id) {
             const updatedChild: FileSystemItem = {
@@ -111,14 +109,58 @@ export const groupBookmarksByDomain = (
           }
         });
 
-        // Hapus duplicate folder dari array all
         all = all.filter((i) => i.id !== dup.id);
       });
     });
   });
 
   // =========================================================================
-  // FASE 2: KELOMPOKKAN BOOKMARK DENGAN DOMAIN SAMA KE DALAM FOLDER
+  // FASE 2: HAPUS FOLDER autoDomain JIKA KURANG DARI 4 BOOKMARK
+  // =========================================================================
+  const autoDomainFolders = all.filter(
+    (it) => it.type === 'folder' && !it.deletedAt && it.autoDomain && !isExcludedFolder(it.id)
+  );
+
+  autoDomainFolders.forEach((folder) => {
+    const lowerDomain = folder.name.trim().toLowerCase();
+    const childrenInside = all.filter(
+      (it) => it.type === 'file' && !it.deletedAt && it.parentId === folder.id
+    );
+    const siblingsOutside = all.filter(
+      (it) =>
+        it.type === 'file' &&
+        !it.deletedAt &&
+        it.parentId === folder.parentId &&
+        getMainDomain(it.content || it.name).toLowerCase() === lowerDomain
+    );
+
+    const totalDomainBookmarks = childrenInside.length + siblingsOutside.length;
+
+    if (totalDomainBookmarks < MIN_AUTO_DOMAIN_BOOKMARKS) {
+      // Hapus folder autoDomain ini dan keluarkan seluruh isinya ke folder induk (folder.parentId)
+      deletedFolders.push(folder.id);
+
+      childrenInside.forEach((child, idx) => {
+        const updatedChild: FileSystemItem = {
+          ...child,
+          parentId: folder.parentId,
+          order: idx,
+          updatedAt: Date.now(),
+        };
+        modifiedMap.set(child.id, updatedChild);
+        const childIdx = all.findIndex((i) => i.id === child.id);
+        if (childIdx !== -1) {
+          all[childIdx] = updatedChild;
+        }
+      });
+
+      // Hapus folder dari all
+      all = all.filter((i) => i.id !== folder.id);
+    }
+  });
+
+  // =========================================================================
+  // FASE 3: KELOMPOKKAN BOOKMARK DENGAN DOMAIN SAMA KE DALAM FOLDER JIKA >= 4
   // =========================================================================
   const fileParents = new Set<string | null>();
   all.forEach((item) => {
@@ -136,7 +178,7 @@ export const groupBookmarksByDomain = (
       (i) => i.type === 'file' && !i.deletedAt && i.parentId === parentId
     );
 
-    // Active folders directly under this parent (sudah bersih dari duplikat di Fase 1)
+    // Active folders directly under this parent
     const foldersUnderParent = all.filter(
       (i) => i.type === 'folder' && !i.deletedAt && i.parentId === parentId
     );
@@ -159,13 +201,19 @@ export const groupBookmarksByDomain = (
     });
 
     domainMap.forEach((domainFiles, lowerDomain) => {
-      // Cari folder yang sudah ada dengan nama domain yang sama
       let targetFolder = foldersUnderParent.find(
         (f) => f.name.trim().toLowerCase() === lowerDomain
       );
 
-      // Jika belum ada folder dan terdapat 2 atau lebih bookmark dari domain ini, buat satu folder baru
-      if (!targetFolder && domainFiles.length >= 2) {
+      // Cari berapa item yang ada di targetFolder saat ini
+      const existingInTarget = targetFolder
+        ? all.filter((it) => it.type === 'file' && !it.deletedAt && it.parentId === targetFolder!.id).length
+        : 0;
+
+      const totalItems = existingInTarget + domainFiles.length;
+
+      // Jika belum ada folder dan total bookmark >= 4, buat satu folder baru
+      if (!targetFolder && totalItems >= MIN_AUTO_DOMAIN_BOOKMARKS) {
         const newFolderId = uidFn();
         const siblings = all.filter((i) => i.parentId === parentId);
         const nextOrder = siblings.length
@@ -196,14 +244,14 @@ export const groupBookmarksByDomain = (
         }
       }
 
-      // Jika targetFolder tersedia (sudah ada sebelumnya atau baru dibuat), pindahkan file-file ke dalamnya
-      if (targetFolder) {
+      // Jika targetFolder tersedia dan total bookmark >= 4, pindahkan file-file ke dalamnya
+      if (targetFolder && totalItems >= MIN_AUTO_DOMAIN_BOOKMARKS) {
         domainFiles.forEach((file, idx) => {
           if (file.parentId !== targetFolder!.id) {
             const updated: FileSystemItem = {
               ...file,
               parentId: targetFolder!.id,
-              order: idx,
+              order: existingInTarget + idx,
               updatedAt: Date.now(),
             };
             modifiedMap.set(file.id, updated);
