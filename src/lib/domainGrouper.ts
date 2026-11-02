@@ -115,6 +115,48 @@ export const groupBookmarksByDomain = (
   });
 
   // =========================================================================
+  // FASE 1.5: RELOKASI BOOKMARK DENGAN DOMAIN BERBEDA DARI FOLDER autoDomain
+  // "folder yang dibuat otomatis tidak boleh memiliki bookmark dengan domain yang berbeda,
+  // jika terjadi maka akan di tempatkan di luar folder."
+  // =========================================================================
+  const allAutoDomainFolders = all.filter(
+    (it) =>
+      it.type === 'folder' &&
+      !it.deletedAt &&
+      (it.autoDomain ||
+        Boolean(
+          it.name &&
+            it.name.includes('.') &&
+            getMainDomain(it.name).toLowerCase() === it.name.trim().toLowerCase()
+        )) &&
+      !isExcludedFolder(it.id)
+  );
+
+  allAutoDomainFolders.forEach((folder) => {
+    const expectedDomain = (getMainDomain(folder.name) || folder.name).trim().toLowerCase();
+    const childrenInside = all.filter(
+      (it) => it.type === 'file' && !it.deletedAt && it.parentId === folder.id
+    );
+
+    childrenInside.forEach((child) => {
+      const childDomain = getMainDomain(child.content || child.name).trim().toLowerCase();
+      if (childDomain && expectedDomain && childDomain !== expectedDomain) {
+        // Pindahkan ke luar folder (yaitu folder.parentId)
+        const updatedChild: FileSystemItem = {
+          ...child,
+          parentId: folder.parentId,
+          updatedAt: Date.now(),
+        };
+        modifiedMap.set(child.id, updatedChild);
+        const childIdx = all.findIndex((i) => i.id === child.id);
+        if (childIdx !== -1) {
+          all[childIdx] = updatedChild;
+        }
+      }
+    });
+  });
+
+  // =========================================================================
   // FASE 2: HAPUS FOLDER autoDomain JIKA KURANG DARI 4 BOOKMARK
   // =========================================================================
   const autoDomainFolders = all.filter(

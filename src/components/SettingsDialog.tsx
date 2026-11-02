@@ -8,7 +8,6 @@ import {
   Lock, 
   Shield, 
   ChevronRight,
-  Laptop
 } from 'lucide-react';
 
 import { useI18n } from '../lib/i18n';
@@ -22,7 +21,6 @@ interface Props {
   onClose: () => void;
   onOpenPinMenu?: () => void;
   onResetPinPassword?: () => void;
-  onLogoutOtherDevices?: () => Promise<boolean | void>;
   initialTab?: TabType;
 }
 
@@ -35,28 +33,20 @@ export const SettingsDialog = ({
   onClose, 
   onOpenPinMenu, 
   onResetPinPassword,
-  onLogoutOtherDevices,
   initialTab
 }: Props) => {
   const { t } = useI18n();
   const pinActive = usePinState();
   const { confirm: customConfirm } = useDialog();
   const [activeTab, setActiveTab] = useState<TabType>(initialTab || null);
-  const [loggingOutOthers, setLoggingOutOthers] = useState(false);
 
-  const handleLogoutOtherDevices = async () => {
-    if (!onLogoutOtherDevices || loggingOutOthers) return;
+  const handleLogout = async () => {
     const ok = await customConfirm(
-      'Apakah Anda yakin ingin keluar dari semua perangkat lain? Anda akan tetap masuk di perangkat saat ini.'
+      'Apakah Anda yakin ingin keluar dari semua sesi?'
     );
     if (!ok) return;
-
-    setLoggingOutOthers(true);
-    try {
-      await onLogoutOtherDevices();
-    } finally {
-      setLoggingOutOthers(false);
-    }
+    await logout();
+    onClose();
   };
 
   const renderProfileTab = () => (
@@ -74,9 +64,9 @@ export const SettingsDialog = ({
             <p className="text-xs text-neutral-500 font-mono truncate mt-0.5">ID: {user.$id}</p>
           </div>
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 text-red-500 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
-            title={t('settings.logout')}
+            title={t('settings.logout') || 'Keluar dari semua sesi'}
           >
             <LogOut size={18} />
           </button>
@@ -154,46 +144,6 @@ export const SettingsDialog = ({
           </button>
         )}
       </div>
-
-      {/* Sesi Perangkat / Keluar dari Semua Perangkat Lain */}
-      {user && (
-        <div className="mt-6 pt-4 border-t border-neutral-200/80">
-          <div className="flex items-center justify-between mb-2">
-            <h5 className="text-sm font-semibold text-neutral-800 flex items-center gap-2">
-              <Laptop size={16} className="text-[#ff4f00]" />
-              {t('settings.devices') || 'Sesi Perangkat'}
-            </h5>
-          </div>
-          <p className="text-xs text-neutral-500 mb-3">
-            {t('settings.devicesDesc') || 'Kelola sesi login akun Anda di perangkat lain.'}
-          </p>
-
-          <button
-            onClick={handleLogoutOtherDevices}
-            disabled={loggingOutOthers}
-            className="w-full flex items-center justify-between p-3.5 bg-[#faf8f5] hover:bg-[#fff0eb] border border-[#e2ddd5] hover:border-[#ff4f00]/40 rounded-xl transition-all text-left cursor-pointer group disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-[#fff0eb] text-[#ff4f00] group-hover:scale-105 transition-transform">
-                {loggingOutOthers ? (
-                  <Loader2 size={18} className="animate-spin text-[#ff4f00]" />
-                ) : (
-                  <LogOut size={18} />
-                )}
-              </div>
-              <div>
-                <div className="text-xs font-bold text-neutral-900">
-                  {t('settings.logoutOtherDevices') || 'Keluar dari Semua Perangkat'}
-                </div>
-                <div className="text-[11px] text-neutral-500">
-                  {t('settings.logoutOtherDevicesDesc') || 'Kecuali perangkat saat ini'}
-                </div>
-              </div>
-            </div>
-            <ChevronRight size={16} className="text-neutral-400 group-hover:text-[#ff4f00] transition-colors" />
-          </button>
-        </div>
-      )}
     </div>
   );
 

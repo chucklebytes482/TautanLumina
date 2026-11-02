@@ -7,65 +7,6 @@ export const cleanText = (str?: string | null): string => {
     .trim();
 };
 
-export const extractTitleFromUrl = (url: string): string => {
-  const cleanedUrl = cleanText(url);
-  if (!cleanedUrl) return 'Bookmark';
-  let clean = cleanedUrl;
-
-  // Decode URI components if URL encoded (e.g. %20 -> space)
-  try {
-    clean = decodeURIComponent(clean);
-  } catch {}
-
-  clean = cleanText(clean);
-
-  // Remove protocol prefix (http://, https://, http/, https/)
-  clean = clean.replace(/^https?:\/*\/*/i, '');
-
-  // Remove www. or www2. prefix if present
-  clean = clean.replace(/^www\d*\./i, '');
-
-  // Strip common URL path parameters or query strings like ?ref= or #anchor
-  clean = clean.replace(/[?&#=]+/g, ' ');
-
-  // Strip common file extensions and TLDs (.com, .org, .net, .co.id, .id, .html, .php, etc.)
-  clean = clean.replace(/\.(com|org|net|co\.id|id|io|app|dev|xyz|site|online|tech|store|shop|me|tv|cc|gov|edu|biz|top|vip|live|asia|info|html|htm|php|aspx|jsp|json|xml|pdf|png|jpg|jpeg)\b/gi, ' ');
-
-  // Insert space before camelCase transitions (e.g. "ReactRouter" -> "React Router")
-  clean = clean.replace(/([a-z])([A-Z])/g, '$1 $2');
-
-  // Insert space between letter and number transitions (e.g. "mini1221best" -> "mini 1221 best")
-  clean = clean
-    .replace(/([a-zA-Z])(\d+)/g, '$1 $2')
-    .replace(/(\d+)([a-zA-Z])/g, '$1 $2');
-
-  // Replace URL delimiters (slashes, dots, hyphens, underscores, colons) with spaces
-  clean = clean.replace(/[/._+:\-]+/g, ' ');
-
-  // Collapse multiple spaces into a single space and trim
-  clean = cleanText(clean);
-
-  if (!clean) return 'Bookmark';
-
-  // Filter out standalone 'www' and apply Title Case
-  const words = clean
-    .split(' ')
-    .filter((word) => word.length > 0 && word.toLowerCase() !== 'www')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1));
-
-  const result = words.join(' ');
-  return cleanText(result) || 'Bookmark';
-};
-
-export const formatCleanUrl = (url?: string | null): string => {
-  if (!url) return '';
-  return url
-    .trim()
-    .replace(/^https?:\/\/(?:www\.)?/i, '')
-    .replace(/^www\./i, '')
-    .replace(/\/+$/, '');
-};
-
 const COMMON_CC_SLD_PREFIXES = new Set([
   'co', 'com', 'org', 'net', 'edu', 'gov', 'go', 'ac', 'sch',
   'mil', 'web', 'or', 'my', 'biz', 'gen', 'res', 'ne', 'ltd', 'plc', 'me'
@@ -117,6 +58,102 @@ export const getMainDomain = (raw?: string | null): string => {
   return parts.slice(-2).join('.');
 };
 
+export const extractTitleFromUrl = (url: string): string => {
+  const cleanedUrl = cleanText(url);
+  if (!cleanedUrl) return '';
+  let clean = cleanedUrl;
+
+  // Decode URI components if URL encoded (e.g. %20 -> space)
+  try {
+    clean = decodeURIComponent(clean);
+  } catch {}
+
+  clean = cleanText(clean);
+
+  // Remove protocol prefix (http://, https://, http/, https/)
+  clean = clean.replace(/^https?:\/*\/*/i, '').replace(/^ftp:\/*\/*/i, '');
+
+  const mainDomain = getMainDomain(url).trim().toLowerCase();
+
+  // Separate host and path/query/hash
+  const slashIdx = clean.indexOf('/');
+  const questionIdx = clean.indexOf('?');
+  const hashIdx = clean.indexOf('#');
+
+  let firstSep = clean.length;
+  if (slashIdx !== -1) firstSep = Math.min(firstSep, slashIdx);
+  if (questionIdx !== -1) firstSep = Math.min(firstSep, questionIdx);
+  if (hashIdx !== -1) firstSep = Math.min(firstSep, hashIdx);
+
+  const hostPart = clean.slice(0, firstSep).trim();
+  const restPart = clean.slice(firstSep).trim();
+
+  let candidate = restPart;
+
+  // If there is no path/query/hash or it's just '/'
+  if (!candidate || candidate === '/' || candidate === '/#' || candidate === '/?') {
+    if (mainDomain && hostPart.toLowerCase() !== mainDomain) {
+      // Subdomain (e.g. web3 in web3.bitget.com)
+      const lowerHost = hostPart.toLowerCase();
+      const escapedDomain = mainDomain.replace(/\./g, '\\.');
+      const sub = lowerHost
+        .replace(new RegExp(`\\.?${escapedDomain}$`, 'i'), '')
+        .replace(/^www\d*\.?/i, '');
+      candidate = sub && sub !== 'www' ? sub : '';
+    } else {
+      // Just the main domain itself -> exclude all domain characters
+      candidate = '';
+    }
+  }
+
+  if (!candidate) return '';
+
+  // Clean candidate: remove leading slashes, hashes, query marks
+  candidate = candidate.replace(/^[/\\?#&]+/, '');
+
+  // Strip common query string tokens or key-values like ?id= or &ref=
+  candidate = candidate.replace(/[?&#=]+/g, ' ');
+
+  // Strip common file extensions (.html, .htm, .php, etc.)
+  candidate = candidate.replace(/\.(html|htm|php|aspx|jsp|json|xml|pdf|png|jpg|jpeg)\b/gi, ' ');
+
+  // Exclude all occurrences of the main domain or its base name
+  if (mainDomain) {
+    const domainBase = mainDomain.split('.')[0];
+    if (domainBase && domainBase.length >= 3) {
+      const regBase = new RegExp(`\\b${domainBase}\\b`, 'gi');
+      candidate = candidate.replace(regBase, ' ');
+    }
+    const escapedDomain = mainDomain.replace(/\./g, '\\.');
+    candidate = candidate.replace(new RegExp(escapedDomain, 'gi'), ' ');
+  }
+
+  // Insert space before camelCase transitions
+  candidate = candidate.replace(/([a-z])([A-Z])/g, '$1 $2');
+
+  // Insert space between letter and number transitions
+  candidate = candidate
+    .replace(/([a-zA-Z])(\d+)/g, '$1 $2')
+    .replace(/(\d+)([a-zA-Z])/g, '$1 $2');
+
+  // Replace URL delimiters (slashes, dots, hyphens, underscores, colons) with spaces
+  candidate = candidate.replace(/[/._+:\-]+/g, ' ');
+
+  // Collapse multiple spaces into a single space and trim
+  candidate = cleanText(candidate);
+
+  return candidate;
+};
+
+export const formatCleanUrl = (url?: string | null): string => {
+  if (!url) return '';
+  return url
+    .trim()
+    .replace(/^https?:\/\/(?:www\.)?/i, '')
+    .replace(/^www\./i, '')
+    .replace(/\/+$/, '');
+};
+
 export const getBookmarkDisplayTitle = (name?: string, content?: string): string => {
   const cleanName = cleanText(name);
   const cleanUrl = cleanText(content);
@@ -124,13 +161,18 @@ export const getBookmarkDisplayTitle = (name?: string, content?: string): string
   // If user explicitly provided a title (and it's not generic 'Bookmark')
   if (cleanName && cleanName.toLowerCase() !== 'bookmark') {
     if (/^https?:\/\//i.test(cleanName) || /^www\./i.test(cleanName)) {
-      return formatCleanUrl(cleanName);
+      const ext = extractTitleFromUrl(cleanName);
+      return ext || formatCleanUrl(cleanName);
     }
     return cleanName;
   }
 
-  // If name is empty, display the cleaned URL
+  // If name is empty, extract title excluding main domain
   if (cleanUrl) {
+    const extracted = extractTitleFromUrl(cleanUrl);
+    if (extracted) {
+      return extracted;
+    }
     return formatCleanUrl(cleanUrl);
   }
 

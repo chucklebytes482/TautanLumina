@@ -271,6 +271,22 @@ export default function App() {
     [items, isPharseFolderOrSubfolder]
   );
 
+  const getRootFolderAncestorId = useCallback(
+    (id: string): string | null => {
+      let cur = items.find((i) => i.id === id);
+      if (!cur) return null;
+      if (!cur.parentId) return cur.id;
+      while (cur && cur.parentId) {
+        const parent = items.find((i) => i.id === cur!.parentId);
+        if (!parent) return cur.parentId;
+        if (!parent.parentId) return parent.id;
+        cur = parent;
+      }
+      return cur ? cur.id : null;
+    },
+    [items]
+  );
+
   const breadcrumbs = getBreadcrumbs();
   const searchMode = query.trim().length > 0;
   const listItems = useMemo(
@@ -425,13 +441,9 @@ export default function App() {
       console.warn('Clipboard read error/denied for bookmark:', err);
     }
 
-    // Jika papan klip kosong atau izin ditolak, sediakan prompt manual
     if (!textToProcess) {
-      const inputUrl = await customPrompt(t('modal.bookmarkUrl') || 'URL Bookmark', '', {
-        placeholder: 'https://...',
-      });
-      if (!inputUrl || !inputUrl.trim()) return;
-      textToProcess = inputUrl.trim();
+      showToast('Papan klip kosong');
+      return;
     }
 
     const cleaned = cleanText(textToProcess);
@@ -478,7 +490,7 @@ export default function App() {
     // 1. Otomatis simpan URL domain utama jika belum ada dan berbeda dari URL yang disalin
     if (!isMainDuplicate && normMain !== normCopied) {
       const extractedMain = extractTitleFromUrl(mainDomainUrl);
-      const autoTitleMain = (extractedMain && extractedMain.toLowerCase() !== 'bookmark') ? extractedMain : mainDomain;
+      const autoTitleMain = extractedMain || '';
       try {
         await createItem(autoTitleMain, 'file', currentFolderId, mainDomainUrl);
         addedCount++;
@@ -490,7 +502,7 @@ export default function App() {
     // 2. Simpan URL yang disalin
     if (!isCopiedDuplicate) {
       const extractedCopied = extractTitleFromUrl(finalCopiedUrl);
-      const autoTitleCopied = (extractedCopied && extractedCopied.toLowerCase() !== 'bookmark') ? extractedCopied : finalCopiedUrl;
+      const autoTitleCopied = extractedCopied || '';
       try {
         await createItem(autoTitleCopied, 'file', currentFolderId, finalCopiedUrl);
         addedCount++;
@@ -641,6 +653,23 @@ export default function App() {
     };
     movingIds.forEach(walk);
 
+    // Cek jika ada sub folder yang sedang dipindahkan
+    const movingSubfolders = items.filter(
+      (i) => movingIds.includes(i.id) && i.type === 'folder' && i.parentId
+    );
+    if (movingSubfolders.length > 0) {
+      const rootAncs = new Set(
+        movingSubfolders.map((sf) => getRootFolderAncestorId(sf.id)).filter(Boolean)
+      );
+      if (rootAncs.size === 1) {
+        const rootAnc = Array.from(rootAncs)[0];
+        // Nonaktifkan semua folder yang bukan di dalam rootAnc atau bukan rootAnc itu sendiri
+        items
+          .filter((i) => i.type === 'folder' && i.id !== rootAnc && getRootFolderAncestorId(i.id) !== rootAnc)
+          .forEach((f) => disabled.add(f.id));
+      }
+    }
+
     const isPharseMoving = movingIds.some((id) => isFromPharseFolder(id));
     const isNoteMoving = movingIds.some((id) => isFromNoteFolder(id));
 
@@ -667,17 +696,41 @@ export default function App() {
 
   const openMovePicker = (ids: string[]) => {
     if (guardOffline()) return;
+
+    const movingItems = items.filter((i) => ids.includes(i.id));
+
+    // Cegah folder di root dipindahkan
+    const hasRootFolder = movingItems.some((i) => i.type === 'folder' && !i.parentId);
+    if (hasRootFolder) {
+      showToast('Folder di root tidak dapat dipindahkan');
+      return;
+    }
+
+    // Cek jika ada sub folder yang dipindahkan
+    const movingSubfolders = movingItems.filter((i) => i.type === 'folder' && i.parentId);
+    let restrictedRootFolderId: string | undefined = undefined;
+
+    if (movingSubfolders.length > 0) {
+      const rootAncestors = new Set(
+        movingSubfolders.map((sf) => getRootFolderAncestorId(sf.id)).filter(Boolean)
+      );
+      if (rootAncestors.size > 1) {
+        showToast('Sub folder hanya dapat dipindahkan di dalam folder utamanya');
+        return;
+      }
+      restrictedRootFolderId = Array.from(rootAncestors)[0] as string;
+    }
+
     const isPharseMoving = ids.some((id) => isFromPharseFolder(id));
     const isNoteMoving = ids.some((id) => isFromNoteFolder(id));
 
-    let restrictedRootFolderId: string | undefined = undefined;
     const hiddenFolderIds = new Set<string>();
 
     if (isPharseMoving) {
       restrictedRootFolderId = 'folder-pharse';
     } else if (isNoteMoving) {
       restrictedRootFolderId = 'folder-clipkey';
-    } else {
+    } else if (!restrictedRootFolderId) {
       // Bookmark & konten di luar note/pharse tidak bisa dipindahkan ke clipkey atau pharse,
       // sehingga folder clipkey dan pharse beserta seluruh sub foldernya tidak perlu ditampilkan.
       const walk = (id: string) => {
@@ -826,10 +879,12 @@ export default function App() {
   };
 
   const openItemMenu = (item: FileSystemItem) => {
+    if (item.type === 'folder' && !item.parentId) return;
     setMenuFor(item);
   };
 
   const menuActions = (item: FileSystemItem): MenuAction[] => {
+    if (item.type === 'folder' && !item.parentId) return [];
     const list: MenuAction[] = [];
     const isInsideClipkey = currentFolderId === 'folder-clipkey' || item.parentId === 'folder-clipkey';
 
@@ -1231,7 +1286,6 @@ export default function App() {
             user={user}
             loading={loading}
             logout={handleLogout}
-            onLogoutOtherDevices={logoutOtherDevices}
             initialTab={settingsInitialTab || null}
             onClose={() => {
               setSettingsOpen(false);

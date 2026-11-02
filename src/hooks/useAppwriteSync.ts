@@ -262,7 +262,18 @@ export function useAppwriteSync(
 
   const logout = async () => {
     try {
-      await account.deleteSession('current').catch(() => {});
+      try {
+        await account.deleteSessions();
+      } catch {
+        try {
+          const sessionList = await account.listSessions();
+          await Promise.all(
+            sessionList.sessions.map((s) => account.deleteSession(s.$id).catch(() => {}))
+          );
+        } catch {
+          await account.deleteSession('current').catch(() => {});
+        }
+      }
       autoSyncedUserRef.current = null;
       await db.setDatabaseUser(null);
       setUser(null);
@@ -272,10 +283,10 @@ export function useAppwriteSync(
       localStorage.removeItem('tautanlumina:deleted_ids');
       window.dispatchEvent(new Event('tautanlumina:user_changed'));
       toast.dismiss();
-      toast.info(t('toast.loggedOut'), { duration: 1500 });
+      toast.info(t('toast.loggedOut') || 'Berhasil keluar dari semua sesi', { duration: 1500 });
     } catch (e: any) {
       toast.dismiss();
-      toast.error(t('toast.logoutError'), { duration: 1500 });
+      toast.error(t('toast.logoutError') || 'Gagal keluar', { duration: 1500 });
     }
   };
 

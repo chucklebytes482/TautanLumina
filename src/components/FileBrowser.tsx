@@ -257,8 +257,8 @@ const Row = ({
         )}
       </div>
 
-      {/* Menu Button */}
-      {!selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && item.id !== 'folder-clipkey' && (
+      {/* Menu Button: folder di root tanpa titik tiga */}
+      {!selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && item.id !== 'folder-clipkey' && !(item.type === 'folder' && !item.parentId) && (
         <div className="flex items-center shrink-0">
           <button
             data-testid={`item-menu-${item.id}`}
