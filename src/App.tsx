@@ -486,10 +486,11 @@ export default function App() {
     }
 
     let addedCount = 0;
+    const isFolder = Boolean(currentFolderId);
 
     // 1. Otomatis simpan URL domain utama jika belum ada dan berbeda dari URL yang disalin
     if (!isMainDuplicate && normMain !== normCopied) {
-      const extractedMain = extractTitleFromUrl(mainDomainUrl);
+      const extractedMain = extractTitleFromUrl(mainDomainUrl, isFolder);
       const autoTitleMain = extractedMain || '';
       try {
         await createItem(autoTitleMain, 'file', currentFolderId, mainDomainUrl);
@@ -501,7 +502,7 @@ export default function App() {
 
     // 2. Simpan URL yang disalin
     if (!isCopiedDuplicate) {
-      const extractedCopied = extractTitleFromUrl(finalCopiedUrl);
+      const extractedCopied = extractTitleFromUrl(finalCopiedUrl, isFolder);
       const autoTitleCopied = extractedCopied || '';
       try {
         await createItem(autoTitleCopied, 'file', currentFolderId, finalCopiedUrl);

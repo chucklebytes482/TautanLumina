@@ -1,5 +1,5 @@
 import { FileSystemItem } from '../Types';
-import { getMainDomain } from './titleExtractor';
+import { getMainDomain, extractTitleFromUrl } from './titleExtractor';
 
 export const MIN_AUTO_DOMAIN_BOOKMARKS = 4;
 
@@ -144,6 +144,7 @@ export const groupBookmarksByDomain = (
         // Pindahkan ke luar folder (yaitu folder.parentId)
         const updatedChild: FileSystemItem = {
           ...child,
+          name: child.content ? extractTitleFromUrl(child.content, Boolean(folder.parentId)) : child.name,
           parentId: folder.parentId,
           updatedAt: Date.now(),
         };
@@ -185,6 +186,7 @@ export const groupBookmarksByDomain = (
       childrenInside.forEach((child, idx) => {
         const updatedChild: FileSystemItem = {
           ...child,
+          name: child.content ? extractTitleFromUrl(child.content, Boolean(folder.parentId)) : child.name,
           parentId: folder.parentId,
           order: idx,
           updatedAt: Date.now(),
@@ -292,6 +294,7 @@ export const groupBookmarksByDomain = (
           if (file.parentId !== targetFolder!.id) {
             const updated: FileSystemItem = {
               ...file,
+              name: file.content ? extractTitleFromUrl(file.content, true) : file.name,
               parentId: targetFolder!.id,
               order: existingInTarget + idx,
               updatedAt: Date.now(),

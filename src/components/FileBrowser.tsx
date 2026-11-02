@@ -250,9 +250,9 @@ const Row = ({
             {cleanText(item.content) || cleanText(item.name) || t('file.note')}
           </div>
         ) : (
-          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name || item.content}>
+          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={getBookmarkDisplayTitle(item.name, item.content, Boolean(item.parentId)) || item.content || item.name}>
             {renderItemLabel()}
-            {getBookmarkDisplayTitle(item.name, item.content)}
+            {getBookmarkDisplayTitle(item.name, item.content, Boolean(item.parentId))}
           </div>
         )}
       </div>

@@ -58,7 +58,7 @@ export const getMainDomain = (raw?: string | null): string => {
   return parts.slice(-2).join('.');
 };
 
-export const extractTitleFromUrl = (url: string): string => {
+export const extractTitleFromUrl = (url: string, excludeMainDomain: boolean = true): string => {
   const cleanedUrl = cleanText(url);
   if (!cleanedUrl) return '';
   let clean = cleanedUrl;
@@ -88,7 +88,35 @@ export const extractTitleFromUrl = (url: string): string => {
   const hostPart = clean.slice(0, firstSep).trim();
   const restPart = clean.slice(firstSep).trim();
 
-  let candidate = restPart;
+  let candidate = '';
+
+  if (!excludeMainDomain) {
+    // =========================================================================
+    // DI ROOT: Pengecualian karakter domain utama TIDAK BERLAKU
+    // =========================================================================
+    let cleanRest = restPart.replace(/^[/\\?#&]+/, '');
+    cleanRest = cleanRest.replace(/[?&#=]+/g, ' ');
+    cleanRest = cleanRest.replace(/\.(html|htm|php|aspx|jsp|json|xml|pdf|png|jpg|jpeg)\b/gi, ' ');
+    cleanRest = cleanRest.replace(/([a-z])([A-Z])/g, '$1 $2');
+    cleanRest = cleanRest
+      .replace(/([a-zA-Z])(\d+)/g, '$1 $2')
+      .replace(/(\d+)([a-zA-Z])/g, '$1 $2');
+    cleanRest = cleanRest.replace(/[/._+:\-]+/g, ' ');
+    cleanRest = cleanText(cleanRest);
+
+    const cleanHost = formatCleanUrl(hostPart) || hostPart || mainDomain;
+    if (cleanRest) {
+      candidate = `${cleanHost} ${cleanRest}`;
+    } else {
+      candidate = cleanHost;
+    }
+    return cleanText(candidate);
+  }
+
+  // =========================================================================
+  // DALAM FOLDER: Pengecualian karakter domain utama LANGSUNG BERLAKU
+  // =========================================================================
+  candidate = restPart;
 
   // If there is no path/query/hash or it's just '/'
   if (!candidate || candidate === '/' || candidate === '/#' || candidate === '/?') {
@@ -154,29 +182,66 @@ export const formatCleanUrl = (url?: string | null): string => {
     .replace(/\/+$/, '');
 };
 
-export const getBookmarkDisplayTitle = (name?: string, content?: string): string => {
+export const getBookmarkDisplayTitle = (
+  name?: string,
+  content?: string,
+  isInsideFolder: boolean = false
+): string => {
   const cleanName = cleanText(name);
   const cleanUrl = cleanText(content);
 
   // If user explicitly provided a title (and it's not generic 'Bookmark')
   if (cleanName && cleanName.toLowerCase() !== 'bookmark') {
     if (/^https?:\/\//i.test(cleanName) || /^www\./i.test(cleanName)) {
-      const ext = extractTitleFromUrl(cleanName);
-      return ext || formatCleanUrl(cleanName);
+      const ext = extractTitleFromUrl(cleanName, isInsideFolder);
+      return ext || (isInsideFolder ? '' : formatCleanUrl(cleanName));
     }
+
+    if (isInsideFolder && cleanUrl) {
+      // DALAM FOLDER: pastikan karakter domain utama tidak muncul
+      const domain = getMainDomain(cleanUrl).toLowerCase();
+      const domainBase = domain.split('.')[0];
+      if (domainBase && domainBase.length >= 3) {
+        const lowerName = cleanName.toLowerCase();
+        if (lowerName === domainBase || lowerName === domain) {
+          const ext = extractTitleFromUrl(cleanUrl, true);
+          return ext || '';
+        }
+        if (lowerName.includes(domainBase)) {
+          const folderExt = extractTitleFromUrl(cleanUrl, true);
+          if (folderExt) {
+            return folderExt;
+          }
+        }
+      }
+    } else if (!isInsideFolder && cleanUrl) {
+      // DI ROOT: pengecualian karakter domain TIDAK BERLAKU
+      const domain = getMainDomain(cleanUrl).toLowerCase();
+      const domainBase = domain.split('.')[0];
+      if (domainBase && domainBase.length >= 3) {
+        const lowerName = cleanName.toLowerCase();
+        if (!lowerName.includes(domainBase)) {
+          const rootExt = extractTitleFromUrl(cleanUrl, false);
+          if (rootExt) {
+            return rootExt;
+          }
+        }
+      }
+    }
+
     return cleanName;
   }
 
-  // If name is empty, extract title excluding main domain
+  // If name is empty, extract title dynamically based on location
   if (cleanUrl) {
-    const extracted = extractTitleFromUrl(cleanUrl);
+    const extracted = extractTitleFromUrl(cleanUrl, isInsideFolder);
     if (extracted) {
       return extracted;
     }
-    return formatCleanUrl(cleanUrl);
+    return isInsideFolder ? '' : formatCleanUrl(cleanUrl);
   }
 
-  return cleanName || 'Bookmark';
+  return isInsideFolder ? '' : (cleanName || 'Bookmark');
 };
 
 export const extractUrlFromLabel = (label?: string | null): string | null => {

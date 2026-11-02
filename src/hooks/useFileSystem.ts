@@ -178,26 +178,18 @@ export const useFileSystem = () => {
 
 
 
-      // Pastikan judul bookmark otomatis mengecualikan domain utama
+      // Aturan judul bookmark:
+      // Di root: pengecualian karakter domain utama TIDAK BERLAKU
+      // Di dalam folder: pengecualian karakter domain utama LANGSUNG BERLAKU
       const fileBookmarks = all.filter(it => it.type === 'file' && it.content);
       const sanitizedBookmarks: FileSystemItem[] = [];
       fileBookmarks.forEach(it => {
-        const domain = getMainDomain(it.content || '').toLowerCase();
-        const domainBase = domain.split('.')[0];
-        if (domainBase && it.name) {
-          const lowerName = it.name.trim().toLowerCase();
-          if (lowerName === domainBase || lowerName === domain) {
-            it.name = '';
-            it.updatedAt = Date.now();
-            sanitizedBookmarks.push(it);
-          } else if (lowerName.includes(domainBase)) {
-            const cleanTitle = extractTitleFromUrl(it.content!);
-            if (cleanTitle !== it.name) {
-              it.name = cleanTitle;
-              it.updatedAt = Date.now();
-              sanitizedBookmarks.push(it);
-            }
-          }
+        const isInsideFolder = Boolean(it.parentId);
+        const expectedTitle = extractTitleFromUrl(it.content!, isInsideFolder);
+        if (it.name !== expectedTitle) {
+          it.name = expectedTitle;
+          it.updatedAt = Date.now();
+          sanitizedBookmarks.push(it);
         }
       });
       if (sanitizedBookmarks.length > 0) {
@@ -253,7 +245,7 @@ export const useFileSystem = () => {
       // Pengurutan didasarkan pada domain utama saja (misal facebook.com)
       // agar semua web dari domain yang sama (misal Facebook) berurutan
       const domain = getMainDomain(it.content || it.name);
-      const display = getBookmarkDisplayTitle(it.name, it.content);
+      const display = getBookmarkDisplayTitle(it.name, it.content, Boolean(it.parentId));
       return {
         primary: domain || display,
         secondary: display || it.content || '',
@@ -432,11 +424,12 @@ export const useFileSystem = () => {
     }
 
     const firstWordFromContent = (content || '').trim().split(/\s+/)[0] || '';
+    const isFolder = Boolean(targetParentId);
     const itemName = type === 'note'
       ? content.trim()
       : type === 'phrase'
       ? (firstWordFromContent || 'pharse')
-      : (type === 'file' ? (name.trim() || '') : (name.trim() || (type === 'folder' ? 'Folder' : 'Untitled')));
+      : (type === 'file' ? (name.trim() || extractTitleFromUrl(content, isFolder)) : (name.trim() || (type === 'folder' ? 'Folder' : 'Untitled')));
     const item: FileSystemItem = {
       id: uid(),
       parentId: targetParentId,
@@ -801,7 +794,12 @@ export const useFileSystem = () => {
         }
       }
 
-      updated.push({ ...it, parentId: finalParent, order: base++, updatedAt: Date.now() });
+      let finalName = it.name;
+      if (it.type === 'file' && it.content) {
+        finalName = extractTitleFromUrl(it.content, Boolean(finalParent));
+      }
+
+      updated.push({ ...it, name: finalName, parentId: finalParent, order: base++, updatedAt: Date.now() });
     });
     if (updated.length) {
       await db.saveItems(updated);
