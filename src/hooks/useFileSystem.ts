@@ -1134,6 +1134,146 @@ export const useFileSystem = () => {
     }
   }, [reload]);
 
+  const refreshAndSanitizeAll = useCallback(async (): Promise<{
+    duplicatesRemoved: number;
+    titlesUpdated: number;
+    foldersUpdated: number;
+    totalChanges: number;
+  }> => {
+    let all = await db.getAllItems();
+    let duplicatesRemoved = 0;
+    let titlesUpdated = 0;
+    let foldersUpdated = 0;
+
+    const toDeleteIds: string[] = [];
+    const toSaveMap = new Map<string, FileSystemItem>();
+
+    // Helper: deteksi apakah sebuah folder adalah bagian dari folder clipboard (folder-clipkey)
+    const isClipboardTarget = (folderId: string | null): boolean => {
+      let cur = folderId;
+      const visited = new Set<string>();
+      while (cur && !visited.has(cur)) {
+        visited.add(cur);
+        if (cur === 'folder-clipkey' || cur === 'folder-catatan') return true;
+        const parent = all.find((i) => i.id === cur);
+        cur = parent ? parent.parentId : null;
+      }
+      return false;
+    };
+
+    // Helper: normalisasi URL untuk perbandingan duplikat (mengabaikan protokol, www, trailing slash)
+    const normalizeUrl = (url?: string | null): string => {
+      if (!url) return '';
+      return url
+        .trim()
+        .toLowerCase()
+        .replace(/^https?:\/\//i, '')
+        .replace(/^www\./i, '')
+        .replace(/\/+$/, '');
+    };
+
+    // 1. Pastikan folder sistem memiliki nama yang tepat
+    const clipkeyFolder = all.find((it) => it.id === 'folder-clipkey');
+    if (clipkeyFolder && clipkeyFolder.name !== 'clipboard') {
+      toSaveMap.set(clipkeyFolder.id, { ...clipkeyFolder, name: 'clipboard', updatedAt: Date.now() });
+      foldersUpdated++;
+    }
+
+    const pharseFolder = all.find((it) => it.id === 'folder-pharse');
+    if (pharseFolder && pharseFolder.name !== 'frasa') {
+      toSaveMap.set(pharseFolder.id, { ...pharseFolder, name: 'frasa', updatedAt: Date.now() });
+      foldersUpdated++;
+    }
+
+    // 2. Bersihkan duplikat bookmark (semua tempat KECUALI folder clipboard)
+    // Di luar folder clipboard, simpan hanya 1 item untuk setiap URL yang sama
+    const seenBookmarkUrls = new Map<string, FileSystemItem>();
+    const fileBookmarks = all.filter((it) => !it.deletedAt && it.type === 'file' && it.content);
+
+    fileBookmarks.forEach((bm) => {
+      if (isClipboardTarget(bm.parentId)) {
+        // Di dalam folder clipboard, duplikat diperbolehkan
+        return;
+      }
+      const norm = normalizeUrl(bm.content);
+      if (!norm) return;
+
+      if (seenBookmarkUrls.has(norm)) {
+        // Duplikat ditemukan di luar folder clipboard -> hapus
+        toDeleteIds.push(bm.id);
+        duplicatesRemoved++;
+      } else {
+        seenBookmarkUrls.set(norm, bm);
+      }
+    });
+
+    // 3. Bersihkan duplikat frasa (dalam folder frasa / type phrase)
+    const seenPhrases = new Set<string>();
+    all.forEach((it) => {
+      if (!it.deletedAt && it.content && (it.type === 'phrase' || it.parentId === 'folder-pharse')) {
+        const norm = it.content.trim().toLowerCase();
+        if (seenPhrases.has(norm)) {
+          toDeleteIds.push(it.id);
+          duplicatesRemoved++;
+        } else {
+          seenPhrases.add(norm);
+        }
+      }
+    });
+
+    // Hapus item-item duplikat dari database
+    if (toDeleteIds.length > 0) {
+      await db.deleteItems(toDeleteIds);
+      all = await db.getAllItems();
+    }
+
+    // 4. Perbarui judul semua bookmark sesuai aturan saat ini:
+    // - Tautan domain utama: judul memakai tautan domain (formatCleanUrl / domain), tidak disembunyikan
+    // - Di dalam folder: karakter domain utama tidak muncul di path
+    // - Di root: sertakan host + path
+    const remainingBookmarks = all.filter((it) => !it.deletedAt && it.type === 'file' && it.content);
+    remainingBookmarks.forEach((bm) => {
+      const isInsideFolder = Boolean(bm.parentId);
+      const expectedTitle = extractTitleFromUrl(bm.content!, isInsideFolder);
+      if (bm.name !== expectedTitle) {
+        toSaveMap.set(bm.id, { ...bm, name: expectedTitle, updatedAt: Date.now() });
+        titlesUpdated++;
+      }
+    });
+
+    // 5. Jalankan pengelompokan domain otomatis (domainGrouper)
+    // Mengelompokkan domain dengan >= 4 bookmark dan membersihkan folder domain kosong / salah penempatan
+    const groupRes = groupBookmarksByDomain(all, uid);
+    if (groupRes.hasChanges) {
+      if (groupRes.deletedFolders && groupRes.deletedFolders.length > 0) {
+        await db.deleteItems(groupRes.deletedFolders);
+        foldersUpdated += groupRes.deletedFolders.length;
+      }
+      if (groupRes.createdFolders && groupRes.createdFolders.length > 0) {
+        await db.saveItems(groupRes.createdFolders);
+        foldersUpdated += groupRes.createdFolders.length;
+      }
+      if (groupRes.modifiedItems && groupRes.modifiedItems.length > 0) {
+        groupRes.modifiedItems.forEach((it) => toSaveMap.set(it.id, it));
+      }
+    }
+
+    if (toSaveMap.size > 0) {
+      await db.saveItems(Array.from(toSaveMap.values()));
+    }
+
+    await reload();
+    notifyDataModified();
+
+    const totalChanges = duplicatesRemoved + titlesUpdated + foldersUpdated;
+    return {
+      duplicatesRemoved,
+      titlesUpdated,
+      foldersUpdated,
+      totalChanges,
+    };
+  }, [reload]);
+
   return {
     items,
     loaded,
@@ -1164,5 +1304,6 @@ export const useFileSystem = () => {
     clearPharseFolder,
     clearClipboardAndPharseContents,
     purgeChangeHistory,
+    refreshAndSanitizeAll,
   };
 };

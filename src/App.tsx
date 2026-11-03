@@ -79,7 +79,10 @@ export default function App() {
     clearAll,
     clearPharseFolder,
     clearClipboardAndPharseContents,
+    refreshAndSanitizeAll,
   } = fs;
+
+  const [updatingFiles, setUpdatingFiles] = useState(false);
 
   const [query, setQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -513,6 +516,29 @@ export default function App() {
       showToast('Domain utama & bookmark disimpan');
     } else if (addedCount === 1) {
       showToast('Bookmark disimpan');
+    }
+  };
+
+  const handleRefreshAndSync = async () => {
+    if (guardOffline()) return;
+    if (syncing || updatingFiles) return;
+    setUpdatingFiles(true);
+    try {
+      // 1. Perbarui semua file lokal (hapus duplikat di luar clipboard, format judul, sesuaikan aturan)
+      const res = await refreshAndSanitizeAll();
+      
+      // 2. Jalankan sinkronisasi cloud
+      await smartSync(true);
+
+      if (res.duplicatesRemoved > 0) {
+        showToast(`Sinkronisasi selesai: ${res.duplicatesRemoved} duplikat dibersihkan`);
+      } else {
+        showToast('Perbarui & sinkronisasi selesai');
+      }
+    } catch (e: any) {
+      showToast(e?.message || 'Gagal sinkronisasi');
+    } finally {
+      setUpdatingFiles(false);
     }
   };
 
@@ -1142,19 +1168,16 @@ export default function App() {
                 ))}
               </div>
 
-              <div className="flex items-center gap-3.5">
+              <div className="flex items-center gap-2">
                 <button
                   data-testid="manual-sync-btn"
-                  onClick={async () => {
-                    if (guardOffline()) return;
-                    await smartSync(true);
-                  }}
-                  disabled={syncing}
+                  onClick={handleRefreshAndSync}
+                  disabled={syncing || updatingFiles}
                   className="p-1.5 rounded-lg disabled:opacity-40 disabled:hover:bg-transparent transition-colors hover:bg-[#faf8f5] dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200 border border-transparent hover:border-[#e2ddd5] dark:hover:border-neutral-700 flex items-center justify-center cursor-pointer mr-1"
-                  title="Sinkronisasi Manual"
-                  aria-label="Sinkronisasi Manual"
+                  title="Perbarui & Sinkronisasi"
+                  aria-label="Perbarui & Sinkronisasi"
                 >
-                  <RefreshCw size={18} className={`text-[#FF4F00] ${syncing ? 'animate-spin' : ''}`} />
+                  <RefreshCw size={18} className={`text-[#FF4F00] ${syncing || updatingFiles ? 'animate-spin' : ''}`} />
                 </button>
                 <button
                   data-testid="select-all-header-btn"
