@@ -7,6 +7,16 @@ import { Toaster } from 'sonner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { I18nProvider } from './lib/i18n';
 
+// Pastikan mode gelap selalu nonaktif dan hanya menggunakan mode terang
+try {
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.remove('dark-theme', 'dark');
+    document.documentElement.style.colorScheme = 'light';
+  }
+} catch {
+  /* ignore */
+}
+
 // Bersihkan semua riwayat dan cache perubahan lama yang sudah tidak diperlukan di localStorage
 try {
   const keysToRemove: string[] = [];

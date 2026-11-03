@@ -100,42 +100,11 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<'profile' | null>(null);
   const [showChatPopup, setShowChatPopup] = useState(false);
-  const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
-    return typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : false;
-  });
-
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const updateTheme = (matches: boolean) => {
-      setIsDarkTheme(matches);
-      if (matches) {
-        document.documentElement.classList.add('dark-theme', 'dark');
-      } else {
-        document.documentElement.classList.remove('dark-theme', 'dark');
-      }
-    };
-
-    updateTheme(mediaQuery.matches);
-
-    const handleChange = (e: MediaQueryListEvent) => {
-      updateTheme(e.matches);
-    };
-
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleChange);
-    } else {
-      (mediaQuery as any).addListener(handleChange);
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('dark-theme', 'dark');
+      document.documentElement.style.colorScheme = 'light';
     }
-
-    return () => {
-      if (mediaQuery.removeEventListener) {
-        mediaQuery.removeEventListener('change', handleChange);
-      } else {
-        (mediaQuery as any).removeListener(handleChange);
-      }
-    };
   }, []);
 
   // PIN security states

@@ -159,11 +159,23 @@ const Row = ({
         })
         .catch(() => {});
     } else {
-       if (item.content?.startsWith('http')) {
-         window.open(item.content, '_blank');
-       } else {
-         window.open(`https://${item.content}`, '_blank');
-       }
+      const raw = (item.content || '').trim();
+      if (!raw) return;
+      const targetUrl = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+      try {
+        const opened = window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        if (!opened) {
+          const a = document.createElement('a');
+          a.href = targetUrl;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
+      } catch {
+        window.location.href = targetUrl;
+      }
     }
   };
 

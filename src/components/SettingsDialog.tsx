@@ -196,7 +196,7 @@ export const SettingsDialog = ({
 
       {/* Content Area Desktop */}
       {activeTab && (
-        <div className="relative flex-1 bg-[#faf8f5] dark:bg-[#161618] h-full shadow-2xl flex flex-col animate-in fade-in slide-in-from-left-8 duration-300 delay-100 max-w-md hidden sm:flex border-r border-[#e2ddd5] z-10">
+        <div className="relative flex-1 bg-[#faf8f5] h-full shadow-2xl flex flex-col animate-in fade-in slide-in-from-left-8 duration-300 delay-100 max-w-md hidden sm:flex border-r border-[#e2ddd5] z-10">
           <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
@@ -219,7 +219,7 @@ export const SettingsDialog = ({
       )}
 
       {/* Mobile Content Area Overlay */}
-      <div className={`sm:hidden fixed inset-0 z-50 bg-[#faf8f5] dark:bg-[#161618] transition-transform duration-300 ${activeTab ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`sm:hidden fixed inset-0 z-50 bg-[#faf8f5] transition-transform duration-300 ${activeTab ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-neutral-100 flex items-center bg-transparent gap-3">
             <button onClick={() => setActiveTab(null)} className="p-1.5 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100 rounded-full cursor-pointer">
