@@ -314,3 +314,10 @@ export const compareQwerty = (a?: string | null, b?: string | null): number => {
 
   return strA.localeCompare(strB);
 };
+
+export const compareAlphabetical = (a?: string | null, b?: string | null): number => {
+  const strA = cleanText(a);
+  const strB = cleanText(b);
+  return strA.localeCompare(strB, undefined, { numeric: true, sensitivity: 'base' });
+};
+

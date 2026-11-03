@@ -3,7 +3,7 @@ import { FileSystemItem, FileSystemItemType } from '../Types';
 import * as db from '../db/db';
 import { useI18n } from '../lib/i18n';
 import { getStoredPinHash, getStoredPinUpdatedAt, setStoredPinHash } from '../lib/pin';
-import { compareQwerty, getBookmarkDisplayTitle, getMainDomain, extractTitleFromUrl } from '../lib/titleExtractor';
+import { compareAlphabetical, getBookmarkDisplayTitle, getMainDomain, extractTitleFromUrl } from '../lib/titleExtractor';
 import { groupBookmarksByDomain } from '../lib/domainGrouper';
 
 const uid = () =>
@@ -257,12 +257,11 @@ export const useFileSystem = () => {
 
   const getItemSortKeys = (it: FileSystemItem): { primary: string; secondary: string } => {
     if (it.type === 'file') {
-      // Pengurutan didasarkan pada domain utama saja (misal facebook.com)
-      // agar semua web dari domain yang sama (misal Facebook) berurutan
+      const isInsideFolder = Boolean(it.parentId);
+      const display = getBookmarkDisplayTitle(it.name, it.content, isInsideFolder);
       const domain = getMainDomain(it.content || it.name);
-      const display = getBookmarkDisplayTitle(it.name, it.content, Boolean(it.parentId));
       return {
-        primary: domain || display,
+        primary: isInsideFolder ? (display || domain) : (domain || display),
         secondary: display || it.content || '',
       };
     }
@@ -316,10 +315,10 @@ export const useFileSystem = () => {
           const keyA = getItemSortKeys(a);
           const keyB = getItemSortKeys(b);
 
-          const primaryDiff = compareQwerty(keyA.primary, keyB.primary);
+          const primaryDiff = compareAlphabetical(keyA.primary, keyB.primary);
           if (primaryDiff !== 0) return primaryDiff;
 
-          const secondaryDiff = compareQwerty(keyA.secondary, keyB.secondary);
+          const secondaryDiff = compareAlphabetical(keyA.secondary, keyB.secondary);
           if (secondaryDiff !== 0) return secondaryDiff;
 
           const orderA = a.order ?? 0;
@@ -963,9 +962,9 @@ export const useFileSystem = () => {
 
           const keyA = getItemSortKeys(a);
           const keyB = getItemSortKeys(b);
-          const primaryDiff = compareQwerty(keyA.primary, keyB.primary);
+          const primaryDiff = compareAlphabetical(keyA.primary, keyB.primary);
           if (primaryDiff !== 0) return primaryDiff;
-          const secondaryDiff = compareQwerty(keyA.secondary, keyB.secondary);
+          const secondaryDiff = compareAlphabetical(keyA.secondary, keyB.secondary);
           if (secondaryDiff !== 0) return secondaryDiff;
           return a.name.localeCompare(b.name);
         });

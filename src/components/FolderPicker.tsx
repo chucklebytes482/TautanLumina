@@ -63,7 +63,7 @@ export const FolderPicker = ({
             const rB = sysRank(b.id);
             if (rA !== rB) return rA - rB;
           }
-          return (a.order ?? 0) - (b.order ?? 0);
+          return (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' });
         }),
     [items, current, hiddenFolderIds],
   );
