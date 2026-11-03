@@ -3,7 +3,6 @@ import { X, ChevronRight, Home, ArrowLeft, Folder, ClipboardList, KeyRound } fro
 import { FileSystemItem } from '../Types';
 import { useDialog } from '../context/DialogContext';
 import { useI18n } from '../lib/i18n';
-import { getTopSiteRank } from '../lib/topSites';
 
 interface Props {
   items: FileSystemItem[];
@@ -64,10 +63,6 @@ export const FolderPicker = ({
             const rB = sysRank(b.id);
             if (rA !== rB) return rA - rB;
           }
-          const topRankA = getTopSiteRank(a.name);
-          const topRankB = getTopSiteRank(b.name);
-          if (topRankA !== topRankB) return topRankA - topRankB;
-
           return (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' });
         }),
     [items, current, hiddenFolderIds],

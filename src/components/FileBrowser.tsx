@@ -5,27 +5,6 @@ import { useI18n } from '../lib/i18n';
 import { usePinState } from '../lib/pin';
 import { cleanText, extractTitleFromUrl, getBookmarkDisplayTitle, formatCleanUrl, getMainDomain } from '../lib/titleExtractor';
 
-const getFaviconUrl = (url?: string | null): string => {
-  if (!url) return '';
-  try {
-    let clean = url.trim();
-    if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
-      clean = `https://${clean}`;
-    }
-    const parsed = new URL(clean);
-    const hostname = parsed.hostname;
-    if (hostname && hostname.includes('.')) {
-      return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=64`;
-    }
-  } catch {
-    const domain = getMainDomain(url);
-    if (domain && domain.includes('.')) {
-      return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
-    }
-  }
-  return '';
-};
-
 interface Props {
   items: FileSystemItem[];
   selectMode: boolean;
@@ -148,10 +127,7 @@ const Row = ({
   const pinActive = usePinState();
   const [copied, setCopied] = useState(false);
   const copyTimeoutRef = useRef<number | null>(null);
-  const [faviconError, setFaviconError] = useState(false);
-
   const isBookmark = item.type === 'file';
-  const faviconUrl = isBookmark && item.content ? getFaviconUrl(item.content) : '';
 
   useEffect(() => {
     return () => {
@@ -224,20 +200,6 @@ const Row = ({
         selected ? 'bg-[#fff0eb] border-[#ff4f00]' : 'border-[#e2ddd5]',
       ].join(' ')}
     >
-      {/* Background Favicon di tengah latar belakang bookmark dengan transparansi 70% */}
-      {isBookmark && faviconUrl && !faviconError && (
-        <div className="absolute inset-0 pointer-events-none select-none z-0 flex items-center justify-center opacity-70">
-          <img
-            src={faviconUrl}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="w-8 h-8 object-contain"
-            onError={() => setFaviconError(true)}
-          />
-        </div>
-      )}
-
       {/* Select Mode Checkbox */}
       {selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && item.id !== 'folder-clipkey' && (
         <span
