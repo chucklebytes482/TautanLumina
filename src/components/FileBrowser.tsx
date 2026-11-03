@@ -224,15 +224,15 @@ const Row = ({
         selected ? 'bg-[#fff0eb] border-[#ff4f00]' : 'border-[#e2ddd5]',
       ].join(' ')}
     >
-      {/* Background Favicon di bagian kanan latar belakang bookmark (tidak memakan ruang layout) */}
+      {/* Background Favicon di tengah latar belakang bookmark dengan transparansi 70% */}
       {isBookmark && faviconUrl && !faviconError && (
-        <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none select-none z-0 flex items-center justify-center opacity-20 dark:opacity-30 group-hover:opacity-35 transition-opacity">
+        <div className="absolute inset-0 pointer-events-none select-none z-0 flex items-center justify-center opacity-70">
           <img
             src={faviconUrl}
             alt=""
             loading="lazy"
             decoding="async"
-            className="w-7 h-7 object-contain drop-shadow-xs"
+            className="w-8 h-8 object-contain"
             onError={() => setFaviconError(true)}
           />
         </div>
