@@ -3,7 +3,28 @@ import { MoreVertical, Folder, Pin, Lock, FileText, ClipboardList, StickyNote, C
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
 import { usePinState } from '../lib/pin';
-import { cleanText, extractTitleFromUrl, getBookmarkDisplayTitle, formatCleanUrl } from '../lib/titleExtractor';
+import { cleanText, extractTitleFromUrl, getBookmarkDisplayTitle, formatCleanUrl, getMainDomain } from '../lib/titleExtractor';
+
+const getFaviconUrl = (url?: string | null): string => {
+  if (!url) return '';
+  try {
+    let clean = url.trim();
+    if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+      clean = `https://${clean}`;
+    }
+    const parsed = new URL(clean);
+    const hostname = parsed.hostname;
+    if (hostname && hostname.includes('.')) {
+      return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=64`;
+    }
+  } catch {
+    const domain = getMainDomain(url);
+    if (domain && domain.includes('.')) {
+      return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
+    }
+  }
+  return '';
+};
 
 interface Props {
   items: FileSystemItem[];
@@ -127,6 +148,10 @@ const Row = ({
   const pinActive = usePinState();
   const [copied, setCopied] = useState(false);
   const copyTimeoutRef = useRef<number | null>(null);
+  const [faviconError, setFaviconError] = useState(false);
+
+  const isBookmark = item.type === 'file';
+  const faviconUrl = isBookmark && item.content ? getFaviconUrl(item.content) : '';
 
   useEffect(() => {
     return () => {
@@ -195,15 +220,29 @@ const Row = ({
       data-testid={`item-row-${item.id}`}
       onClick={handleClick}
       className={[
-        'flex items-center gap-1.5 px-2 py-2 border rounded-xl select-none no-select bg-white cursor-pointer transition-all hover:shadow-xs hover:border-[#ff4f00]/40',
+        'relative overflow-hidden group flex items-center gap-1.5 px-2 py-2 border rounded-xl select-none no-select bg-white cursor-pointer transition-all hover:shadow-xs hover:border-[#ff4f00]/40',
         selected ? 'bg-[#fff0eb] border-[#ff4f00]' : 'border-[#e2ddd5]',
       ].join(' ')}
     >
+      {/* Background Favicon di tengah latar belakang bookmark dengan transparansi 70% */}
+      {isBookmark && faviconUrl && !faviconError && (
+        <div className="absolute inset-0 pointer-events-none select-none z-0 flex items-center justify-center opacity-70">
+          <img
+            src={faviconUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="w-8 h-8 object-contain"
+            onError={() => setFaviconError(true)}
+          />
+        </div>
+      )}
+
       {/* Select Mode Checkbox */}
       {selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && item.id !== 'folder-clipkey' && (
         <span
           className={[
-            'inline-block w-4 h-4 rounded border shrink-0 transition-colors',
+            'relative z-10 inline-block w-4 h-4 rounded border shrink-0 transition-colors',
             selected ? 'bg-[#ff4f00] border-[#ff4f00]' : 'border-neutral-400 bg-white',
           ].join(' ')}
           aria-checked={selected}
@@ -215,12 +254,12 @@ const Row = ({
         />
       )}
       {selectMode && (item.id === 'folder-catatan' || item.id === 'folder-pharse' || item.id === 'folder-clipkey') && (
-        <div className="w-4 h-4 shrink-0" />
+        <div className="w-4 h-4 shrink-0 relative z-10" />
       )}
 
       {/* Icon / Note Badge (bookmarks & phrase items have no icon) */}
       {(item.type === 'folder' || item.type === 'note') && (
-        <div className={`shrink-0 w-6.5 h-6.5 flex items-center justify-center rounded-lg border overflow-hidden relative transition-colors ${
+        <div className={`shrink-0 w-6.5 h-6.5 flex items-center justify-center rounded-lg border overflow-hidden relative z-10 transition-colors ${
           copied ? 'bg-emerald-50 border-emerald-500/40 dark:bg-emerald-950/40 dark:border-emerald-500/50' : 'bg-[#faf8f5] border-[#e2ddd5]/60'
         }`}>
           {item.type === 'folder' ? (
@@ -245,7 +284,7 @@ const Row = ({
       )}
 
       {/* Info */}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 relative z-10">
         {item.type === 'folder' ? (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.id === 'folder-clipkey' ? 'clipboard' : item.id === 'folder-pharse' ? 'frasa' : item.name}>
             {renderItemLabel()}
@@ -271,7 +310,7 @@ const Row = ({
 
       {/* Menu Button: folder di root tanpa titik tiga */}
       {!selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && item.id !== 'folder-clipkey' && !(item.type === 'folder' && !item.parentId) && (
-        <div className="flex items-center shrink-0">
+        <div className="flex items-center shrink-0 relative z-10">
           <button
             data-testid={`item-menu-${item.id}`}
             data-no-press="1"

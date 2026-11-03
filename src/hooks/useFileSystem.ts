@@ -5,6 +5,7 @@ import { useI18n } from '../lib/i18n';
 import { getStoredPinHash, getStoredPinUpdatedAt, setStoredPinHash } from '../lib/pin';
 import { compareAlphabetical, getBookmarkDisplayTitle, getMainDomain, extractTitleFromUrl } from '../lib/titleExtractor';
 import { groupBookmarksByDomain } from '../lib/domainGrouper';
+import { getTopSiteRank } from '../lib/topSites';
 
 const uid = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -311,6 +312,13 @@ export const useFileSystem = () => {
           }
 
           if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+
+          // Pengurutan bookmark: berdasarkan kamus 100 situs teratas dulu, baru urutan alfabet
+          const topRankA = getTopSiteRank(a.type === 'file' ? (a.content || a.name) : a.name);
+          const topRankB = getTopSiteRank(b.type === 'file' ? (b.content || b.name) : b.name);
+          if (topRankA !== topRankB) {
+            return topRankA - topRankB;
+          }
 
           const keyA = getItemSortKeys(a);
           const keyB = getItemSortKeys(b);
@@ -972,13 +980,20 @@ export const useFileSystem = () => {
           if (a.type === 'folder' && b.type !== 'folder') return -1;
           if (b.type === 'folder' && a.type !== 'folder') return 1;
 
+          // Pengurutan pencarian: Top 100 dulu baru urutan alfabet
+          const topRankA = getTopSiteRank(a.type === 'file' ? (a.content || a.name) : a.name);
+          const topRankB = getTopSiteRank(b.type === 'file' ? (b.content || b.name) : b.name);
+          if (topRankA !== topRankB) {
+            return topRankA - topRankB;
+          }
+
           const keyA = getItemSortKeys(a);
           const keyB = getItemSortKeys(b);
           const primaryDiff = compareAlphabetical(keyA.primary, keyB.primary);
           if (primaryDiff !== 0) return primaryDiff;
           const secondaryDiff = compareAlphabetical(keyA.secondary, keyB.secondary);
           if (secondaryDiff !== 0) return secondaryDiff;
-          return a.name.localeCompare(b.name);
+          return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
         });
     },
     [items],
