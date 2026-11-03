@@ -28,7 +28,7 @@ export const missingTranslations = {
       "newBookmark": "New Bookmark",
       "newFolder": "New Folder",
       "newNote": "New Note",
-      "newPhrase": "Pharse (1-Click Paste)",
+      "newPhrase": "Frasa (1-Click Paste)",
       "selectAll": "Select All"
     },
     "chat": {
@@ -355,7 +355,7 @@ export const missingTranslations = {
       "newBookmark": "Bookmark Baru",
       "newFolder": "Folder Baru",
       "newNote": "Catatan Baru",
-      "newPhrase": "Pharse (1x Klik Tempel)",
+      "newPhrase": "Frasa (1x Klik Tempel)",
       "selectAll": "Pilih Semua"
     },
     "chat": {

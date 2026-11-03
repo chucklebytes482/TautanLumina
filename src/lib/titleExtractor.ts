@@ -116,10 +116,8 @@ export const extractTitleFromUrl = (url: string, excludeMainDomain: boolean = tr
   // =========================================================================
   // DALAM FOLDER: Pengecualian karakter domain utama LANGSUNG BERLAKU
   // =========================================================================
-  candidate = restPart;
-
-  // If there is no path/query/hash or it's just '/'
-  if (!candidate || candidate === '/' || candidate === '/#' || candidate === '/?') {
+  // Jika tidak ada path (hanya domain utama atau subdomain):
+  if (!restPart || restPart === '/' || restPart === '/#' || restPart === '/?') {
     if (mainDomain && hostPart.toLowerCase() !== mainDomain) {
       // Subdomain (e.g. web3 in web3.bitget.com)
       const lowerHost = hostPart.toLowerCase();
@@ -127,14 +125,18 @@ export const extractTitleFromUrl = (url: string, excludeMainDomain: boolean = tr
       const sub = lowerHost
         .replace(new RegExp(`\\.?${escapedDomain}$`, 'i'), '')
         .replace(/^www\d*\.?/i, '');
-      candidate = sub && sub !== 'www' ? sub : '';
+      return sub && sub !== 'www' ? sub : formatCleanUrl(hostPart);
     } else {
-      // Just the main domain itself -> exclude all domain characters
-      candidate = '';
+      // Tautan domain utama: jangan disembunyikan tapi pakai tautan domain untuk judulnya
+      return formatCleanUrl(hostPart) || mainDomain;
     }
   }
 
-  if (!candidate) return '';
+  candidate = restPart;
+
+  if (!candidate) {
+    return formatCleanUrl(hostPart) || mainDomain;
+  }
 
   // Clean candidate: remove leading slashes, hashes, query marks
   candidate = candidate.replace(/^[/\\?#&]+/, '');
@@ -170,7 +172,8 @@ export const extractTitleFromUrl = (url: string, excludeMainDomain: boolean = tr
   // Collapse multiple spaces into a single space and trim
   candidate = cleanText(candidate);
 
-  return candidate;
+  // Jika setelah dibersihkan hasilnya kosong, pakai tautan domain sebagai judul
+  return candidate || formatCleanUrl(hostPart) || mainDomain;
 };
 
 export const formatCleanUrl = (url?: string | null): string => {
@@ -194,18 +197,28 @@ export const getBookmarkDisplayTitle = (
   if (cleanName && cleanName.toLowerCase() !== 'bookmark') {
     if (/^https?:\/\//i.test(cleanName) || /^www\./i.test(cleanName)) {
       const ext = extractTitleFromUrl(cleanName, isInsideFolder);
-      return ext || (isInsideFolder ? '' : formatCleanUrl(cleanName));
+      return ext || formatCleanUrl(cleanName);
     }
 
     if (isInsideFolder && cleanUrl) {
-      // DALAM FOLDER: pastikan karakter domain utama tidak muncul
       const domain = getMainDomain(cleanUrl).toLowerCase();
       const domainBase = domain.split('.')[0];
+      const cleanFormatted = formatCleanUrl(cleanUrl);
+
+      // Tautan domain utama: jangan disembunyikan tapi pakai tautan domain untuk judulnya
+      const isMainDomainLink =
+        cleanFormatted === domain ||
+        cleanFormatted === `www.${domain}` ||
+        !cleanUrl.replace(/^https?:\/\//i, '').replace(/^ftp:\/\//i, '').includes('/');
+
+      if (isMainDomainLink) {
+        return cleanFormatted || domain;
+      }
+
       if (domainBase && domainBase.length >= 3) {
         const lowerName = cleanName.toLowerCase();
         if (lowerName === domainBase || lowerName === domain) {
-          const ext = extractTitleFromUrl(cleanUrl, true);
-          return ext || '';
+          return cleanFormatted || domain;
         }
         if (lowerName.includes(domainBase)) {
           const folderExt = extractTitleFromUrl(cleanUrl, true);
@@ -238,10 +251,10 @@ export const getBookmarkDisplayTitle = (
     if (extracted) {
       return extracted;
     }
-    return isInsideFolder ? '' : formatCleanUrl(cleanUrl);
+    return formatCleanUrl(cleanUrl);
   }
 
-  return isInsideFolder ? '' : (cleanName || 'Bookmark');
+  return cleanName || 'Bookmark';
 };
 
 export const extractUrlFromLabel = (label?: string | null): string | null => {

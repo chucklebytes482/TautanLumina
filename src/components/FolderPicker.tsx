@@ -155,7 +155,7 @@ export const FolderPicker = ({
                 }}
                 className="hover:text-[#FF4F00] font-medium truncate max-w-[120px] transition-colors"
               >
-                {b.name}
+                {b.id === 'folder-clipkey' ? 'clipboard' : b.id === 'folder-pharse' ? 'frasa' : b.name}
               </button>
             </span>
           ))}
@@ -221,7 +221,7 @@ export const FolderPicker = ({
                         ) : (
                           <Folder size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
                         )}
-                        <span className="truncate">{f.id === 'folder-clipkey' ? 'clipboard' : f.name}</span>
+                        <span className="truncate">{f.id === 'folder-clipkey' ? 'clipboard' : f.id === 'folder-pharse' ? 'frasa' : f.name}</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {subfolderCount > 0 && !disabled && (

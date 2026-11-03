@@ -247,14 +247,14 @@ const Row = ({
       {/* Info */}
       <div className="min-w-0 flex-1">
         {item.type === 'folder' ? (
-          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.id === 'folder-clipkey' ? 'clipboard' : item.name}>
+          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.id === 'folder-clipkey' ? 'clipboard' : item.id === 'folder-pharse' ? 'frasa' : item.name}>
             {renderItemLabel()}
-            {item.id === 'folder-clipkey' ? 'clipboard' : (cleanText(item.name) || t('file.folder'))}
+            {item.id === 'folder-clipkey' ? 'clipboard' : item.id === 'folder-pharse' ? 'frasa' : (cleanText(item.name) || t('file.folder'))}
           </div>
         ) : item.type === 'phrase' ? (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name}>
             {renderItemLabel()}
-            {/^https?:\/\//i.test(item.name || '') || /^www\./i.test(item.name || '') ? formatCleanUrl(item.name) : (cleanText(item.name) || 'Pharse')}
+            {/^https?:\/\//i.test(item.name || '') || /^www\./i.test(item.name || '') ? formatCleanUrl(item.name) : (cleanText(item.name) || 'Frasa')}
           </div>
         ) : item.type === 'note' ? (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.content || item.name}>

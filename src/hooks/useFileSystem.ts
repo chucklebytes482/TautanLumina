@@ -93,12 +93,12 @@ export const useFileSystem = () => {
         changed = true;
       }
 
-      const pharseExists = all.some(it => it.id === 'folder-pharse');
-      if (!pharseExists) {
+      const existingPharse = all.find(it => it.id === 'folder-pharse');
+      if (!existingPharse) {
         const folderPharse: FileSystemItem = {
           id: 'folder-pharse',
           parentId: null,
-          name: 'Pharse',
+          name: 'frasa',
           type: 'folder',
           order: 1,
           createdAt: 0,
@@ -106,6 +106,21 @@ export const useFileSystem = () => {
         };
         await db.saveItem(folderPharse);
         changed = true;
+      } else {
+        let pharseUpdated = false;
+        if (existingPharse.parentId !== null) {
+          existingPharse.parentId = null;
+          pharseUpdated = true;
+        }
+        if (existingPharse.name !== 'frasa') {
+          existingPharse.name = 'frasa';
+          pharseUpdated = true;
+        }
+        if (pharseUpdated) {
+          existingPharse.updatedAt = Date.now();
+          await db.saveItem(existingPharse);
+          changed = true;
+        }
       }
 
       if (changed) {
@@ -252,7 +267,7 @@ export const useFileSystem = () => {
       };
     }
     if (it.type === 'folder') {
-      const name = it.id === 'folder-catatan' ? 'Catatan' : it.id === 'folder-clipkey' ? 'clipboard' : it.name;
+      const name = it.id === 'folder-catatan' ? 'Catatan' : it.id === 'folder-clipkey' ? 'clipboard' : it.id === 'folder-pharse' ? 'frasa' : it.name;
       return { primary: name, secondary: '' };
     }
     if (it.type === 'phrase') {
@@ -270,6 +285,22 @@ export const useFileSystem = () => {
       items
         .filter((i) => i.parentId === pid)
         .sort((a, b) => {
+          // 1. Folder clipboard dan frasa SELALU nomor 1 dan 2 (folder lain TIDAK boleh di atasnya)
+          const sysRank = (id: string) => {
+            if (id === 'folder-clipkey' || id === 'folder-catatan') return 1;
+            if (id === 'folder-pharse') return 2;
+            return 999;
+          };
+          const rankA = sysRank(a.id);
+          const rankB = sysRank(b.id);
+          if (rankA !== rankB) {
+            return rankA - rankB;
+          }
+
+          // 2. Folder selalu di tempatkan keatas (di atas bookmark/catatan/pharse non-folder)
+          if (a.type === 'folder' && b.type !== 'folder') return -1;
+          if (b.type === 'folder' && a.type !== 'folder') return 1;
+
           // Khusus sub folder clipkey: diurutkan berdasarkan posisi/order (reorder keypad), bukan qwerty
           if (pid === 'folder-clipkey') {
             const orderA = a.order ?? 0;
@@ -280,24 +311,7 @@ export const useFileSystem = () => {
             return (a.createdAt ?? 0) - (b.createdAt ?? 0);
           }
 
-          // Selain folder clipkey: semuanya diurutkan berdasarkan urutan keyboard QWERTY
-          if (pid === null) {
-            const sysRank = (id: string) => {
-              if (id === 'folder-clipkey') return 1;
-              if (id === 'folder-pharse') return 2;
-              return 999;
-            };
-            const rankA = sysRank(a.id);
-            const rankB = sysRank(b.id);
-            if (rankA !== rankB) {
-              return rankA - rankB;
-            }
-          }
-
           if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-
-          if (a.type === 'folder' && b.type !== 'folder') return -1;
-          if (b.type === 'folder' && a.type !== 'folder') return 1;
 
           const keyA = getItemSortKeys(a);
           const keyB = getItemSortKeys(b);
@@ -346,7 +360,7 @@ export const useFileSystem = () => {
       const normContent = content.trim();
       const exists = currentDbItems.some(it => !it.deletedAt && it.type === 'phrase' && it.content?.trim() === normContent);
       if (exists) {
-        throw new Error('Pharse ini sudah ada');
+        throw new Error('Frasa ini sudah ada');
       }
     }
     let targetParentId = type === 'phrase'
@@ -428,7 +442,7 @@ export const useFileSystem = () => {
     const itemName = type === 'note'
       ? content.trim()
       : type === 'phrase'
-      ? (firstWordFromContent || 'pharse')
+      ? (firstWordFromContent || 'frasa')
       : (type === 'file' ? (name.trim() || extractTitleFromUrl(content, isFolder)) : (name.trim() || (type === 'folder' ? 'Folder' : 'Untitled')));
     const item: FileSystemItem = {
       id: uid(),
@@ -908,6 +922,22 @@ export const useFileSystem = () => {
           return false;
         })
         .sort((a, b) => {
+          // 1. Folder clipboard dan frasa SELALU nomor 1 dan 2
+          const sysRank = (id: string) => {
+            if (id === 'folder-clipkey' || id === 'folder-catatan') return 1;
+            if (id === 'folder-pharse') return 2;
+            return 999;
+          };
+          const rankA = sysRank(a.id);
+          const rankB = sysRank(b.id);
+          if (rankA !== rankB) {
+            return rankA - rankB;
+          }
+
+          // 2. Folder selalu di tempatkan keatas
+          if (a.type === 'folder' && b.type !== 'folder') return -1;
+          if (b.type === 'folder' && a.type !== 'folder') return 1;
+
           const keyA = getItemSortKeys(a);
           const keyB = getItemSortKeys(b);
           const primaryDiff = compareQwerty(keyA.primary, keyB.primary);
@@ -926,7 +956,8 @@ export const useFileSystem = () => {
       const parts: string[] = [];
       let cur = items.find((i) => i.id === id);
       while (cur) {
-        parts.unshift(cur.name);
+        const name = cur.id === 'folder-clipkey' ? 'clipboard' : cur.id === 'folder-pharse' ? 'frasa' : cur.name;
+        parts.unshift(name);
         cur = items.find((i) => i.id === cur!.parentId);
       }
       return '/' + parts.join('/');

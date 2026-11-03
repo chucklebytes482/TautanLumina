@@ -283,7 +283,7 @@ export default function App() {
         if (!unlockedFolderIds.has('folder-pharse')) {
           const pharseFolder = items.find((i) => i.id === 'folder-pharse') || ({
             id: 'folder-pharse',
-            name: 'Pharse',
+            name: 'frasa',
             type: 'folder',
             locked: true,
           } as FileSystemItem);
@@ -547,17 +547,17 @@ export default function App() {
       (it) => !it.deletedAt && it.type === 'phrase' && it.content?.trim() === cleanContent.trim()
     );
     if (isDuplicate) {
-      showToast('Pharse ini sudah ada');
+      showToast('Frasa ini sudah ada');
       return;
     }
 
-    // Judul pharse otomatis diambil dari 1 kata pertama isi pharse
-    const firstWord = words[0] || 'pharse';
+    // Judul frasa otomatis diambil dari 1 kata pertama isi frasa
+    const firstWord = words[0] || 'frasa';
 
     try {
       await createItem(firstWord, 'phrase', 'folder-pharse', cleanContent);
       navigateTo('folder-pharse');
-      showToast('Pharse disimpan');
+      showToast('Frasa disimpan');
     } catch (e: any) {
       showToast(e?.message || 'Gagal simpan');
     }
@@ -1083,8 +1083,8 @@ export default function App() {
                   data-testid="new-phrase-btn"
                   onClick={handleNewPhrase}
                   className="p-2.5 border border-[#e2ddd5] dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 dark:text-neutral-200 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
-                  title={t('btn.newPhrase') || 'Pharse (1x Klik Tempel)'}
-                  aria-label={t('btn.newPhrase') || 'Pharse (1x Klik Tempel)'}
+                  title={t('btn.newPhrase') || 'Frasa (1x Klik Tempel)'}
+                  aria-label={t('btn.newPhrase') || 'Frasa (1x Klik Tempel)'}
                 >
                   <KeyRound size={20} />
                 </button>
@@ -1109,7 +1109,7 @@ export default function App() {
                       onClick={() => navigateTo(b.id)}
                       className="px-2.5 py-1 rounded-lg hover:bg-[#faf8f5] dark:hover:bg-neutral-800 truncate max-w-[140px] text-neutral-800 dark:text-neutral-200 transition-colors cursor-pointer"
                     >
-                      {b.id === 'folder-clipkey' ? 'clipboard' : b.name}
+                      {b.id === 'folder-clipkey' ? 'clipboard' : b.id === 'folder-pharse' ? 'frasa' : b.name}
                     </button>
                   </div>
                 ))}
@@ -1216,6 +1216,8 @@ export default function App() {
               ? (menuFor.content || '').split('\n').find((l) => l.trim()) || '(kosong)'
               : menuFor.id === 'folder-clipkey'
               ? 'clipboard'
+              : menuFor.id === 'folder-pharse'
+              ? 'frasa'
               : menuFor.name || t('picker.newFolder')
           }
           actions={menuActions(menuFor)}
