@@ -347,27 +347,50 @@ export const useFileSystem = () => {
     if (type === 'file' && !content.trim()) {
       throw new Error('URL tidak boleh kosong');
     }
-    // Query direct fresh DB items to guarantee no false duplicate matches from stale state or deleted items
-    const currentDbItems = await db.getAllItems();
-    if (type === 'file') {
-      const normContent = content.trim().replace(/\/+$/, '');
-      const exists = currentDbItems.some(it => !it.deletedAt && it.type === 'file' && it.content?.trim().replace(/\/+$/, '') === normContent);
-      if (exists) {
-        throw new Error('Tautan ini sudah ada');
-      }
-    }
-    if (type === 'phrase') {
-      const normContent = content.trim();
-      const exists = currentDbItems.some(it => !it.deletedAt && it.type === 'phrase' && it.content?.trim() === normContent);
-      if (exists) {
-        throw new Error('Frasa ini sudah ada');
-      }
-    }
+    const isClipboardTarget = (targetId: string | null): boolean => {
+      if (!targetId) return false;
+      return targetId === 'folder-clipkey' || isDescendant('folder-clipkey', targetId);
+    };
+
     let targetParentId = type === 'phrase'
       ? 'folder-pharse'
       : (type === 'note')
       ? (parentId && (parentId === 'folder-clipkey' || isDescendant('folder-clipkey', parentId)) ? parentId : 'folder-clipkey')
       : parentId;
+
+    // Query direct fresh DB items to guarantee no false duplicate matches from stale state or deleted items
+    const currentDbItems = await db.getAllItems();
+
+    // Aturan anti-duplikat: tidak diizinkan duplikat di semua tempat KECUALI folder clipboard
+    const isClip = isClipboardTarget(targetParentId);
+
+    if (type === 'file' && !isClip) {
+      const normContent = content.trim().replace(/\/+$/, '').toLowerCase();
+      const exists = currentDbItems.some(
+        it => !it.deletedAt && it.type === 'file' && !isClipboardTarget(it.parentId) && it.content?.trim().replace(/\/+$/, '').toLowerCase() === normContent
+      );
+      if (exists) {
+        throw new Error('Tautan ini sudah ada');
+      }
+    }
+
+    if (type === 'phrase') {
+      const normContent = content.trim().toLowerCase();
+      const exists = currentDbItems.some(it => !it.deletedAt && it.type === 'phrase' && it.content?.trim().toLowerCase() === normContent);
+      if (exists) {
+        throw new Error('Frasa ini sudah ada');
+      }
+    }
+
+    if (type === 'folder' && !isClip) {
+      const normName = name.trim().toLowerCase();
+      const exists = currentDbItems.some(
+        it => !it.deletedAt && it.type === 'folder' && it.parentId === targetParentId && it.name?.trim().toLowerCase() === normName
+      );
+      if (exists) {
+        throw new Error('Folder dengan nama ini sudah ada');
+      }
+    }
 
     if (type === 'file') {
       const domain = getMainDomain(content || name);

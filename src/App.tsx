@@ -40,7 +40,7 @@ import { useI18n } from './lib/i18n';
 import { ADMIN_EMAIL } from './lib/appwrite';
 
 import { FileSystemItem } from './Types';
-import { extractTitleFromUrl, cleanText, getMainDomain } from './lib/titleExtractor';
+import { extractTitleFromUrl, cleanText, getMainDomain, formatCleanUrl } from './lib/titleExtractor';
 import { hasPinSet, removePin, usePinState } from './lib/pin';
 import { isBip39EnglishWord } from './lib/bip39';
 
@@ -387,35 +387,28 @@ export default function App() {
 
   const handleNewFolder = async () => {
     if (guardOffline()) return;
-    const name = await customPrompt(t('modal.folderName'));
+    const name = await customPrompt(t('modal.folderName') || 'Nama Folder Baru');
     if (name && name.trim()) {
-      await createItem(name.trim(), 'folder', currentFolderId);
+      try {
+        await createItem(name.trim(), 'folder', currentFolderId);
+      } catch (e: any) {
+        showToast(e?.message || 'Gagal membuat folder');
+      }
     }
   };
 
   const handleNewFile = async () => {
     if (guardOffline()) return;
 
-    let textToProcess = '';
+    // Kolom input bookmark saja (tidak otomatis ambil papan klip diam-diam)
+    const inputUrl = await customPrompt(
+      t('modal.bookmarkUrl') || 'Tambah Bookmark',
+      '',
+      { placeholder: 'https://example.com' }
+    );
+    if (!inputUrl || !inputUrl.trim()) return;
 
-    // 1-click paste: attempt to read directly from clipboard immediately
-    try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
-        const clip = await navigator.clipboard.readText();
-        if (clip && clip.trim()) {
-          textToProcess = clip.trim();
-        }
-      }
-    } catch (err) {
-      console.warn('Clipboard read error/denied for bookmark:', err);
-    }
-
-    if (!textToProcess) {
-      showToast('Papan klip kosong');
-      return;
-    }
-
-    const cleaned = cleanText(textToProcess);
+    const cleaned = cleanText(inputUrl);
     const urlMatch = cleaned.match(/https?:\/\/[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*/i);
     const rawUrl = urlMatch ? urlMatch[0].replace(/[),;.]+$/, '') : cleaned;
 
@@ -437,16 +430,16 @@ export default function App() {
     }
 
     const mainDomainUrl = `https://${mainDomain}`;
-
     const normMain = mainDomainUrl.trim().replace(/\/+$/, '').toLowerCase();
     const normCopied = finalCopiedUrl.trim().replace(/\/+$/, '').toLowerCase();
 
-    // Deteksi anti-duplikat langsung dari seluruh isi
-    const isMainDuplicate = items.some(
-      (it) => !it.deletedAt && it.type === 'file' && (it.content?.trim().replace(/\/+$/, '').toLowerCase() === normMain)
+    // Deteksi anti-duplikat langsung dari seluruh isi (tidak diizinkan duplikat kecuali folder clipboard)
+    const isInsideClip = isNoteFolderOrSubfolder(currentFolderId);
+    const isMainDuplicate = !isInsideClip && items.some(
+      (it) => !it.deletedAt && it.type === 'file' && !isNoteFolderOrSubfolder(it.parentId) && (it.content?.trim().replace(/\/+$/, '').toLowerCase() === normMain)
     );
-    const isCopiedDuplicate = items.some(
-      (it) => !it.deletedAt && it.type === 'file' && (it.content?.trim().replace(/\/+$/, '').toLowerCase() === normCopied)
+    const isCopiedDuplicate = !isInsideClip && items.some(
+      (it) => !it.deletedAt && it.type === 'file' && !isNoteFolderOrSubfolder(it.parentId) && (it.content?.trim().replace(/\/+$/, '').toLowerCase() === normCopied)
     );
 
     if (isMainDuplicate && isCopiedDuplicate) {
@@ -457,19 +450,19 @@ export default function App() {
     let addedCount = 0;
     const isFolder = Boolean(currentFolderId);
 
-    // 1. Otomatis simpan URL domain utama jika belum ada dan berbeda dari URL yang disalin
+    // 1. Otomatis membuat domain utama jika belum ada dan berbeda dari URL yang dimasukkan
     if (!isMainDuplicate && normMain !== normCopied) {
       const extractedMain = extractTitleFromUrl(mainDomainUrl, isFolder);
-      const autoTitleMain = extractedMain || '';
+      const autoTitleMain = extractedMain || formatCleanUrl(mainDomainUrl);
       try {
         await createItem(autoTitleMain, 'file', currentFolderId, mainDomainUrl);
         addedCount++;
       } catch (e: any) {
-        console.warn('Failed to add main domain bookmark:', e);
+        console.warn('Gagal otomatis membuat domain utama:', e);
       }
     }
 
-    // 2. Simpan URL yang disalin
+    // 2. Simpan URL yang dimasukkan dari kolom input
     if (!isCopiedDuplicate) {
       const extractedCopied = extractTitleFromUrl(finalCopiedUrl, isFolder);
       const autoTitleCopied = extractedCopied || '';
@@ -1065,8 +1058,8 @@ export default function App() {
                   data-testid="new-file-btn"
                   onClick={handleNewFile}
                   className="p-2.5 border border-[#e2ddd5] dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 dark:text-neutral-200 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
-                  title={t("btn.newBookmark") || "Bookmark (1x Klik Tempel)"}
-                  aria-label={t("btn.newBookmark") || "Bookmark (1x Klik Tempel)"}
+                  title={t("btn.newBookmark") || "Tambah Bookmark"}
+                  aria-label={t("btn.newBookmark") || "Tambah Bookmark"}
                 >
                   <BookmarkPlus size={20} />
                 </button>
