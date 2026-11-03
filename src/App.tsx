@@ -430,30 +430,66 @@ export default function App() {
     }
 
     const mainDomainUrl = `https://${mainDomain}`;
-    const normMain = mainDomainUrl.trim().replace(/\/+$/, '').toLowerCase();
-    const normCopied = finalCopiedUrl.trim().replace(/\/+$/, '').toLowerCase();
+    const normMain = mainDomain.toLowerCase();
+    const normInput = finalCopiedUrl
+      .trim()
+      .toLowerCase()
+      .replace(/^https?:\/\//i, '')
+      .replace(/^www\./i, '')
+      .replace(/\/+$/, '');
 
-    // Deteksi anti-duplikat langsung dari seluruh isi (tidak diizinkan duplikat kecuali folder clipboard)
     const isInsideClip = isNoteFolderOrSubfolder(currentFolderId);
-    const isMainDuplicate = !isInsideClip && items.some(
-      (it) => !it.deletedAt && it.type === 'file' && !isNoteFolderOrSubfolder(it.parentId) && (it.content?.trim().replace(/\/+$/, '').toLowerCase() === normMain)
-    );
-    const isCopiedDuplicate = !isInsideClip && items.some(
-      (it) => !it.deletedAt && it.type === 'file' && !isNoteFolderOrSubfolder(it.parentId) && (it.content?.trim().replace(/\/+$/, '').toLowerCase() === normCopied)
-    );
+    const isFolder = Boolean(currentFolderId);
 
-    if (isMainDuplicate && isCopiedDuplicate) {
+    // Cek apakah tautan yang ditambah adalah domain utama itu sendiri (misal bitget.com atau https://www.bitget.com/)
+    const isAddingMainDomain = normInput === normMain;
+
+    if (isAddingMainDomain) {
+      // JANGAN MEMBUAT DUPLIKAT JIKA TAUTAN YANG DITAMBAH ITU DOMAIN UTAMA
+      const alreadyExists = !isInsideClip && items.some(
+        (it) => !it.deletedAt && it.type === 'file' && !isNoteFolderOrSubfolder(it.parentId) && (
+          (it.content || '').trim().toLowerCase().replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/+$/, '') === normMain
+        )
+      );
+      if (alreadyExists) {
+        showToast('Tautan ini sudah ada');
+        return;
+      }
+
+      // Simpan HANYA SATU bookmark untuk domain utama (tidak membuat duplikat)
+      const autoTitleMain = formatCleanUrl(mainDomainUrl) || mainDomain;
+      try {
+        await createItem(autoTitleMain, 'file', currentFolderId, mainDomainUrl);
+        showToast('Bookmark disimpan');
+      } catch (e: any) {
+        showToast(e?.message || 'Gagal simpan');
+      }
+      return;
+    }
+
+    // Jika tautan yang ditambah adalah sub-halaman/path:
+    const isCopiedDuplicate = !isInsideClip && items.some(
+      (it) => !it.deletedAt && it.type === 'file' && !isNoteFolderOrSubfolder(it.parentId) && (
+        (it.content || '').trim().toLowerCase().replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/+$/, '') === normInput
+      )
+    );
+    if (isCopiedDuplicate) {
       showToast('Tautan ini sudah ada');
       return;
     }
 
-    let addedCount = 0;
-    const isFolder = Boolean(currentFolderId);
+    const isMainDuplicate = !isInsideClip && items.some(
+      (it) => !it.deletedAt && it.type === 'file' && !isNoteFolderOrSubfolder(it.parentId) && (
+        (it.content || '').trim().toLowerCase().replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/+$/, '') === normMain
+      )
+    );
 
-    // 1. Otomatis membuat domain utama jika belum ada dan berbeda dari URL yang dimasukkan
-    if (!isMainDuplicate && normMain !== normCopied) {
+    let addedCount = 0;
+
+    // 1. Otomatis membuat domain utama jika belum ada
+    if (!isMainDuplicate) {
       const extractedMain = extractTitleFromUrl(mainDomainUrl, isFolder);
-      const autoTitleMain = extractedMain || formatCleanUrl(mainDomainUrl);
+      const autoTitleMain = extractedMain || formatCleanUrl(mainDomainUrl) || mainDomain;
       try {
         await createItem(autoTitleMain, 'file', currentFolderId, mainDomainUrl);
         addedCount++;
@@ -462,17 +498,15 @@ export default function App() {
       }
     }
 
-    // 2. Simpan URL yang dimasukkan dari kolom input
-    if (!isCopiedDuplicate) {
-      const extractedCopied = extractTitleFromUrl(finalCopiedUrl, isFolder);
-      const autoTitleCopied = extractedCopied || '';
-      try {
-        await createItem(autoTitleCopied, 'file', currentFolderId, finalCopiedUrl);
-        addedCount++;
-      } catch (e: any) {
-        showToast(e?.message || 'Gagal simpan');
-        return;
-      }
+    // 2. Simpan URL sub-halaman yang dimasukkan dari kolom input
+    const extractedCopied = extractTitleFromUrl(finalCopiedUrl, isFolder);
+    const autoTitleCopied = extractedCopied || '';
+    try {
+      await createItem(autoTitleCopied, 'file', currentFolderId, finalCopiedUrl);
+      addedCount++;
+    } catch (e: any) {
+      showToast(e?.message || 'Gagal simpan');
+      return;
     }
 
     if (addedCount > 1) {

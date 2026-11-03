@@ -364,9 +364,21 @@ export const useFileSystem = () => {
     const isClip = isClipboardTarget(targetParentId);
 
     if (type === 'file' && !isClip) {
-      const normContent = content.trim().replace(/\/+$/, '').toLowerCase();
+      const normContent = content
+        .trim()
+        .toLowerCase()
+        .replace(/^https?:\/\//i, '')
+        .replace(/^www\./i, '')
+        .replace(/\/+$/, '');
       const exists = currentDbItems.some(
-        it => !it.deletedAt && it.type === 'file' && !isClipboardTarget(it.parentId) && it.content?.trim().replace(/\/+$/, '').toLowerCase() === normContent
+        it => !it.deletedAt && it.type === 'file' && !isClipboardTarget(it.parentId) && (
+          (it.content || '')
+            .trim()
+            .toLowerCase()
+            .replace(/^https?:\/\//i, '')
+            .replace(/^www\./i, '')
+            .replace(/\/+$/, '') === normContent
+        )
       );
       if (exists) {
         throw new Error('Tautan ini sudah ada');
