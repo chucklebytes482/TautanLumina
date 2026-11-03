@@ -200,17 +200,26 @@ const Row = ({
       ].join(' ')}
     >
       {/* Favicon Latar Belakang di Bagian Kiri (tidak memakan ruang judul) */}
-      {item.type === 'file' && item.content && (
+      {item.type === 'file' && Boolean(item.content || item.name) && (
         <div
           aria-hidden="true"
-          className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6.5 h-6.5 pointer-events-none select-none z-0 opacity-20 dark:opacity-25 group-hover:opacity-35 transition-opacity overflow-hidden flex items-center justify-center"
+          className="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 pointer-events-none select-none z-0 opacity-30 dark:opacity-35 group-hover:opacity-50 transition-opacity overflow-hidden flex items-center justify-center"
         >
           <img
-            src={`https://www.google.com/s2/favicons?domain=${getMainDomain(item.content)}&sz=64`}
+            src={`https://www.google.com/s2/favicons?domain=${getMainDomain(item.content || item.name) || 'google.com'}&sz=64`}
+            referrerPolicy="no-referrer"
+            crossOrigin="anonymous"
             alt=""
             className="w-full h-full object-contain filter dark:brightness-110"
             onError={(e) => {
-              (e.currentTarget as HTMLElement).style.display = 'none';
+              const target = e.currentTarget as HTMLImageElement;
+              const d = getMainDomain(item.content || item.name);
+              if (!target.dataset.fallback && d) {
+                target.dataset.fallback = '1';
+                target.src = `https://icons.duckduckgo.com/ip3/${d}.ico`;
+              } else {
+                target.style.display = 'none';
+              }
             }}
             loading="lazy"
           />
