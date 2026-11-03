@@ -5,6 +5,27 @@ import { useI18n } from '../lib/i18n';
 import { usePinState } from '../lib/pin';
 import { cleanText, extractTitleFromUrl, getBookmarkDisplayTitle, formatCleanUrl, getMainDomain } from '../lib/titleExtractor';
 
+const getFaviconUrl = (url?: string | null): string => {
+  if (!url) return '';
+  try {
+    let clean = url.trim();
+    if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+      clean = `https://${clean}`;
+    }
+    const parsed = new URL(clean);
+    const hostname = parsed.hostname;
+    if (hostname && hostname.includes('.')) {
+      return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=64`;
+    }
+  } catch {
+    const domain = getMainDomain(url);
+    if (domain && domain.includes('.')) {
+      return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
+    }
+  }
+  return '';
+};
+
 interface Props {
   items: FileSystemItem[];
   selectMode: boolean;
@@ -127,6 +148,10 @@ const Row = ({
   const pinActive = usePinState();
   const [copied, setCopied] = useState(false);
   const copyTimeoutRef = useRef<number | null>(null);
+  const [faviconError, setFaviconError] = useState(false);
+
+  const isBookmark = item.type === 'file';
+  const faviconUrl = isBookmark && item.content ? getFaviconUrl(item.content) : '';
 
   useEffect(() => {
     return () => {
@@ -195,33 +220,20 @@ const Row = ({
       data-testid={`item-row-${item.id}`}
       onClick={handleClick}
       className={[
-        'flex items-center gap-1.5 px-2 py-2 border rounded-xl select-none no-select bg-white cursor-pointer transition-all hover:shadow-xs hover:border-[#ff4f00]/40 relative overflow-hidden group',
+        'relative overflow-hidden group flex items-center gap-1.5 px-2 py-2 border rounded-xl select-none no-select bg-white cursor-pointer transition-all hover:shadow-xs hover:border-[#ff4f00]/40',
         selected ? 'bg-[#fff0eb] border-[#ff4f00]' : 'border-[#e2ddd5]',
       ].join(' ')}
     >
-      {/* Favicon Latar Belakang di Bagian Kiri (tidak memakan ruang judul) */}
-      {item.type === 'file' && Boolean(item.content || item.name) && (
-        <div
-          aria-hidden="true"
-          className="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 pointer-events-none select-none z-0 opacity-30 dark:opacity-35 group-hover:opacity-50 transition-opacity overflow-hidden flex items-center justify-center"
-        >
+      {/* Background Favicon di bagian kanan latar belakang bookmark (tidak memakan ruang layout) */}
+      {isBookmark && faviconUrl && !faviconError && (
+        <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none select-none z-0 flex items-center justify-center opacity-20 dark:opacity-30 group-hover:opacity-35 transition-opacity">
           <img
-            src={`https://www.google.com/s2/favicons?domain=${getMainDomain(item.content || item.name) || 'google.com'}&sz=64`}
-            referrerPolicy="no-referrer"
-            crossOrigin="anonymous"
+            src={faviconUrl}
             alt=""
-            className="w-full h-full object-contain filter dark:brightness-110"
-            onError={(e) => {
-              const target = e.currentTarget as HTMLImageElement;
-              const d = getMainDomain(item.content || item.name);
-              if (!target.dataset.fallback && d) {
-                target.dataset.fallback = '1';
-                target.src = `https://icons.duckduckgo.com/ip3/${d}.ico`;
-              } else {
-                target.style.display = 'none';
-              }
-            }}
             loading="lazy"
+            decoding="async"
+            className="w-7 h-7 object-contain drop-shadow-xs"
+            onError={() => setFaviconError(true)}
           />
         </div>
       )}
@@ -247,7 +259,7 @@ const Row = ({
 
       {/* Icon / Note Badge (bookmarks & phrase items have no icon) */}
       {(item.type === 'folder' || item.type === 'note') && (
-        <div className={`relative z-10 shrink-0 w-6.5 h-6.5 flex items-center justify-center rounded-lg border overflow-hidden transition-colors ${
+        <div className={`shrink-0 w-6.5 h-6.5 flex items-center justify-center rounded-lg border overflow-hidden relative z-10 transition-colors ${
           copied ? 'bg-emerald-50 border-emerald-500/40 dark:bg-emerald-950/40 dark:border-emerald-500/50' : 'bg-[#faf8f5] border-[#e2ddd5]/60'
         }`}>
           {item.type === 'folder' ? (
