@@ -1224,6 +1224,11 @@ export const useFileSystem = () => {
     // Hapus item-item duplikat dari database
     if (toDeleteIds.length > 0) {
       await db.deleteItems(toDeleteIds);
+      try {
+        const storedDeleted = JSON.parse(localStorage.getItem('tautanlumina:deleted_ids') || '[]');
+        const updatedDeleted = Array.from(new Set([...storedDeleted, ...toDeleteIds])).slice(-1000);
+        localStorage.setItem('tautanlumina:deleted_ids', JSON.stringify(updatedDeleted));
+      } catch (e) {}
       all = await db.getAllItems();
     }
 
@@ -1248,6 +1253,11 @@ export const useFileSystem = () => {
       if (groupRes.deletedFolders && groupRes.deletedFolders.length > 0) {
         await db.deleteItems(groupRes.deletedFolders);
         foldersUpdated += groupRes.deletedFolders.length;
+        try {
+          const storedDeleted = JSON.parse(localStorage.getItem('tautanlumina:deleted_ids') || '[]');
+          const updatedDeleted = Array.from(new Set([...storedDeleted, ...groupRes.deletedFolders])).slice(-1000);
+          localStorage.setItem('tautanlumina:deleted_ids', JSON.stringify(updatedDeleted));
+        } catch (e) {}
       }
       if (groupRes.createdFolders && groupRes.createdFolders.length > 0) {
         await db.saveItems(groupRes.createdFolders);
