@@ -403,7 +403,6 @@ export default function App() {
   const handleNewFile = async () => {
     if (guardOffline()) return;
 
-    // Kolom input bookmark saja (tidak otomatis ambil papan klip diam-diam)
     const inputUrl = await customPrompt(
       t('modal.bookmarkUrl') || 'Tambah Bookmark',
       '',
@@ -432,8 +431,6 @@ export default function App() {
       return;
     }
 
-    const mainDomainUrl = `https://${mainDomain}`;
-    const normMain = mainDomain.toLowerCase();
     const normInput = finalCopiedUrl
       .trim()
       .toLowerCase()
@@ -444,33 +441,6 @@ export default function App() {
     const isInsideClip = isNoteFolderOrSubfolder(currentFolderId);
     const isFolder = Boolean(currentFolderId);
 
-    // Cek apakah tautan yang ditambah adalah domain utama itu sendiri (misal bitget.com atau https://www.bitget.com/)
-    const isAddingMainDomain = normInput === normMain;
-
-    if (isAddingMainDomain) {
-      // JANGAN MEMBUAT DUPLIKAT JIKA TAUTAN YANG DITAMBAH ITU DOMAIN UTAMA
-      const alreadyExists = !isInsideClip && items.some(
-        (it) => !it.deletedAt && it.type === 'file' && !isNoteFolderOrSubfolder(it.parentId) && (
-          (it.content || '').trim().toLowerCase().replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/+$/, '') === normMain
-        )
-      );
-      if (alreadyExists) {
-        showToast('Tautan ini sudah ada');
-        return;
-      }
-
-      // Simpan HANYA SATU bookmark untuk domain utama (tidak membuat duplikat)
-      const autoTitleMain = formatCleanUrl(mainDomainUrl) || mainDomain;
-      try {
-        await createItem(autoTitleMain, 'file', currentFolderId, mainDomainUrl);
-        showToast('Bookmark disimpan');
-      } catch (e: any) {
-        showToast(e?.message || 'Gagal simpan');
-      }
-      return;
-    }
-
-    // Jika tautan yang ditambah adalah sub-halaman/path:
     const isCopiedDuplicate = !isInsideClip && items.some(
       (it) => !it.deletedAt && it.type === 'file' && !isNoteFolderOrSubfolder(it.parentId) && (
         (it.content || '').trim().toLowerCase().replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/+$/, '') === normInput
@@ -481,41 +451,13 @@ export default function App() {
       return;
     }
 
-    const isMainDuplicate = !isInsideClip && items.some(
-      (it) => !it.deletedAt && it.type === 'file' && !isNoteFolderOrSubfolder(it.parentId) && (
-        (it.content || '').trim().toLowerCase().replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/+$/, '') === normMain
-      )
-    );
-
-    let addedCount = 0;
-
-    // 1. Otomatis membuat domain utama jika belum ada
-    if (!isMainDuplicate) {
-      const extractedMain = extractTitleFromUrl(mainDomainUrl, isFolder);
-      const autoTitleMain = extractedMain || formatCleanUrl(mainDomainUrl) || mainDomain;
-      try {
-        await createItem(autoTitleMain, 'file', currentFolderId, mainDomainUrl);
-        addedCount++;
-      } catch (e: any) {
-        console.warn('Gagal otomatis membuat domain utama:', e);
-      }
-    }
-
-    // 2. Simpan URL sub-halaman yang dimasukkan dari kolom input
     const extractedCopied = extractTitleFromUrl(finalCopiedUrl, isFolder);
     const autoTitleCopied = extractedCopied || '';
     try {
       await createItem(autoTitleCopied, 'file', currentFolderId, finalCopiedUrl);
-      addedCount++;
+      showToast('Bookmark disimpan');
     } catch (e: any) {
       showToast(e?.message || 'Gagal simpan');
-      return;
-    }
-
-    if (addedCount > 1) {
-      showToast('Domain utama & bookmark disimpan');
-    } else if (addedCount === 1) {
-      showToast('Bookmark disimpan');
     }
   };
 
