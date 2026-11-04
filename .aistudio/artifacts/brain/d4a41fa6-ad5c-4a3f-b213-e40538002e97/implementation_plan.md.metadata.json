@@ -1,6 +1,6 @@
 {
-  "summary":  "Rencana implementasi untuk mencegah duplikasi folder otomatis dan menggabungkan isi folder duplikat yang sudah ada di dalam folder induk yang sama.",
-  "updatedAt":  "2026-11-01T18:14:15.547152990Z",
-  "requestFeedback":  true,
-  "userFacing":  true
+  "summary": "Rencana pembersihan file tidak terpakai (termasuk aset screenshot lama dan kamus bahasa asing i18n-missing) serta optimasi kode mati dan duplikasi logika tanpa mengubah perilaku fitur.",
+  "updatedAt": "2026-11-04T07:28:40.109874653Z",
+  "requestFeedback": true,
+  "userFacing": true
 }

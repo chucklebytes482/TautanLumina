@@ -257,62 +257,14 @@ export const getBookmarkDisplayTitle = (
   return cleanName || 'Bookmark';
 };
 
-export const extractUrlFromLabel = (label?: string | null): string | null => {
-  if (!label) return null;
-  const trimmed = cleanText(label);
-  if (!trimmed) return null;
-
-  if (/^https?:\/\//i.test(trimmed)) {
-    return trimmed;
-  }
-  if (/^www\./i.test(trimmed)) {
-    return `https://${trimmed}`;
-  }
-  if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/.*)?$/i.test(trimmed)) {
-    return `https://${trimmed}`;
-  }
-  const match = trimmed.match(/https?:\/\/[^\s]+|www\.[^\s]+/i);
-  if (match) {
-    const url = match[0];
-    return url.startsWith('http') ? url : `https://${url}`;
-  }
-  return null;
-};
-
-const QWERTY_ORDER = 'qwertyuiopasdfghjklzxcvbnm';
-
-const getCharRank = (ch: string): number => {
-  const lower = ch.toLowerCase();
-  const qIdx = QWERTY_ORDER.indexOf(lower);
-  if (qIdx !== -1) {
-    return 100 + qIdx; // letters in QWERTY keyboard order: 100..125
-  }
-  // Digits 0-9
-  if (lower >= '0' && lower <= '9') {
-    return 50 + (lower.charCodeAt(0) - 48); // digits 50..59
-  }
-  // All other characters (symbols, punctuation)
-  return lower.charCodeAt(0);
-};
-
-export const compareQwerty = (a?: string | null, b?: string | null): number => {
-  const strA = cleanText(a);
-  const strB = cleanText(b);
-  const len = Math.min(strA.length, strB.length);
-
-  for (let i = 0; i < len; i++) {
-    const rankA = getCharRank(strA[i]);
-    const rankB = getCharRank(strB[i]);
-    if (rankA !== rankB) {
-      return rankA - rankB;
-    }
-  }
-
-  if (strA.length !== strB.length) {
-    return strA.length - strB.length;
-  }
-
-  return strA.localeCompare(strB);
+export const normalizeBookmarkUrl = (url?: string | null): string => {
+  if (!url) return '';
+  return url
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^www\./i, '')
+    .replace(/\/+$/, '');
 };
 
 export const compareAlphabetical = (a?: string | null, b?: string | null): number => {
@@ -320,4 +272,3 @@ export const compareAlphabetical = (a?: string | null, b?: string | null): numbe
   const strB = cleanText(b);
   return strA.localeCompare(strB, undefined, { numeric: true, sensitivity: 'base' });
 };
-

@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { FileSystemItem, FileSystemItemType } from '../Types';
 import * as db from '../db/db';
-import { useI18n } from '../lib/i18n';
 import { getStoredPinHash, getStoredPinUpdatedAt, setStoredPinHash } from '../lib/pin';
-import { compareAlphabetical, getBookmarkDisplayTitle, getMainDomain, extractTitleFromUrl } from '../lib/titleExtractor';
+import { compareAlphabetical, getBookmarkDisplayTitle, getMainDomain, extractTitleFromUrl, normalizeBookmarkUrl } from '../lib/titleExtractor';
 import { groupBookmarksByDomain } from '../lib/domainGrouper';
 
 const uid = () =>
@@ -18,7 +17,6 @@ export const notifyDataModified = () => {
 };
 
 export const useFileSystem = () => {
-  const { t } = useI18n();
   const [items, setItems] = useState<FileSystemItem[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -275,10 +273,6 @@ export const useFileSystem = () => {
     return { primary: it.content || it.name || '', secondary: '' };
   };
 
-  const getItemSortTitle = (it: FileSystemItem): string => {
-    return getItemSortKeys(it).primary;
-  };
-
   const childrenOf = useCallback(
     (pid: string | null) =>
       items
@@ -364,20 +358,10 @@ export const useFileSystem = () => {
     const isClip = isClipboardTarget(targetParentId);
 
     if (type === 'file' && !isClip) {
-      const normContent = content
-        .trim()
-        .toLowerCase()
-        .replace(/^https?:\/\//i, '')
-        .replace(/^www\./i, '')
-        .replace(/\/+$/, '');
+      const normContent = normalizeBookmarkUrl(content);
       const exists = currentDbItems.some(
         it => !it.deletedAt && it.type === 'file' && !isClipboardTarget(it.parentId) && (
-          (it.content || '')
-            .trim()
-            .toLowerCase()
-            .replace(/^https?:\/\//i, '')
-            .replace(/^www\./i, '')
-            .replace(/\/+$/, '') === normContent
+          normalizeBookmarkUrl(it.content) === normContent
         )
       );
       if (exists) {
@@ -557,25 +541,6 @@ export const useFileSystem = () => {
     notifyDataModified();
   };
 
-  const updateMany = async (itemUpdatesList: { id: string; updates: Partial<FileSystemItem> }[]) => {
-    const now = Date.now();
-    const updatedItems: FileSystemItem[] = [];
-    for (const { id, updates } of itemUpdatesList) {
-      let it = items.find((i) => i.id === id);
-      if (!it) {
-        it = await db.getItem(id);
-      }
-      if (it) {
-        updatedItems.push({ ...it, ...updates, updatedAt: now });
-      }
-    }
-    if (updatedItems.length > 0) {
-      await db.saveItems(updatedItems);
-      await reload();
-      notifyDataModified();
-    }
-  };
-
   const collectDescendants = (rootIds: string[]): string[] => {
     const all = new Set<string>();
     const walk = (id: string) => {
@@ -678,25 +643,6 @@ export const useFileSystem = () => {
     await reload();
     notifyDataModified();
   }, [currentFolderId, reload]);
-
-  const clearPharseFolder = async () => {
-    const allDbItems = await db.getAllItems();
-    const pharseItemIds = allDbItems
-      .filter(it => it.id !== 'folder-pharse' && (it.parentId === 'folder-pharse' || isDescendant('folder-pharse', it.parentId || '')))
-      .map(it => it.id);
-    
-    if (pharseItemIds.length > 0) {
-      await db.deleteItems(pharseItemIds);
-      try {
-        const stored = localStorage.getItem('tautanlumina:deleted_ids');
-        const currentDeleted: string[] = stored ? JSON.parse(stored) : [];
-        const updatedDeleted = Array.from(new Set([...currentDeleted, ...pharseItemIds]));
-        localStorage.setItem('tautanlumina:deleted_ids', JSON.stringify(updatedDeleted));
-      } catch (e) {}
-    }
-    await reload();
-    notifyDataModified();
-  };
 
   const isDescendant = (ancestorId: string, nodeId: string): boolean => {
     let cur = items.find((i) => i.id === nodeId);
@@ -854,58 +800,6 @@ export const useFileSystem = () => {
       await reload();
       notifyDataModified();
     }
-  };
-
-  const copyMany = async (ids: string[], targetParentId: string | null) => {
-    const isTargetPharse = isPharseFolder(targetParentId);
-    const isTargetNote = isNoteFolder(targetParentId);
-
-    const validIds = ids.filter((id) => {
-      const it = items.find((i) => i.id === id);
-      if (!it) return false;
-      const isPharseContent = isPharseItem(it);
-      const isNoteContent = isNoteItem(it);
-
-      if (isPharseContent) {
-        return isTargetPharse;
-      } else if (isNoteContent) {
-        return isTargetNote;
-      } else {
-        return !isTargetPharse && !isTargetNote;
-      }
-    });
-
-    if (validIds.length === 0) return;
-
-    const all = collectDescendants(validIds);
-    const map: Record<string, string> = {};
-    const now = Date.now();
-    const targetSiblings = items.filter((i) => i.parentId === targetParentId);
-    let base = targetSiblings.length ? Math.max(...targetSiblings.map((s) => s.order ?? 0)) + 1 : 0;
-
-    all.forEach((id) => (map[id] = uid()));
-
-    const copies: FileSystemItem[] = all.map((id) => {
-      const it = items.find((i) => i.id === id)!;
-      const isRoot = ids.includes(id);
-      return {
-        ...it,
-        id: map[id],
-        parentId: isRoot ? targetParentId : map[it.parentId!] ?? targetParentId,
-        order: isRoot ? base++ : it.order,
-        createdAt: now,
-        updatedAt: now,
-      };
-    });
-    await db.saveItems(copies);
-    await reload();
-    notifyDataModified();
-  };
-
-  const duplicateItem = async (id: string) => {
-    const it = items.find((i) => i.id === id);
-    if (!it) return;
-    await copyMany([id], it.parentId);
   };
 
   const reorderInParent = async (parentId: string | null, orderedIds: string[]) => {
@@ -1095,45 +989,6 @@ export const useFileSystem = () => {
     await reload();
   };
 
-  const clearAll = useCallback(async () => {
-    await db.clearAll();
-    setItems([]);
-    setCurrentFolderId(null);
-    try {
-      localStorage.removeItem('tautanlumina:deleted_ids');
-    } catch (e) {}
-    await reload();
-    notifyDataModified();
-  }, [reload]);
-
-  const purgeChangeHistory = useCallback(async () => {
-    try {
-      localStorage.removeItem('tautanlumina:deleted_ids');
-      const all = await db.getAllItems();
-      const toDeleteIds: string[] = [];
-      const validFolderIds = new Set(all.filter((it) => it.type === 'folder').map((it) => it.id));
-      all.forEach((it) => {
-        if (it.deletedAt) {
-          toDeleteIds.push(it.id);
-        } else if (
-          it.parentId &&
-          it.parentId !== 'folder-pharse' &&
-          it.parentId !== 'folder-clipkey' &&
-          !validFolderIds.has(it.parentId)
-        ) {
-          toDeleteIds.push(it.id);
-        }
-      });
-      if (toDeleteIds.length > 0) {
-        await db.deleteItems(toDeleteIds);
-      }
-      await reload();
-      return true;
-    } catch {
-      return false;
-    }
-  }, [reload]);
-
   const refreshAndSanitizeAll = useCallback(async (): Promise<{
     duplicatesRemoved: number;
     titlesUpdated: number;
@@ -1161,17 +1016,6 @@ export const useFileSystem = () => {
       return false;
     };
 
-    // Helper: normalisasi URL untuk perbandingan duplikat (mengabaikan protokol, www, trailing slash)
-    const normalizeUrl = (url?: string | null): string => {
-      if (!url) return '';
-      return url
-        .trim()
-        .toLowerCase()
-        .replace(/^https?:\/\//i, '')
-        .replace(/^www\./i, '')
-        .replace(/\/+$/, '');
-    };
-
     // 1. Pastikan folder sistem memiliki nama yang tepat
     const clipkeyFolder = all.find((it) => it.id === 'folder-clipkey');
     if (clipkeyFolder && clipkeyFolder.name !== 'clipboard') {
@@ -1195,7 +1039,7 @@ export const useFileSystem = () => {
         // Di dalam folder clipboard, duplikat diperbolehkan
         return;
       }
-      const norm = normalizeUrl(bm.content);
+      const norm = normalizeBookmarkUrl(bm.content);
       if (!norm) return;
 
       if (seenBookmarkUrls.has(norm)) {
@@ -1295,11 +1139,8 @@ export const useFileSystem = () => {
     updateContent,
     renameItem,
     updateItem,
-    updateMany,
     deleteMany,
     moveMany,
-    copyMany,
-    duplicateItem,
     reorderInParent,
     getBreadcrumbs,
     searchItems,
@@ -1310,10 +1151,7 @@ export const useFileSystem = () => {
     isDescendant,
     isPharseFolder,
     isNoteFolder,
-    clearAll,
-    clearPharseFolder,
     clearClipboardAndPharseContents,
-    purgeChangeHistory,
     refreshAndSanitizeAll,
   };
 };

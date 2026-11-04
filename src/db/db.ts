@@ -2,7 +2,6 @@ import { openDB, IDBPDatabase, deleteDB } from 'idb';
 import { FileSystemItem } from '../Types';
 import { isDevEnvironment } from '../lib/appwrite';
 
-const DB_NAME = 'tautanlumina';
 const LEGACY_DB_NAME = 'simpanteks';
 const DB_VERSION = 3;
 const STORE = 'items';
@@ -161,12 +160,6 @@ export const deleteItems = async (ids: string[]): Promise<void> => {
   });
 };
 
-export const clearAll = async (): Promise<void> => {
-  await runOp((db) => db.clear(STORE));
-};
-
 export const clearItems = async (): Promise<void> => {
   await runOp((db) => db.clear(STORE));
 };
-
-

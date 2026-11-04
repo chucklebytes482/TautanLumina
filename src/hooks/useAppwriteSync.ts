@@ -6,7 +6,7 @@ import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
 import { removePin, getStoredPinHash, getStoredPinUpdatedAt, setStoredPinHash } from '../lib/pin';
 import * as db from '../db/db';
-import { extractTitleFromUrl } from '../lib/titleExtractor';
+import { extractTitleFromUrl, normalizeBookmarkUrl } from '../lib/titleExtractor';
 import { groupBookmarksByDomain } from '../lib/domainGrouper';
 
 const getInitialUser = () => {
@@ -292,36 +292,6 @@ export function useAppwriteSync(
     }
   };
 
-  const logoutOtherDevices = async () => {
-    try {
-      const currentSession = await account.getSession('current');
-      const sessionList = await account.listSessions();
-      const otherSessions = sessionList.sessions.filter((s) => s.$id !== currentSession.$id);
-
-      if (otherSessions.length === 0) {
-        toast.dismiss();
-        toast.info(t('settings.noOtherSessions') || 'Tidak ada sesi perangkat lain yang aktif', { duration: 2000 });
-        return true;
-      }
-
-      await Promise.all(
-        otherSessions.map((s) => account.deleteSession(s.$id).catch((e) => console.warn('Failed to delete session', s.$id, e)))
-      );
-
-      toast.dismiss();
-      toast.success(
-        t('settings.loggedOutOtherDevices') || `Berhasil keluar dari ${otherSessions.length} perangkat lain`,
-        { duration: 2500 }
-      );
-      return true;
-    } catch (e: any) {
-      console.error('Failed to logout other devices:', e);
-      toast.dismiss();
-      toast.error(t('settings.logoutOtherDevicesError') || 'Gagal mengeluarkan perangkat lain', { duration: 2000 });
-      return false;
-    }
-  };
-
   const syncInProgressRef = useRef(false);
   const pendingQueuedSyncRef = useRef(false);
   const debounceTimerRef = useRef<any>(null);
@@ -523,23 +493,13 @@ export function useAppwriteSync(
         return false;
       };
 
-      const normalizeUrl = (url?: string | null): string => {
-        if (!url) return '';
-        return url
-          .trim()
-          .toLowerCase()
-          .replace(/^https?:\/\//i, '')
-          .replace(/^www\./i, '')
-          .replace(/\/+$/, '');
-      };
-
       // Bersihkan duplikat bookmark di luar folder clipboard dari data cloud/lokal
       const seenUrls = new Map<string, FileSystemItem>();
       const dedupedList: FileSystemItem[] = [];
 
       for (const it of rawMergedList) {
         if (it.type === 'file' && it.content && !isClipboardTarget(it.parentId)) {
-          const norm = normalizeUrl(it.content);
+          const norm = normalizeBookmarkUrl(it.content);
           if (norm) {
             if (seenUrls.has(norm)) {
               // Hapus duplikat secara permanen (tambahkan ke permanentlyDeletedSet)
@@ -744,69 +704,6 @@ export function useAppwriteSync(
     };
   }, [user, smartSync]);
 
-  const purgeSyncHistory = useCallback(async () => {
-    try {
-      localStorage.removeItem('tautanlumina:deleted_ids');
-      if (user && user.$id) {
-        const docId = getSyncDocId(user.$id);
-        const cloudDoc = await databases.getDocument(APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID, docId).catch(() => null);
-        if (cloudDoc && cloudDoc.data) {
-          let parsed: any;
-          try {
-            parsed = JSON.parse(cloudDoc.data);
-          } catch {
-            parsed = null;
-          }
-          if (parsed && typeof parsed === 'object') {
-            parsed.deletedIds = [];
-            const updatedDataStr = JSON.stringify(parsed);
-            if (updatedDataStr !== cloudDoc.data) {
-              await databases.updateDocument(APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID, docId, {
-                data: updatedDataStr,
-                email: user.email
-              });
-              lastSyncedStrRef.current = updatedDataStr;
-            }
-          }
-        }
-      }
-      return true;
-    } catch (err) {
-      console.warn('Failed to purge sync history in cloud:', err);
-      return false;
-    }
-  }, [user]);
-
-  const clearCloudData = useCallback(async () => {
-    try {
-      if (user && user.$id) {
-        const docId = getSyncDocId(user.$id);
-        const cloudDoc = await databases.getDocument(APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID, docId).catch(() => null);
-        if (cloudDoc) {
-          const emptyData = JSON.stringify({
-            app: 'plaintxtai',
-            version: 1,
-            items: [],
-            deletedIds: [],
-            apiKey: '',
-            model: '',
-            pinHash: '',
-            pinUpdatedAt: 0
-          });
-          await databases.updateDocument(APPWRITE_DATABASE_ID, APPWRITE_COLLECTION_ID, docId, {
-            data: emptyData,
-            email: user.email
-          });
-          lastSyncedStrRef.current = emptyData;
-        }
-      }
-      return true;
-    } catch (e) {
-      console.warn('Failed to clear cloud data:', e);
-      return false;
-    }
-  }, [user]);
-
   return {
     user,
     loading,
@@ -818,9 +715,6 @@ export function useAppwriteSync(
     updatePasswordRecovery,
     verifyPasswordAndResetPin,
     logout,
-    logoutOtherDevices,
     smartSync,
-    purgeSyncHistory,
-    clearCloudData
   };
 }

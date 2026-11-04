@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import {
   Search,
@@ -9,21 +9,10 @@ import {
   ChevronRight,
   X,
   Trash2,
-  Copy,
   Move,
   ListChecks,
-  Shield,
-  Lock,
-  Unlock,
-  Layers,
-  Eraser,
-  Settings,
-  Menu,
   PanelLeft,
   MessageCircle,
-  ExternalLink,
-  Mail,
-  Aperture,
   KeyRound,
   RefreshCw
 } from 'lucide-react';
@@ -40,8 +29,8 @@ import { useI18n } from './lib/i18n';
 import { ADMIN_EMAIL } from './lib/appwrite';
 
 import { FileSystemItem } from './Types';
-import { extractTitleFromUrl, cleanText, getMainDomain, formatCleanUrl } from './lib/titleExtractor';
-import { hasPinSet, removePin, usePinState } from './lib/pin';
+import { extractTitleFromUrl, cleanText, getMainDomain, normalizeBookmarkUrl } from './lib/titleExtractor';
+import { hasPinSet, usePinState } from './lib/pin';
 import { isBip39EnglishWord } from './lib/bip39';
 
 import { FolderPicker } from './components/FolderPicker';
@@ -53,7 +42,7 @@ import { PhraseViewModal } from './components/PhraseViewModal';
 
 export default function App() {
   const fs = useFileSystem();
-  const { alert: customAlert, confirm: customConfirm, prompt: customPrompt } = useDialog();
+  const { confirm: customConfirm, prompt: customPrompt } = useDialog();
   const {
     items,
     loaded,
@@ -64,20 +53,14 @@ export default function App() {
     updateContent,
     renameItem,
     updateItem,
-    updateMany,
     deleteMany,
     moveMany,
-    copyMany,
     reorderInParent,
-    childrenOf,
     getBreadcrumbs,
     searchItems,
     pathOf,
     exportJSON,
     importJSON,
-    importItems,
-    clearAll,
-    clearPharseFolder,
     clearClipboardAndPharseContents,
     refreshAndSanitizeAll,
   } = fs;
@@ -127,33 +110,14 @@ export default function App() {
   // Phrase Read-Only modal state
   const [viewingPhraseItem, setViewingPhraseItem] = useState<FileSystemItem | null>(null);
 
-  const { lang, setLang, t } = useI18n();
+  const { t } = useI18n();
 
-  const [isOffline, setIsOffline] = useState<boolean>(() => typeof navigator !== 'undefined' ? !navigator.onLine : false);
-
-  const { user, loading, syncing, login, register, resetPassword, verifyPasswordAndResetPin, updatePasswordRecovery, verifyEmail, logout, logoutOtherDevices, smartSync, clearCloudData } = useAppwriteSync(
+  const { user, loading, syncing, login, register, resetPassword, verifyPasswordAndResetPin, updatePasswordRecovery, verifyEmail, logout, smartSync } = useAppwriteSync(
     items,
     importJSON,
     exportJSON,
     loaded
   );
-
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOffline(false);
-    };
-    const handleOffline = () => {
-      setIsOffline(true);
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
 
   const guardOffline = useCallback(() => {
     return false;
@@ -431,19 +395,14 @@ export default function App() {
       return;
     }
 
-    const normInput = finalCopiedUrl
-      .trim()
-      .toLowerCase()
-      .replace(/^https?:\/\//i, '')
-      .replace(/^www\./i, '')
-      .replace(/\/+$/, '');
+    const normInput = normalizeBookmarkUrl(finalCopiedUrl);
 
     const isInsideClip = isNoteFolderOrSubfolder(currentFolderId);
     const isFolder = Boolean(currentFolderId);
 
     const isCopiedDuplicate = !isInsideClip && items.some(
       (it) => !it.deletedAt && it.type === 'file' && !isNoteFolderOrSubfolder(it.parentId) && (
-        (it.content || '').trim().toLowerCase().replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/+$/, '') === normInput
+        normalizeBookmarkUrl(it.content) === normInput
       )
     );
     if (isCopiedDuplicate) {

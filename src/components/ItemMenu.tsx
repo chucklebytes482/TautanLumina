@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { FileSystemItem } from '../Types';
+import { formatCleanUrl } from '../lib/titleExtractor';
 
 export interface MenuAction {
   key: string;
@@ -42,7 +43,6 @@ const copyToClipboard = async (text: string): Promise<boolean> => {
     return false;
   }
 };
-import { formatCleanUrl, extractUrlFromLabel } from '../lib/titleExtractor';
 
 export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
