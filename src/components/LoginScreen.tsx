@@ -169,7 +169,7 @@ export const LoginScreen = ({ login, register, resetPassword, updatePasswordReco
             {/* Collapsible & Scrollable Hero Body */}
             <div className={`transition-all duration-300 pr-0.5 ${isHeroExpanded ? 'block max-h-72 overflow-y-auto mt-3 custom-scrollbar' : 'hidden md:block'}`}>
               <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed mb-4 sm:mb-6">
-                {t('app.heroDesc') || 'Aplikasi pengelola bookmark dan catatan cerdas berbasis AI. Penamaan otomatis maks 15 karakter, kunci PIN 4-digit, obrolan suara 30 detik dengan pratinjau audio, sinkronisasi cloud Appwrite, serta impor/ekspor data instan.'}
+                {t('app.heroDesc') || 'Aplikasi pengelola catatan dan frasa cerdas. Kunci PIN 4-digit, obrolan suara 30 detik dengan pratinjau audio, sinkronisasi cloud Appwrite, serta impor/ekspor data instan.'}
               </p>
 
               {/* Feature Highlights Grid */}
@@ -345,7 +345,7 @@ export const LoginScreen = ({ login, register, resetPassword, updatePasswordReco
 
       {/* Footer copyright */}
       <footer className="w-full max-w-5xl text-center pt-3 pb-1 text-[11px] text-neutral-500 dark:text-neutral-400">
-        <p>© 2026 TautanLumina • Ultra-Minimalist AI Bookmark & Note Manager</p>
+        <p>© 2026 TautanLumina • Ultra-Minimalist AI Note & Phrase Manager</p>
       </footer>
 
     </div>

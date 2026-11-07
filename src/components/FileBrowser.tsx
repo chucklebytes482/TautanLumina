@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { MoreVertical, Folder, Pin, Lock, FileText, ClipboardList, StickyNote, Copy, KeyRound, Check } from 'lucide-react';
+import { MoreVertical, Folder, Lock, ClipboardList, KeyRound, Check } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
 import { usePinState } from '../lib/pin';
-import { cleanText, extractTitleFromUrl, getBookmarkDisplayTitle, formatCleanUrl, getMainDomain } from '../lib/titleExtractor';
+import { cleanText, formatCleanUrl } from '../lib/titleExtractor';
 
 interface Props {
   items: FileSystemItem[];
@@ -127,7 +127,6 @@ const Row = ({
   const pinActive = usePinState();
   const [copied, setCopied] = useState(false);
   const copyTimeoutRef = useRef<number | null>(null);
-  const isBookmark = item.type === 'file';
 
   useEffect(() => {
     return () => {
@@ -159,24 +158,6 @@ const Row = ({
           }, 1200);
         })
         .catch(() => {});
-    } else {
-      const raw = (item.content || '').trim();
-      if (!raw) return;
-      const targetUrl = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-      try {
-        const opened = window.open(targetUrl, '_blank', 'noopener,noreferrer');
-        if (!opened) {
-          const a = document.createElement('a');
-          a.href = targetUrl;
-          a.target = '_blank';
-          a.rel = 'noopener noreferrer';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        }
-      } catch {
-        window.location.href = targetUrl;
-      }
     }
   };
 
@@ -219,7 +200,7 @@ const Row = ({
         <div className="w-4 h-4 shrink-0 relative z-10" />
       )}
 
-      {/* Icon / Note Badge (bookmarks & phrase items have no icon) */}
+      {/* Icon / Note Badge (phrase items have no icon) */}
       {(item.type === 'folder' || item.type === 'note') && (
         <div className={`shrink-0 w-6.5 h-6.5 flex items-center justify-center rounded-lg border overflow-hidden relative z-10 transition-colors ${
           copied ? 'bg-emerald-50 border-emerald-500/40 dark:bg-emerald-950/40 dark:border-emerald-500/50' : 'bg-[#faf8f5] border-[#e2ddd5]/60'
@@ -257,15 +238,10 @@ const Row = ({
             {renderItemLabel()}
             {/^https?:\/\//i.test(item.name || '') || /^www\./i.test(item.name || '') ? formatCleanUrl(item.name) : (cleanText(item.name) || 'Frasa')}
           </div>
-        ) : item.type === 'note' ? (
+        ) : (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.content || item.name}>
             {renderItemLabel()}
             {cleanText(item.content) || cleanText(item.name) || t('file.note')}
-          </div>
-        ) : (
-          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={getBookmarkDisplayTitle(item.name, item.content, Boolean(item.parentId)) || item.content || item.name}>
-            {renderItemLabel()}
-            {getBookmarkDisplayTitle(item.name, item.content, Boolean(item.parentId))}
           </div>
         )}
       </div>

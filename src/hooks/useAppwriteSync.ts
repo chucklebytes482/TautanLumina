@@ -6,8 +6,7 @@ import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
 import { removePin, getStoredPinHash, getStoredPinUpdatedAt, setStoredPinHash } from '../lib/pin';
 import * as db from '../db/db';
-import { extractTitleFromUrl, normalizeBookmarkUrl } from '../lib/titleExtractor';
-import { groupBookmarksByDomain } from '../lib/domainGrouper';
+
 
 const getInitialUser = () => {
   if (typeof localStorage === 'undefined') return null;
@@ -452,11 +451,19 @@ export function useAppwriteSync(
       const itemMap = new Map<string, FileSystemItem>();
 
       for (const item of rawCloudItems) {
+        if ((item as any).type === 'file' || item.autoDomain === true) {
+          permanentlyDeletedSet.add(item.id);
+          continue;
+        }
         if (permanentlyDeletedSet.has(item.id)) continue;
         itemMap.set(item.id, item);
       }
 
       for (const item of currentLocalItems) {
+        if ((item as any).type === 'file' || item.autoDomain === true) {
+          permanentlyDeletedSet.add(item.id);
+          continue;
+        }
         if (permanentlyDeletedSet.has(item.id)) continue;
         const existing = itemMap.get(item.id);
         if (!existing || (item.updatedAt || 0) >= (existing.updatedAt || 0)) {
@@ -481,68 +488,27 @@ export function useAppwriteSync(
         return it;
       });
 
-      const isClipboardTarget = (folderId: string | null): boolean => {
-        let cur = folderId;
-        const visited = new Set<string>();
-        while (cur && !visited.has(cur)) {
-          visited.add(cur);
-          if (cur === 'folder-clipkey' || cur === 'folder-catatan') return true;
-          const parent = rawMergedList.find((i) => i.id === cur);
-          cur = parent ? parent.parentId : null;
-        }
-        return false;
-      };
-
-      // Bersihkan duplikat bookmark di luar folder clipboard dari data cloud/lokal
-      const seenUrls = new Map<string, FileSystemItem>();
+      // Bersihkan duplikat frasa dari data cloud/lokal
+      const seenPhrases = new Set<string>();
       const dedupedList: FileSystemItem[] = [];
 
       for (const it of rawMergedList) {
-        if (it.type === 'file' && it.content && !isClipboardTarget(it.parentId)) {
-          const norm = normalizeBookmarkUrl(it.content);
-          if (norm) {
-            if (seenUrls.has(norm)) {
-              // Hapus duplikat secara permanen (tambahkan ke permanentlyDeletedSet)
-              permanentlyDeletedSet.add(it.id);
-              continue;
-            } else {
-              seenUrls.set(norm, it);
-            }
-          }
-        } else if (it.type === 'phrase' || it.parentId === 'folder-pharse') {
+        if (it.type === 'phrase' || it.parentId === 'folder-pharse') {
           const norm = (it.content || '').trim().toLowerCase();
           if (norm) {
             const phraseKey = `phrase:${norm}`;
-            if (seenUrls.has(phraseKey)) {
+            if (seenPhrases.has(phraseKey)) {
               permanentlyDeletedSet.add(it.id);
               continue;
             } else {
-              seenUrls.set(phraseKey, it);
+              seenPhrases.add(phraseKey);
             }
           }
         }
         dedupedList.push(it);
       }
 
-      // Perbarui judul bookmark sesuai aturan (domain utama menampilkan domainnya, folder mengecualikan domain)
-      const titledList = dedupedList.map(it => {
-        if (it.type === 'file' && it.content) {
-          const isInsideFolder = Boolean(it.parentId);
-          const expectedTitle = extractTitleFromUrl(it.content, isInsideFolder);
-          if (it.name !== expectedTitle) {
-            return { ...it, name: expectedTitle };
-          }
-        }
-        return it;
-      });
-
-      // Pengelompokan domain otomatis jika ada 4+ bookmark domain sama
-      const groupRes = groupBookmarksByDomain(titledList, () => ID.unique());
-      if (groupRes.deletedFolders && groupRes.deletedFolders.length > 0) {
-        groupRes.deletedFolders.forEach(id => permanentlyDeletedSet.add(id));
-      }
-
-      const mergedItems = groupRes.updatedAll;
+      const mergedItems = dedupedList;
 
       const mergedApiKey = localApiKey || cloudApiKey;
       const mergedModel = localModel || cloudModel;

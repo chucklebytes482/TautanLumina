@@ -1,4 +1,4 @@
-export type FileSystemItemType = 'file' | 'folder' | 'note' | 'phrase';
+export type FileSystemItemType = 'folder' | 'note' | 'phrase';
 
 export interface FileSystemItem {
   id: string;

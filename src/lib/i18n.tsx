@@ -63,13 +63,12 @@ const nestedTranslations: Record<string, any> = {
   },
   app: {
     heroDesc:
-      'TautanLumina adalah pengelola bookmark & catatan yang cepat dan ultra-minimalis. Otomatisasi judul dari URL dengan kata dan spasi yang rapi, kunci folder PIN 4-digit, voice note 30 detik dengan pratinjau audio, urutan posisi Keypad Move, serta sinkronisasi Awan Appwrite.',
+      'TautanLumina adalah pengelola catatan & frasa yang cepat dan ultra-minimalis. Kunci folder PIN 4-digit, voice note 30 detik dengan pratinjau audio, urutan posisi Keypad Move, serta sinkronisasi Awan Appwrite.',
     tagline: 'Tautan Anda, Cerdas & Bercahaya.',
   },
   btn: {
     exportJSON: 'Ekspor JSON',
-    importJSON: 'Impor JSON atau HTML',
-    newBookmark: 'Bookmark Baru',
+    importJSON: 'Impor JSON',
     newFolder: 'Folder Baru',
     newNote: 'Catatan Baru',
     newPhrase: 'Frasa (1x Klik Tempel)',
@@ -110,7 +109,6 @@ const nestedTranslations: Record<string, any> = {
     },
   },
   file: {
-    bookmark: 'Markah',
     editContent: 'Edit Konten',
     folder: 'Folder',
     menu: 'Menu',
@@ -158,7 +156,6 @@ const nestedTranslations: Record<string, any> = {
     wallet: 'Langganan',
   },
   modal: {
-    bookmarkUrl: 'URL',
     cancel: 'Batal',
     done: 'Selesai',
     folderName: 'Nama Folder',
@@ -245,7 +242,6 @@ const nestedTranslations: Record<string, any> = {
   },
   toast: {
     addressCopied: 'Alamat disalin',
-    bookmarkSaved: 'Bookmark disimpan',
     cantMoveSearch: 'Tidak dapat dipindah',
     clipboardError: 'Kesalahan papan klip',
     copied: 'Disalin',
@@ -259,8 +255,6 @@ const nestedTranslations: Record<string, any> = {
     folderSystemCannotRename: 'Tidak dapat diubah',
     folderSystemCannotLock: 'Tidak dapat dikunci',
     invalidFileFormat: 'Format tidak valid',
-    bookmarkSaveFailed: 'Gagal simpan',
-    importBookmarksSuccess: '{count} bookmark diimpor',
     folderOpened: 'Folder dibuka',
     invalidCredentials: 'Email atau password salah',
     userAlreadyExists: 'Email sudah terdaftar',
@@ -272,7 +266,6 @@ const nestedTranslations: Record<string, any> = {
     loginSuccess: 'Berhasil masuk',
     logoutError: 'Gagal keluar',
     moved: 'Dipindahkan',
-    noBookmarksInFolder: 'Tidak ada bookmark',
     noteSaved: 'Catatan disimpan',
     offlineModeNotice: 'Sinkronisasi otomatis ke cloud',
     offlineReadonlyNotice: 'Mode offline',

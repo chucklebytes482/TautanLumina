@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { FileSystemItem, FileSystemItemType } from '../Types';
 import * as db from '../db/db';
 import { getStoredPinHash, getStoredPinUpdatedAt, setStoredPinHash } from '../lib/pin';
-import { compareAlphabetical, getBookmarkDisplayTitle, getMainDomain, extractTitleFromUrl, normalizeBookmarkUrl } from '../lib/titleExtractor';
-import { groupBookmarksByDomain } from '../lib/domainGrouper';
+import { compareAlphabetical } from '../lib/titleExtractor';
 
 const uid = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -33,6 +32,22 @@ export const useFileSystem = () => {
       let all = await db.getAllItems();
       
       let changed = false;
+
+      // Purge: Hapus semua data bookmark (type === 'file') dan folder otomatis domain
+      const bookmarkAndDomainItems = all.filter(it => (it as any).type === 'file' || it.autoDomain === true);
+      if (bookmarkAndDomainItems.length > 0) {
+        const purgeIds = bookmarkAndDomainItems.map(it => it.id);
+        await db.deleteItems(purgeIds);
+        try {
+          const stored = localStorage.getItem('tautanlumina:deleted_ids');
+          const currentDeleted: string[] = stored ? JSON.parse(stored) : [];
+          const updatedDeleted = Array.from(new Set([...currentDeleted, ...purgeIds]));
+          localStorage.setItem('tautanlumina:deleted_ids', JSON.stringify(updatedDeleted));
+        } catch (e) {}
+        all = all.filter(it => !((it as any).type === 'file' || it.autoDomain === true));
+        changed = true;
+        notifyDataModified();
+      }
       // Migrasi: hapus folder-catatan dan pindahkan folder-clipkey ke root (parentId: null)
       const existingCatatan = all.find(it => it.id === 'folder-catatan');
       if (existingCatatan) {
@@ -191,40 +206,6 @@ export const useFileSystem = () => {
 
 
 
-      // Aturan judul bookmark:
-      // Di root: pengecualian karakter domain utama TIDAK BERLAKU
-      // Di dalam folder: pengecualian karakter domain utama LANGSUNG BERLAKU
-      const fileBookmarks = all.filter(it => it.type === 'file' && it.content);
-      const sanitizedBookmarks: FileSystemItem[] = [];
-      fileBookmarks.forEach(it => {
-        const isInsideFolder = Boolean(it.parentId);
-        const expectedTitle = extractTitleFromUrl(it.content!, isInsideFolder);
-        if (it.name !== expectedTitle) {
-          it.name = expectedTitle;
-          it.updatedAt = Date.now();
-          sanitizedBookmarks.push(it);
-        }
-      });
-      if (sanitizedBookmarks.length > 0) {
-        await db.saveItems(sanitizedBookmarks);
-        all = await db.getAllItems();
-      }
-
-      // Otomatis masukkan bookmark dengan domain yang sama ke dalam folder baru dengan nama domain utamanya
-      const groupRes = groupBookmarksByDomain(all, uid);
-      if (groupRes.hasChanges) {
-        if (groupRes.deletedFolders && groupRes.deletedFolders.length > 0) {
-          await db.deleteItems(groupRes.deletedFolders);
-        }
-        if (groupRes.createdFolders.length > 0) {
-          await db.saveItems(groupRes.createdFolders);
-        }
-        if (groupRes.modifiedItems.length > 0) {
-          await db.saveItems(groupRes.modifiedItems);
-        }
-        all = groupRes.updatedAll;
-      }
-
       setItems(all);
     } catch (e) {
       console.warn('Failed to load file system items:', e);
@@ -254,15 +235,6 @@ export const useFileSystem = () => {
   }, [reload]);
 
   const getItemSortKeys = (it: FileSystemItem): { primary: string; secondary: string } => {
-    if (it.type === 'file') {
-      const isInsideFolder = Boolean(it.parentId);
-      const display = getBookmarkDisplayTitle(it.name, it.content, isInsideFolder);
-      const domain = getMainDomain(it.content || it.name);
-      return {
-        primary: isInsideFolder ? (display || domain) : (domain || display),
-        secondary: display || it.content || '',
-      };
-    }
     if (it.type === 'folder') {
       const name = it.id === 'folder-catatan' ? 'Catatan' : it.id === 'folder-clipkey' ? 'clipboard' : it.id === 'folder-pharse' ? 'frasa' : it.name;
       return { primary: name, secondary: '' };
@@ -290,7 +262,7 @@ export const useFileSystem = () => {
             return rankA - rankB;
           }
 
-          // 2. Folder selalu di tempatkan keatas (di atas bookmark/catatan/pharse non-folder)
+          // 2. Folder selalu di tempatkan keatas
           if (a.type === 'folder' && b.type !== 'folder') return -1;
           if (b.type === 'folder' && a.type !== 'folder') return 1;
 
@@ -337,9 +309,6 @@ export const useFileSystem = () => {
     content = '',
     category?: string,
   ): Promise<FileSystemItem> => {
-    if (type === 'file' && !content.trim()) {
-      throw new Error('URL tidak boleh kosong');
-    }
     const isClipboardTarget = (targetId: string | null): boolean => {
       if (!targetId) return false;
       return targetId === 'folder-clipkey' || isDescendant('folder-clipkey', targetId);
@@ -348,7 +317,7 @@ export const useFileSystem = () => {
     let targetParentId = type === 'phrase'
       ? 'folder-pharse'
       : (type === 'note')
-      ? (parentId && (parentId === 'folder-clipkey' || isDescendant('folder-clipkey', parentId)) ? parentId : 'folder-clipkey')
+      ? (parentId && (parentId === 'folder-pharse' || isDescendant('folder-pharse', parentId)) ? 'folder-clipkey' : parentId)
       : parentId;
 
     // Query direct fresh DB items to guarantee no false duplicate matches from stale state or deleted items
@@ -356,18 +325,6 @@ export const useFileSystem = () => {
 
     // Aturan anti-duplikat: tidak diizinkan duplikat di semua tempat KECUALI folder clipboard
     const isClip = isClipboardTarget(targetParentId);
-
-    if (type === 'file' && !isClip) {
-      const normContent = normalizeBookmarkUrl(content);
-      const exists = currentDbItems.some(
-        it => !it.deletedAt && it.type === 'file' && !isClipboardTarget(it.parentId) && (
-          normalizeBookmarkUrl(it.content) === normContent
-        )
-      );
-      if (exists) {
-        throw new Error('Tautan ini sudah ada');
-      }
-    }
 
     if (type === 'phrase') {
       const normContent = content.trim().toLowerCase();
@@ -387,81 +344,12 @@ export const useFileSystem = () => {
       }
     }
 
-    if (type === 'file') {
-      const domain = getMainDomain(content || name);
-      if (domain && domain.includes('.')) {
-        const lowerDomain = domain.toLowerCase();
-        const parentFolder = targetParentId ? currentDbItems.find((it) => it.id === targetParentId) : null;
-        const isParentAutoDomain = parentFolder && (
-          Boolean(parentFolder.autoDomain) ||
-          Boolean(parentFolder.name && parentFolder.name.includes('.') && getMainDomain(parentFolder.name).toLowerCase() === parentFolder.name.trim().toLowerCase())
-        );
-
-        // Jika folder saat ini adalah folder otomatis dan domain bookmark berbeda,
-        // tempatkan di luar folder (parentFolder.parentId)
-        if (isParentAutoDomain && parentFolder.name?.trim().toLowerCase() !== lowerDomain) {
-          targetParentId = parentFolder.parentId;
-        }
-
-        const effectiveParentFolder = targetParentId ? currentDbItems.find((it) => it.id === targetParentId) : null;
-        if (effectiveParentFolder?.name?.trim().toLowerCase() !== lowerDomain) {
-          // 1. Jika sudah ada folder dengan nama domain ini di targetParentId, langsung masukkan ke dalamnya
-          const existingDomainFolder = currentDbItems.find(
-            (it) =>
-              !it.deletedAt &&
-              it.type === 'folder' &&
-              it.parentId === targetParentId &&
-              it.name?.trim().toLowerCase() === lowerDomain
-          );
-          if (existingDomainFolder) {
-            targetParentId = existingDomainFolder.id;
-          } else {
-            // 2. Jika sudah ada bookmark dengan domain yang sama di targetParentId, buat folder baru dan masukkan keduanya
-            const siblingsWithSameDomain = currentDbItems.filter(
-              (it) =>
-                !it.deletedAt &&
-                it.type === 'file' &&
-                it.parentId === targetParentId &&
-                getMainDomain(it.content || it.name).toLowerCase() === lowerDomain
-            );
-            if (siblingsWithSameDomain.length >= 3) {
-              const newFolderId = uid();
-              const siblings = currentDbItems.filter((it) => it.parentId === targetParentId);
-              const nextFolderOrder = siblings.length
-                ? Math.max(...siblings.map((s) => (typeof s.order === 'number' ? s.order : 0))) + 1
-                : 0;
-              const newDomainFolder: FileSystemItem = {
-                id: newFolderId,
-                parentId: targetParentId,
-                name: lowerDomain,
-                type: 'folder',
-                autoDomain: true,
-                order: nextFolderOrder,
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
-              };
-              await db.saveItem(newDomainFolder);
-              const updatedSiblings = siblingsWithSameDomain.map((sib, sIdx) => ({
-                ...sib,
-                parentId: newFolderId,
-                order: sIdx,
-                updatedAt: Date.now(),
-              }));
-              await db.saveItems(updatedSiblings);
-              targetParentId = newFolderId;
-            }
-          }
-        }
-      }
-    }
-
     const firstWordFromContent = (content || '').trim().split(/\s+/)[0] || '';
-    const isFolder = Boolean(targetParentId);
     const itemName = type === 'note'
       ? content.trim()
       : type === 'phrase'
       ? (firstWordFromContent || 'frasa')
-      : (type === 'file' ? (name.trim() || extractTitleFromUrl(content, isFolder)) : (name.trim() || (type === 'folder' ? 'Folder' : 'Untitled')));
+      : (name.trim() || (type === 'folder' ? 'Folder' : 'Untitled'));
     const item: FileSystemItem = {
       id: uid(),
       parentId: targetParentId,
@@ -497,7 +385,7 @@ export const useFileSystem = () => {
     }
     const it = items.find((i) => i.id === id);
     if (!it) return;
-    if (it.type === 'folder' && (it.autoDomain || (it.name && it.name.includes('.') && getMainDomain(it.name) === it.name.trim().toLowerCase()))) {
+    if (it.type === 'folder' && it.autoDomain) {
       throw new Error('Folder otomatis tidak dapat diubah namanya');
     }
     if (it.type === 'phrase') {
@@ -687,90 +575,63 @@ export const useFileSystem = () => {
 
   const moveMany = async (ids: string[], targetParentId: string | null) => {
     const isTargetPharse = isPharseFolder(targetParentId);
-    const isTargetNote = isNoteFolder(targetParentId);
 
     const validIds = ids.filter((id) => {
       if (id === targetParentId) return false;
       if (id === 'folder-catatan' || id === 'folder-pharse' || id === 'folder-clipkey') return false;
       const it = items.find((i) => i.id === id);
       if (!it) return false;
-      if (it.type === 'folder' && targetParentId && isDescendant(id, targetParentId)) return false;
 
-      // Aturan: folder di root tidak dapat dipindahkan, dan sub folder tidak dapat dipindahkan ke luar folder utama
-      if (it.type === 'folder') {
-        const rootAnc = getRootAncestorFolderId(it.id);
-        if (!rootAnc) {
-          // Folder di root tidak dapat dipindahkan
-          return false;
-        }
-        // Sub folder hanya bisa dipindahkan ke dalam rootAnc atau sub folder di bawah rootAnc
-        const isInsideMainFolder = targetParentId === rootAnc || (targetParentId ? isDescendant(rootAnc, targetParentId) : false);
-        if (!isInsideMainFolder) {
-          return false;
-        }
+      // Cegah folder dipindahkan ke dalam dirinya sendiri atau ke dalam keturunannya
+      if (it.type === 'folder' && targetParentId && (id === targetParentId || isDescendant(id, targetParentId))) return false;
+
+      // Folder di root (parentId === null) tidak dapat dipindahkan
+      if (it.type === 'folder' && !it.parentId) {
+        return false;
       }
 
       const isPharseContent = isPharseItem(it);
-      const isNoteContent = isNoteItem(it);
 
       if (isPharseContent) {
         // Konten folder pharse hanya dapat dipindahkan di dalam folder pharse
         return isTargetPharse;
-      } else if (isNoteContent) {
-        // Konten folder note hanya dapat dipindahkan di dalam folder note
-        return isTargetNote;
       } else {
-        // Konten di luar pharse dan note tidak dapat dipindahkan ke folder pharse atau note
-        return !isTargetPharse && !isTargetNote;
+        // Sub folder dan isi dari folder clipboard (serta konten non-pharse)
+        // bisa dipindahkan kemana saja KECUALI ke folder frasa
+        return !isTargetPharse;
       }
     });
 
     if (ids.length > 0 && validIds.length === 0) {
-      const isSubFolderViolation = ids.some((id) => {
+      const isRootFolder = ids.some((id) => {
         const it = items.find((i) => i.id === id);
-        if (it && it.type === 'folder') {
-          const rootAnc = getRootAncestorFolderId(it.id);
-          if (!rootAnc) return true; // folder di root
-          const isInside = targetParentId === rootAnc || (targetParentId ? isDescendant(rootAnc, targetParentId) : false);
-          return !isInside;
-        }
-        return false;
+        return it && it.type === 'folder' && !it.parentId;
       });
+      if (isRootFolder) {
+        throw new Error('Folder di root tidak dapat dipindahkan');
+      }
 
-      if (isSubFolderViolation) {
-        throw new Error('Sub folder tidak dapat dipindahkan ke luar folder utama');
+      const isMovingIntoDescendant = ids.some((id) => {
+        const it = items.find((i) => i.id === id);
+        return it && it.type === 'folder' && targetParentId && (id === targetParentId || isDescendant(id, targetParentId));
+      });
+      if (isMovingIntoDescendant) {
+        throw new Error('Folder tidak dapat dipindahkan ke dalam dirinya sendiri');
       }
 
       const isAnyPharse = ids.some((id) => {
         const it = items.find((i) => i.id === id);
         return it && isPharseItem(it);
       });
-      const isAnyNote = ids.some((id) => {
-        const it = items.find((i) => i.id === id);
-        return it && isNoteItem(it);
-      });
 
       if (isAnyPharse && !isTargetPharse) {
-        throw new Error('Konten folder pharse tidak dapat dipindahkan ke luar folder pharse');
+        throw new Error('Konten folder frasa tidak dapat dipindahkan ke luar folder frasa');
       }
-      if (isAnyNote && !isTargetNote) {
-        throw new Error('Konten folder note tidak dapat dipindahkan ke luar folder note');
-      }
-      if (!isAnyPharse && !isAnyNote && isTargetPharse) {
-        throw new Error('Konten di luar folder pharse tidak dapat dipindahkan ke folder pharse');
-      }
-      if (!isAnyPharse && !isAnyNote && isTargetNote) {
-        throw new Error('Konten di luar folder note tidak dapat dipindahkan ke folder note');
+      if (!isAnyPharse && isTargetPharse) {
+        throw new Error('Item tidak dapat dipindahkan ke folder frasa');
       }
       throw new Error('Item tidak dapat dipindahkan ke folder tujuan');
     }
-    const targetFolder = targetParentId ? items.find((i) => i.id === targetParentId) : null;
-    const isTargetAutoDomain = targetFolder?.type === 'folder' && (
-      Boolean(targetFolder.autoDomain) ||
-      Boolean(targetFolder.name && targetFolder.name.includes('.') && getMainDomain(targetFolder.name).toLowerCase() === targetFolder.name.trim().toLowerCase())
-    );
-    const targetAutoDomainName = isTargetAutoDomain ? (getMainDomain(targetFolder!.name).toLowerCase() || targetFolder!.name.trim().toLowerCase()) : null;
-
     const targetSiblings = items.filter((i) => i.parentId === targetParentId);
     let base = targetSiblings.length ? Math.max(...targetSiblings.map((s) => s.order ?? 0)) + 1 : 0;
     const updated: FileSystemItem[] = [];
@@ -778,22 +639,7 @@ export const useFileSystem = () => {
       const it = items.find((i) => i.id === id);
       if (!it) return;
 
-      let finalParent = targetParentId;
-      // "folder yang dibuat otomatis tidak boleh memiliki bookmark dengan domain yang berbeda,
-      // jika terjadi maka akan di tempatkan di luar folder."
-      if (it.type === 'file' && isTargetAutoDomain && targetAutoDomainName) {
-        const itemDomain = getMainDomain(it.content || it.name).trim().toLowerCase();
-        if (itemDomain && itemDomain !== targetAutoDomainName) {
-          finalParent = targetFolder!.parentId; // di tempatkan di luar folder
-        }
-      }
-
-      let finalName = it.name;
-      if (it.type === 'file' && it.content) {
-        finalName = extractTitleFromUrl(it.content, Boolean(finalParent));
-      }
-
-      updated.push({ ...it, name: finalName, parentId: finalParent, order: base++, updatedAt: Date.now() });
+      updated.push({ ...it, parentId: targetParentId, order: base++, updatedAt: Date.now() });
     });
     if (updated.length) {
       await db.saveItems(updated);
@@ -845,7 +691,6 @@ export const useFileSystem = () => {
         .filter((i) => {
           if (i.name.toLowerCase().includes(query)) return true;
           if (i.label && i.label.toLowerCase().includes(query)) return true;
-          if (i.type === 'file' && i.content && i.content.toLowerCase().includes(query)) return true;
           if (i.type === 'note' && i.content && i.content.toLowerCase().includes(query)) return true;
           return false;
         })
@@ -1029,29 +874,7 @@ export const useFileSystem = () => {
       foldersUpdated++;
     }
 
-    // 2. Bersihkan duplikat bookmark (semua tempat KECUALI folder clipboard)
-    // Di luar folder clipboard, simpan hanya 1 item untuk setiap URL yang sama
-    const seenBookmarkUrls = new Map<string, FileSystemItem>();
-    const fileBookmarks = all.filter((it) => !it.deletedAt && it.type === 'file' && it.content);
-
-    fileBookmarks.forEach((bm) => {
-      if (isClipboardTarget(bm.parentId)) {
-        // Di dalam folder clipboard, duplikat diperbolehkan
-        return;
-      }
-      const norm = normalizeBookmarkUrl(bm.content);
-      if (!norm) return;
-
-      if (seenBookmarkUrls.has(norm)) {
-        // Duplikat ditemukan di luar folder clipboard -> hapus
-        toDeleteIds.push(bm.id);
-        duplicatesRemoved++;
-      } else {
-        seenBookmarkUrls.set(norm, bm);
-      }
-    });
-
-    // 3. Bersihkan duplikat frasa (dalam folder frasa / type phrase)
+    // 2. Bersihkan duplikat frasa (dalam folder frasa / type phrase)
     const seenPhrases = new Set<string>();
     all.forEach((it) => {
       if (!it.deletedAt && it.content && (it.type === 'phrase' || it.parentId === 'folder-pharse')) {
@@ -1074,42 +897,6 @@ export const useFileSystem = () => {
         localStorage.setItem('tautanlumina:deleted_ids', JSON.stringify(updatedDeleted));
       } catch (e) {}
       all = await db.getAllItems();
-    }
-
-    // 4. Perbarui judul semua bookmark sesuai aturan saat ini:
-    // - Tautan domain utama: judul memakai tautan domain (formatCleanUrl / domain), tidak disembunyikan
-    // - Di dalam folder: karakter domain utama tidak muncul di path
-    // - Di root: sertakan host + path
-    const remainingBookmarks = all.filter((it) => !it.deletedAt && it.type === 'file' && it.content);
-    remainingBookmarks.forEach((bm) => {
-      const isInsideFolder = Boolean(bm.parentId);
-      const expectedTitle = extractTitleFromUrl(bm.content!, isInsideFolder);
-      if (bm.name !== expectedTitle) {
-        toSaveMap.set(bm.id, { ...bm, name: expectedTitle, updatedAt: Date.now() });
-        titlesUpdated++;
-      }
-    });
-
-    // 5. Jalankan pengelompokan domain otomatis (domainGrouper)
-    // Mengelompokkan domain dengan >= 4 bookmark dan membersihkan folder domain kosong / salah penempatan
-    const groupRes = groupBookmarksByDomain(all, uid);
-    if (groupRes.hasChanges) {
-      if (groupRes.deletedFolders && groupRes.deletedFolders.length > 0) {
-        await db.deleteItems(groupRes.deletedFolders);
-        foldersUpdated += groupRes.deletedFolders.length;
-        try {
-          const storedDeleted = JSON.parse(localStorage.getItem('tautanlumina:deleted_ids') || '[]');
-          const updatedDeleted = Array.from(new Set([...storedDeleted, ...groupRes.deletedFolders])).slice(-1000);
-          localStorage.setItem('tautanlumina:deleted_ids', JSON.stringify(updatedDeleted));
-        } catch (e) {}
-      }
-      if (groupRes.createdFolders && groupRes.createdFolders.length > 0) {
-        await db.saveItems(groupRes.createdFolders);
-        foldersUpdated += groupRes.createdFolders.length;
-      }
-      if (groupRes.modifiedItems && groupRes.modifiedItems.length > 0) {
-        groupRes.modifiedItems.forEach((it) => toSaveMap.set(it.id, it));
-      }
     }
 
     if (toSaveMap.size > 0) {

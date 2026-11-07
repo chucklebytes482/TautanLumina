@@ -3,7 +3,6 @@ import { toast as sonnerToast } from 'sonner';
 import {
   Search,
   FolderPlus,
-  BookmarkPlus,
   ClipboardList,
   Home,
   ChevronRight,
@@ -29,7 +28,7 @@ import { useI18n } from './lib/i18n';
 import { ADMIN_EMAIL } from './lib/appwrite';
 
 import { FileSystemItem } from './Types';
-import { extractTitleFromUrl, cleanText, getMainDomain, normalizeBookmarkUrl } from './lib/titleExtractor';
+import { cleanText } from './lib/titleExtractor';
 import { hasPinSet, usePinState } from './lib/pin';
 import { isBip39EnglishWord } from './lib/bip39';
 
@@ -364,61 +363,7 @@ export default function App() {
     }
   };
 
-  const handleNewFile = async () => {
-    if (guardOffline()) return;
 
-    const inputUrl = await customPrompt(
-      t('modal.bookmarkUrl') || 'Tambah Bookmark',
-      '',
-      { placeholder: 'https://example.com' }
-    );
-    if (!inputUrl || !inputUrl.trim()) return;
-
-    const cleaned = cleanText(inputUrl);
-    const urlMatch = cleaned.match(/https?:\/\/[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*/i);
-    const rawUrl = urlMatch ? urlMatch[0].replace(/[),;.]+$/, '') : cleaned;
-
-    // Aturan penambahan bookmark: wajib ada titik dan format domain valid
-    const hasValidDot = /[a-zA-Z0-9-]*[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z][a-zA-Z0-9-]*\.[a-zA-Z]{2,}/i.test(rawUrl);
-    if (!rawUrl.includes('.') || rawUrl.includes(' ') || /\s/.test(rawUrl) || !hasValidDot) {
-      showToast('bukan tautan');
-      return;
-    }
-
-    const finalCopiedUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
-      ? rawUrl
-      : `https://${rawUrl}`;
-
-    const mainDomain = getMainDomain(finalCopiedUrl);
-    if (!mainDomain || !mainDomain.includes('.')) {
-      showToast('bukan tautan');
-      return;
-    }
-
-    const normInput = normalizeBookmarkUrl(finalCopiedUrl);
-
-    const isInsideClip = isNoteFolderOrSubfolder(currentFolderId);
-    const isFolder = Boolean(currentFolderId);
-
-    const isCopiedDuplicate = !isInsideClip && items.some(
-      (it) => !it.deletedAt && it.type === 'file' && !isNoteFolderOrSubfolder(it.parentId) && (
-        normalizeBookmarkUrl(it.content) === normInput
-      )
-    );
-    if (isCopiedDuplicate) {
-      showToast('Tautan ini sudah ada');
-      return;
-    }
-
-    const extractedCopied = extractTitleFromUrl(finalCopiedUrl, isFolder);
-    const autoTitleCopied = extractedCopied || '';
-    try {
-      await createItem(autoTitleCopied, 'file', currentFolderId, finalCopiedUrl);
-      showToast('Bookmark disimpan');
-    } catch (e: any) {
-      showToast(e?.message || 'Gagal simpan');
-    }
-  };
 
   const handleRefreshAndSync = async () => {
     if (guardOffline()) return;
@@ -448,7 +393,8 @@ export default function App() {
     const text = await customPrompt('Clipboard Baru', '', { textarea: true, maxWidth: 'max-w-xl' });
     if (!text || !text.trim()) return;
     
-    const targetFolder = isNoteFolderOrSubfolder(currentFolderId) ? currentFolderId : 'folder-clipkey';
+    // Clipboard baru ditempatkan sesuai posisi saat ditambahkan (currentFolderId), kecuali jika berada dalam folder frasa
+    const targetFolder = isPharseFolderOrSubfolder(currentFolderId) ? 'folder-clipkey' : currentFolderId;
     await createItem('', 'note', targetFolder, text.trim());
     showToast('Clipboard disimpan');
   };
@@ -565,8 +511,6 @@ export default function App() {
 
   const disabledFolderIds = (movingIds: string[]): Set<string> => {
     const disabled = new Set<string>(movingIds);
-    // folder-clipkey tidak dapat dipindahkan
-    disabled.add('folder-clipkey');
     const walk = (id: string) => {
       items.filter((i) => i.parentId === id).forEach((c) => {
         if (!disabled.has(c.id)) {
@@ -577,42 +521,17 @@ export default function App() {
     };
     movingIds.forEach(walk);
 
-    // Cek jika ada sub folder yang sedang dipindahkan
-    const movingSubfolders = items.filter(
-      (i) => movingIds.includes(i.id) && i.type === 'folder' && i.parentId
-    );
-    if (movingSubfolders.length > 0) {
-      const rootAncs = new Set(
-        movingSubfolders.map((sf) => getRootFolderAncestorId(sf.id)).filter(Boolean)
-      );
-      if (rootAncs.size === 1) {
-        const rootAnc = Array.from(rootAncs)[0];
-        // Nonaktifkan semua folder yang bukan di dalam rootAnc atau bukan rootAnc itu sendiri
-        items
-          .filter((i) => i.type === 'folder' && i.id !== rootAnc && getRootFolderAncestorId(i.id) !== rootAnc)
-          .forEach((f) => disabled.add(f.id));
-      }
-    }
-
     const isPharseMoving = movingIds.some((id) => isFromPharseFolder(id));
-    const isNoteMoving = movingIds.some((id) => isFromNoteFolder(id));
 
     if (isPharseMoving) {
       // Pharse diisolasi: nonaktifkan semua folder yang BUKAN di dalam pharse
       items.filter((i) => i.type === 'folder' && !isPharseFolderOrSubfolder(i.id)).forEach((f) => {
         disabled.add(f.id);
       });
-    } else if (isNoteMoving) {
-      // Note diisolasi: nonaktifkan semua folder yang BUKAN di dalam note
-      items.filter((i) => i.type === 'folder' && !isNoteFolderOrSubfolder(i.id)).forEach((f) => {
-        disabled.add(f.id);
-      });
     } else {
-      // Konten di luar note & pharse: nonaktifkan folder pharse dan clipkey beserta semua subfoldernya
+      // Sub folder dan isi dari folder clipboard (dan non-pharse) tidak boleh dipindahkan ke folder frasa
       disabled.add('folder-pharse');
       walk('folder-pharse');
-      disabled.add('folder-clipkey');
-      walk('folder-clipkey');
     }
 
     return disabled;
@@ -630,43 +549,25 @@ export default function App() {
       return;
     }
 
-    // Cek jika ada sub folder yang dipindahkan
-    const movingSubfolders = movingItems.filter((i) => i.type === 'folder' && i.parentId);
-    let restrictedRootFolderId: string | undefined = undefined;
-
-    if (movingSubfolders.length > 0) {
-      const rootAncestors = new Set(
-        movingSubfolders.map((sf) => getRootFolderAncestorId(sf.id)).filter(Boolean)
-      );
-      if (rootAncestors.size > 1) {
-        showToast('Sub folder hanya dapat dipindahkan di dalam folder utamanya');
-        return;
-      }
-      restrictedRootFolderId = Array.from(rootAncestors)[0] as string;
-    }
-
     const isPharseMoving = ids.some((id) => isFromPharseFolder(id));
-    const isNoteMoving = ids.some((id) => isFromNoteFolder(id));
 
+    let restrictedRootFolderId: string | undefined = undefined;
     const hiddenFolderIds = new Set<string>();
+
+    const walk = (id: string) => {
+      items.filter((i) => i.parentId === id).forEach((c) => {
+        if (!hiddenFolderIds.has(c.id)) {
+          hiddenFolderIds.add(c.id);
+          walk(c.id);
+        }
+      });
+    };
 
     if (isPharseMoving) {
       restrictedRootFolderId = 'folder-pharse';
-    } else if (isNoteMoving) {
-      restrictedRootFolderId = 'folder-clipkey';
-    } else if (!restrictedRootFolderId) {
-      // Bookmark & konten di luar note/pharse tidak bisa dipindahkan ke clipkey atau pharse,
-      // sehingga folder clipkey dan pharse beserta seluruh sub foldernya tidak perlu ditampilkan.
-      const walk = (id: string) => {
-        items.filter((i) => i.parentId === id).forEach((c) => {
-          if (!hiddenFolderIds.has(c.id)) {
-            hiddenFolderIds.add(c.id);
-            walk(c.id);
-          }
-        });
-      };
-      hiddenFolderIds.add('folder-clipkey');
-      walk('folder-clipkey');
+    } else {
+      // Sub folder dan isi dari folder clipboard sekarang bisa dipindahkan kemana saja
+      // KECUALI ke folder frasa, sehingga folder frasa & subfoldernya disembunyikan
       hiddenFolderIds.add('folder-pharse');
       walk('folder-pharse');
     }
@@ -846,10 +747,7 @@ export default function App() {
     }
 
     const isPermanentFolder = item.type === 'folder' && (item.id === 'folder-catatan' || item.id === 'folder-pharse' || item.id === 'folder-clipkey');
-    const isAutoDomainFolder = item.type === 'folder' && (
-      Boolean(item.autoDomain) ||
-      Boolean(item.name && item.name.includes('.') && getMainDomain(item.name) === item.name.trim().toLowerCase())
-    );
+    const isAutoDomainFolder = item.type === 'folder' && Boolean(item.autoDomain);
 
     // Fitur ganti nama tidak ditampilkan untuk folder permanen dan folder yang dibuat otomatis
     if (item.type === 'folder' && !isPermanentFolder && !isAutoDomainFolder) {
@@ -1008,23 +906,6 @@ export default function App() {
               </div>
               <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                 <button
-                  data-testid="new-folder-btn"
-                  onClick={handleNewFolder}
-                  className="p-2.5 border border-[#e2ddd5] dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 dark:text-neutral-200 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
-                  title={t('btn.newFolder')}
-                >
-                  <FolderPlus size={20} />
-                </button>
-                <button
-                  data-testid="new-file-btn"
-                  onClick={handleNewFile}
-                  className="p-2.5 border border-[#e2ddd5] dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 dark:text-neutral-200 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
-                  title={t("btn.newBookmark") || "Tambah Bookmark"}
-                  aria-label={t("btn.newBookmark") || "Tambah Bookmark"}
-                >
-                  <BookmarkPlus size={20} />
-                </button>
-                <button
                   data-testid="new-note-btn"
                   onClick={handleNewNote}
                   className="p-2.5 border border-[#e2ddd5] dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 dark:text-neutral-200 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
@@ -1033,6 +914,16 @@ export default function App() {
                 >
                   <ClipboardList size={20} />
                 </button>
+
+                <button
+                  data-testid="new-folder-btn"
+                  onClick={handleNewFolder}
+                  className="p-2.5 border border-[#e2ddd5] dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 dark:text-neutral-200 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
+                  title={t('btn.newFolder')}
+                >
+                  <FolderPlus size={20} />
+                </button>
+
                 <button
                   data-testid="new-phrase-btn"
                   onClick={handleNewPhrase}
@@ -1163,8 +1054,6 @@ export default function App() {
               ? menuFor.name || 'Pharse'
               : menuFor.type === 'note'
               ? (menuFor.content || '').substring(0, 30) + ((menuFor.content || '').length > 30 ? '...' : '')
-              : menuFor.type === 'file'
-              ? (menuFor.content || '').split('\n').find((l) => l.trim()) || '(kosong)'
               : menuFor.id === 'folder-clipkey'
               ? 'clipboard'
               : menuFor.id === 'folder-pharse'
