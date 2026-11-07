@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { FileSystemItem } from '../Types';
-import { formatCleanUrl } from '../lib/titleExtractor';
 
 export interface MenuAction {
   key: string;
@@ -63,7 +62,7 @@ export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
   const handleCopyLabel = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!item?.label) return;
-    const textToCopy = formatCleanUrl(item.label) || item.label.trim();
+    const textToCopy = item.label.trim();
     const ok = await copyToClipboard(textToCopy);
     if (ok) {
       setLabelCopied(true);
@@ -76,13 +75,15 @@ export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
 
   const renderLabelBadge = () => {
     if (!item?.label || !item.label.trim()) return null;
-    const displayLabel = formatCleanUrl(item.label) || item.label.trim();
+    const fullWallet = item.label.trim();
+    // Di menu jika frasa, tampilkan 4 karakter terakhir atau jika pendek tampilkan utuh
+    const displayLabel = fullWallet.length > 4 ? fullWallet.slice(-4) : fullWallet;
 
     return (
       <button
         type="button"
         onClick={handleCopyLabel}
-        title={`Klik untuk menyalin: ${displayLabel}`}
+        title={`Klik untuk menyalin alamat dompet: ${fullWallet}`}
         className={`inline-flex items-center gap-1 text-xs font-semibold mr-2 shrink-0 select-none cursor-pointer transition-colors duration-150 active:scale-95 ${
           labelCopied
             ? 'text-emerald-600 dark:text-emerald-400'

@@ -647,19 +647,19 @@ export default function App() {
   const handleSetLabel = async (item: FileSystemItem) => {
     if (guardOffline()) return;
     if (item.type === 'folder') return;
-    const promptTitle = item.label ? 'Ubah Label' : 'Tambah Label';
+    const promptTitle = item.label ? 'Ubah Alamat Dompet' : 'Tambah Alamat Dompet';
     const input = await customPrompt(promptTitle, item.label || '', {
-      placeholder: 'Tulis label...',
+      placeholder: 'Tulis alamat dompet...',
     });
     if (input === null) return;
 
     const trimmed = input.trim();
     if (!trimmed) {
       await updateItem(item.id, { label: '' });
-      showToast('Label dihapus');
+      showToast('Alamat dompet dihapus');
     } else {
       await updateItem(item.id, { label: trimmed });
-      showToast('Label disimpan');
+      showToast('Alamat dompet disimpan');
     }
   };
 
@@ -680,17 +680,16 @@ export default function App() {
       });
       list.push({
         key: 'label',
-        label: item.label ? 'Ubah Label' : 'Tambah Label',
+        label: item.label ? 'Ubah Alamat Dompet' : 'Tambah Alamat Dompet',
         onClick: () => handleSetLabel(item),
       });
       return list;
     }
 
     const isPermanentFolder = item.type === 'folder' && (item.id === 'folder-catatan' || item.id === 'folder-pharse');
-    const isAutoDomainFolder = item.type === 'folder' && Boolean(item.autoDomain);
 
-    // Fitur ganti nama tidak ditampilkan untuk folder permanen dan folder yang dibuat otomatis
-    if (item.type === 'folder' && !isPermanentFolder && !isAutoDomainFolder) {
+    // Fitur ganti nama tidak ditampilkan untuk folder permanen
+    if (item.type === 'folder' && !isPermanentFolder) {
       list.push({
         key: 'rename',
         label: t('action.rename') || 'Ubah Nama',

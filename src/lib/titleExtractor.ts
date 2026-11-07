@@ -7,15 +7,6 @@ export const cleanText = (str?: string | null): string => {
     .trim();
 };
 
-export const formatCleanUrl = (url?: string | null): string => {
-  if (!url) return '';
-  return url
-    .trim()
-    .replace(/^https?:\/\/(?:www\.)?/i, '')
-    .replace(/^www\./i, '')
-    .replace(/\/+$/, '');
-};
-
 export const compareAlphabetical = (a?: string | null, b?: string | null): number => {
   const strA = cleanText(a);
   const strB = cleanText(b);

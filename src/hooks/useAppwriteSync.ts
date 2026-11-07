@@ -451,7 +451,7 @@ export function useAppwriteSync(
       const itemMap = new Map<string, FileSystemItem>();
 
       for (const item of rawCloudItems) {
-        if ((item as any).type === 'file' || item.autoDomain === true) {
+        if ((item as any).type === 'file' || (item as any).autoDomain === true) {
           permanentlyDeletedSet.add(item.id);
           continue;
         }
@@ -460,7 +460,7 @@ export function useAppwriteSync(
       }
 
       for (const item of currentLocalItems) {
-        if ((item as any).type === 'file' || item.autoDomain === true) {
+        if ((item as any).type === 'file' || (item as any).autoDomain === true) {
           permanentlyDeletedSet.add(item.id);
           continue;
         }

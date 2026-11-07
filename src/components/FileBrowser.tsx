@@ -3,7 +3,7 @@ import { MoreVertical, Folder, Lock, ClipboardList, KeyRound, Check } from 'luci
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
 import { usePinState } from '../lib/pin';
-import { cleanText, formatCleanUrl } from '../lib/titleExtractor';
+import { cleanText } from '../lib/titleExtractor';
 
 interface Props {
   items: FileSystemItem[];
@@ -152,8 +152,9 @@ const Row = ({
 
   const renderItemLabel = () => {
     if (item.type !== 'phrase') return null;
-    if (!item.label || !item.label.trim()) return null;
-    const displayText = formatCleanUrl(item.label) || item.label.trim();
+    const walletAddress = item.label ? item.label.trim() : '';
+    if (!walletAddress) return null;
+    const displayText = walletAddress.length > 4 ? walletAddress.slice(-4) : walletAddress;
     return (
       <span className="inline-flex items-center text-[8px] font-bold leading-none px-1.5 py-[1.5px] rounded border border-neutral-700 text-neutral-800 bg-transparent dark:border-white dark:text-white dark:bg-white/5 mr-1.5 align-middle shrink-0 select-none tracking-wide pointer-events-none">
         {displayText}
@@ -221,7 +222,7 @@ const Row = ({
         ) : item.type === 'phrase' ? (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name}>
             {renderItemLabel()}
-            {/^https?:\/\//i.test(item.name || '') || /^www\./i.test(item.name || '') ? formatCleanUrl(item.name) : (cleanText(item.name) || 'Frasa')}
+            {cleanText(item.name) || 'Frasa'}
           </div>
         ) : (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.content || item.name}>

@@ -33,8 +33,8 @@ export const useFileSystem = () => {
       
       let changed = false;
 
-      // Purge: Hapus semua data bookmark (type === 'file') dan folder otomatis domain
-      const bookmarkAndDomainItems = all.filter(it => (it as any).type === 'file' || it.autoDomain === true);
+      // Purge: Hapus semua data bookmark (type === 'file') dan folder otomatis domain lama jika ada
+      const bookmarkAndDomainItems = all.filter(it => (it as any).type === 'file' || (it as any).autoDomain === true);
       if (bookmarkAndDomainItems.length > 0) {
         const purgeIds = bookmarkAndDomainItems.map(it => it.id);
         await db.deleteItems(purgeIds);
@@ -44,7 +44,7 @@ export const useFileSystem = () => {
           const updatedDeleted = Array.from(new Set([...currentDeleted, ...purgeIds]));
           localStorage.setItem('tautanlumina:deleted_ids', JSON.stringify(updatedDeleted));
         } catch (e) {}
-        all = all.filter(it => !((it as any).type === 'file' || it.autoDomain === true));
+        all = all.filter(it => !((it as any).type === 'file' || (it as any).autoDomain === true));
         changed = true;
         notifyDataModified();
       }
@@ -340,9 +340,6 @@ export const useFileSystem = () => {
     }
     const it = items.find((i) => i.id === id);
     if (!it) return;
-    if (it.type === 'folder' && it.autoDomain) {
-      throw new Error('Folder otomatis tidak dapat diubah namanya');
-    }
     if (it.type === 'phrase') {
       throw new Error('Judul pharse tidak dapat diedit');
     }

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { X, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { FileSystemItem } from '../Types';
-import { formatCleanUrl } from '../lib/titleExtractor';
 
 interface Props {
   item: FileSystemItem;
@@ -15,12 +14,14 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
 
   const words = (item.content || '').trim().split(/\s+/).filter(Boolean);
   const rawTitle = item.name || words[0] || 'Pharse';
-  const displayTitle = /^https?:\/\//i.test(rawTitle) || /^www\./i.test(rawTitle)
-    ? formatCleanUrl(rawTitle)
-    : rawTitle;
 
-  const cleanLabel = item.label && item.label.trim() ? (formatCleanUrl(item.label) || item.label.trim()) : '';
-  const fullHeaderText = cleanLabel ? `${cleanLabel} ${displayTitle}` : displayTitle;
+  const walletAddress = (item.label || '').trim();
+  // Alamat dompet dipotong hanya menampilkan 4 karakter terakhir jika lebih dari 4 karakter
+  const truncatedWallet = walletAddress
+    ? walletAddress.length > 4
+      ? walletAddress.slice(-4)
+      : walletAddress
+    : '';
 
   const handleCopy = async () => {
     try {
@@ -34,10 +35,12 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
 
   const handleCopyHeader = async () => {
     try {
-      await navigator.clipboard.writeText(fullHeaderText);
+      // Salin alamat dompet lengkap jika ada, atau salin judul jika tidak ada
+      const textToCopy = walletAddress || rawTitle;
+      await navigator.clipboard.writeText(textToCopy);
       setHeaderCopied(true);
       toast.dismiss();
-      toast.success('Label & judul disalin', { duration: 1500 });
+      toast.success(walletAddress ? 'Alamat dompet disalin' : 'Judul disalin', { duration: 1500 });
       setTimeout(() => setHeaderCopied(false), 2000);
     } catch {
       // silent fallback
@@ -54,17 +57,17 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
               <button
                 type="button"
                 onClick={handleCopyHeader}
-                title={`Klik untuk menyalin: ${fullHeaderText}`}
+                title={walletAddress ? `Klik untuk menyalin alamat dompet: ${walletAddress}` : `Klik untuk menyalin: ${rawTitle}`}
                 className="group flex items-center gap-2 max-w-full text-left cursor-pointer transition-transform active:scale-[0.98] select-none"
               >
                 <div className="flex items-center gap-2 truncate">
-                  {cleanLabel && (
+                  {truncatedWallet && (
                     <span className="text-[#FF4F00] text-sm sm:text-base font-bold shrink-0">
-                      {cleanLabel}
+                      {truncatedWallet}
                     </span>
                   )}
                   <span className="text-base font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-[#FF4F00] transition-colors truncate">
-                    {displayTitle}
+                    {rawTitle}
                   </span>
                 </div>
                 {headerCopied ? (
