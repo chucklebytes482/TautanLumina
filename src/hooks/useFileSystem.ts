@@ -48,47 +48,27 @@ export const useFileSystem = () => {
         changed = true;
         notifyDataModified();
       }
-      // Migrasi: hapus folder-catatan dan pindahkan folder-clipkey ke root (parentId: null)
+      // Migrasi: hapus folder-catatan jika masih ada
       const existingCatatan = all.find(it => it.id === 'folder-catatan');
       if (existingCatatan) {
-        // Hapus semua catatan di luar clipkey yang ada di dalam folder-catatan
-        const orphanCatatanChildren = all.filter(it => it.parentId === 'folder-catatan' && it.id !== 'folder-clipkey');
-        if (orphanCatatanChildren.length > 0) {
-          await db.deleteItems(orphanCatatanChildren.map(c => c.id));
-        }
         await db.deleteItems(['folder-catatan']);
         changed = true;
       }
 
-      // Pastikan folder permanen 'clipboard' selalu ada di root (parentId: null)
+      // Hapus folder clipboard dan pindahkan semua isinya ke root (parentId: null)
       const existingClipkey = all.find(it => it.id === 'folder-clipkey');
-      if (!existingClipkey) {
-        const folderClipkey: FileSystemItem = {
-          id: 'folder-clipkey',
-          parentId: null,
-          name: 'clipboard',
-          type: 'folder',
-          order: 0,
-          createdAt: 0,
-          updatedAt: Date.now(),
-        };
-        await db.saveItem(folderClipkey);
+      if (existingClipkey) {
+        const clipkeyChildren = all.filter(it => it.parentId === 'folder-clipkey');
+        if (clipkeyChildren.length > 0) {
+          clipkeyChildren.forEach(c => {
+            c.parentId = null;
+            c.updatedAt = Date.now();
+          });
+          await db.saveItems(clipkeyChildren);
+        }
+        await db.deleteItems(['folder-clipkey']);
+        all = all.filter(it => it.id !== 'folder-clipkey');
         changed = true;
-      } else {
-        let clipkeyUpdated = false;
-        if (existingClipkey.parentId !== null) {
-          existingClipkey.parentId = null;
-          clipkeyUpdated = true;
-        }
-        if (existingClipkey.name !== 'clipboard') {
-          existingClipkey.name = 'clipboard';
-          clipkeyUpdated = true;
-        }
-        if (clipkeyUpdated) {
-          existingClipkey.updatedAt = Date.now();
-          await db.saveItem(existingClipkey);
-          changed = true;
-        }
       }
 
       // Bersihkan & migrasikan folder-hello-world jika masih tersisa dari versi lama
@@ -162,7 +142,6 @@ export const useFileSystem = () => {
       const orphanedItems = all.filter(it => 
         it.parentId && 
         it.parentId !== 'folder-pharse' && 
-        it.parentId !== 'folder-clipkey' &&
         !allFolderIds.has(it.parentId)
       );
       if (orphanedItems.length > 0) {
@@ -236,7 +215,7 @@ export const useFileSystem = () => {
 
   const getItemSortKeys = (it: FileSystemItem): { primary: string; secondary: string } => {
     if (it.type === 'folder') {
-      const name = it.id === 'folder-catatan' ? 'Catatan' : it.id === 'folder-clipkey' ? 'clipboard' : it.id === 'folder-pharse' ? 'frasa' : it.name;
+      const name = it.id === 'folder-catatan' ? 'Catatan' : it.id === 'folder-pharse' ? 'frasa' : it.name;
       return { primary: name, secondary: '' };
     }
     if (it.type === 'phrase') {
@@ -250,10 +229,9 @@ export const useFileSystem = () => {
       items
         .filter((i) => i.parentId === pid)
         .sort((a, b) => {
-          // 1. Folder clipboard dan frasa SELALU nomor 1 dan 2 (folder lain TIDAK boleh di atasnya)
+          // 1. Folder frasa SELALU nomor 1 di root (folder lain TIDAK boleh di atasnya)
           const sysRank = (id: string) => {
-            if (id === 'folder-clipkey' || id === 'folder-catatan') return 1;
-            if (id === 'folder-pharse') return 2;
+            if (id === 'folder-pharse') return 1;
             return 999;
           };
           const rankA = sysRank(a.id);
@@ -266,16 +244,6 @@ export const useFileSystem = () => {
           if (a.type === 'folder' && b.type !== 'folder') return -1;
           if (b.type === 'folder' && a.type !== 'folder') return 1;
 
-          // Khusus sub folder clipkey: diurutkan berdasarkan posisi/order (reorder keypad), bukan qwerty
-          if (pid === 'folder-clipkey') {
-            const orderA = a.order ?? 0;
-            const orderB = b.order ?? 0;
-            if (orderA !== orderB) {
-              return orderA - orderB;
-            }
-            return (a.createdAt ?? 0) - (b.createdAt ?? 0);
-          }
-
           if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
 
           const keyA = getItemSortKeys(a);
@@ -287,11 +255,6 @@ export const useFileSystem = () => {
           const secondaryDiff = compareAlphabetical(keyA.secondary, keyB.secondary);
           if (secondaryDiff !== 0) return secondaryDiff;
 
-          const orderA = a.order ?? 0;
-          const orderB = b.order ?? 0;
-          if (orderA !== orderB) {
-            return orderA - orderB;
-          }
           return (a.createdAt ?? 0) - (b.createdAt ?? 0);
         }),
     [items],
@@ -309,22 +272,14 @@ export const useFileSystem = () => {
     content = '',
     category?: string,
   ): Promise<FileSystemItem> => {
-    const isClipboardTarget = (targetId: string | null): boolean => {
-      if (!targetId) return false;
-      return targetId === 'folder-clipkey' || isDescendant('folder-clipkey', targetId);
-    };
-
     let targetParentId = type === 'phrase'
       ? 'folder-pharse'
       : (type === 'note')
-      ? (parentId && (parentId === 'folder-pharse' || isDescendant('folder-pharse', parentId)) ? 'folder-clipkey' : parentId)
+      ? (parentId && (parentId === 'folder-pharse' || isDescendant('folder-pharse', parentId)) ? null : parentId)
       : parentId;
 
     // Query direct fresh DB items to guarantee no false duplicate matches from stale state or deleted items
     const currentDbItems = await db.getAllItems();
-
-    // Aturan anti-duplikat: tidak diizinkan duplikat di semua tempat KECUALI folder clipboard
-    const isClip = isClipboardTarget(targetParentId);
 
     if (type === 'phrase') {
       const normContent = content.trim().toLowerCase();
@@ -334,7 +289,7 @@ export const useFileSystem = () => {
       }
     }
 
-    if (type === 'folder' && !isClip) {
+    if (type === 'folder') {
       const normName = name.trim().toLowerCase();
       const exists = currentDbItems.some(
         it => !it.deletedAt && it.type === 'folder' && it.parentId === targetParentId && it.name?.trim().toLowerCase() === normName
@@ -380,7 +335,7 @@ export const useFileSystem = () => {
   };
 
   const renameItem = async (id: string, name: string) => {
-    if (id === 'folder-catatan' || id === 'folder-pharse' || id === 'folder-clipkey') {
+    if (id === 'folder-catatan' || id === 'folder-pharse') {
       throw new Error('Tidak dapat diubah');
     }
     const it = items.find((i) => i.id === id);
@@ -442,7 +397,7 @@ export const useFileSystem = () => {
 
   const deleteMany = async (ids: string[]) => {
     const activeIds = ids.filter(id => {
-      if (id === 'folder-catatan' || id === 'folder-pharse' || id === 'folder-clipkey') return false;
+      if (id === 'folder-catatan' || id === 'folder-pharse') return false;
       const it = items.find(i => i.id === id);
       if (it && it.type === 'phrase') return false; // Jangan pernah izinkan pharse dihapus
       return true;
@@ -468,7 +423,7 @@ export const useFileSystem = () => {
 
     const all = collectDescendants(activeIds);
     const finalIdsToDelete = all.filter(id => {
-      if (id === 'folder-catatan' || id === 'folder-pharse' || id === 'folder-clipkey') return false;
+      if (id === 'folder-catatan' || id === 'folder-pharse') return false;
       const it = items.find(item => item.id === id);
       if (it && it.type === 'phrase') return false;
       return true;
@@ -501,17 +456,17 @@ export const useFileSystem = () => {
 
     const targetIds = allDbItems
       .filter((it) => {
-        // Jangan pernah menghapus folder permanen clipboard atau pharse itu sendiri
-        if (it.id === 'folder-clipkey' || it.id === 'folder-pharse') return false;
+        // Jangan pernah menghapus folder permanen pharse itu sendiri
+        if (it.id === 'folder-pharse') return false;
         
-        // Hapus semua isi di dalam folder clipboard
-        const insideClipboard = it.parentId === 'folder-clipkey' || isInsideFolder('folder-clipkey', it.parentId);
+        // Hapus semua catatan
+        const isNoteType = it.type === 'note';
         // Hapus semua isi di dalam folder pharse
         const insidePharse = it.parentId === 'folder-pharse' || isInsideFolder('folder-pharse', it.parentId);
         // Hapus item bertipe phrase
         const isPhraseType = it.type === 'phrase';
 
-        return insideClipboard || insidePharse || isPhraseType;
+        return isNoteType || insidePharse || isPhraseType;
       })
       .map((it) => it.id);
 
@@ -520,9 +475,7 @@ export const useFileSystem = () => {
     }
 
     if (
-      currentFolderId === 'folder-clipkey' || 
       currentFolderId === 'folder-pharse' || 
-      isInsideFolder('folder-clipkey', currentFolderId) || 
       isInsideFolder('folder-pharse', currentFolderId)
     ) {
       setCurrentFolderId(null);
@@ -547,18 +500,8 @@ export const useFileSystem = () => {
     return isDescendant('folder-pharse', folderId);
   };
 
-  const isNoteFolder = (folderId: string | null): boolean => {
-    if (!folderId) return false;
-    if (folderId === 'folder-clipkey') return true;
-    return isDescendant('folder-clipkey', folderId);
-  };
-
   const isPharseItem = (it: FileSystemItem): boolean => {
     return it.type === 'phrase' || isPharseFolder(it.parentId);
-  };
-
-  const isNoteItem = (it: FileSystemItem): boolean => {
-    return it.type === 'note' || isNoteFolder(it.parentId);
   };
 
   const getRootAncestorFolderId = (folderId: string): string | null => {
@@ -578,7 +521,7 @@ export const useFileSystem = () => {
 
     const validIds = ids.filter((id) => {
       if (id === targetParentId) return false;
-      if (id === 'folder-catatan' || id === 'folder-pharse' || id === 'folder-clipkey') return false;
+      if (id === 'folder-catatan' || id === 'folder-pharse') return false;
       const it = items.find((i) => i.id === id);
       if (!it) return false;
 
@@ -651,7 +594,7 @@ export const useFileSystem = () => {
   const reorderInParent = async (parentId: string | null, orderedIds: string[]) => {
     let finalIds = [...orderedIds];
     if (parentId === null) {
-      const systemIds = ['folder-clipkey', 'folder-pharse'];
+      const systemIds = ['folder-pharse'];
       const nonSystem = finalIds.filter((id) => !systemIds.includes(id));
       finalIds = [...systemIds, ...nonSystem];
     }
@@ -695,10 +638,9 @@ export const useFileSystem = () => {
           return false;
         })
         .sort((a, b) => {
-          // 1. Folder clipboard dan frasa SELALU nomor 1 dan 2
+          // 1. Folder frasa SELALU nomor 1
           const sysRank = (id: string) => {
-            if (id === 'folder-clipkey' || id === 'folder-catatan') return 1;
-            if (id === 'folder-pharse') return 2;
+            if (id === 'folder-pharse') return 1;
             return 999;
           };
           const rankA = sysRank(a.id);
@@ -729,7 +671,7 @@ export const useFileSystem = () => {
       const parts: string[] = [];
       let cur = items.find((i) => i.id === id);
       while (cur) {
-        const name = cur.id === 'folder-clipkey' ? 'clipboard' : cur.id === 'folder-pharse' ? 'frasa' : cur.name;
+        const name = cur.id === 'folder-pharse' ? 'frasa' : cur.name;
         parts.unshift(name);
         cur = items.find((i) => i.id === cur!.parentId);
       }
@@ -788,18 +730,12 @@ export const useFileSystem = () => {
   };
 
   const importItems = async (incoming: FileSystemItem[], replace: boolean = true, targetParentId?: string | null) => {
-    // Bersihkan folder-hello-world & folder-catatan jika terbawa dari file cadangan lama
+    // Bersihkan folder-hello-world, folder-catatan & folder-clipkey jika terbawa dari file cadangan lama
     const sanitizedIncoming = incoming
-      .filter((it) => it.id !== 'folder-hello-world' && it.id !== 'folder-catatan')
+      .filter((it) => it.id !== 'folder-hello-world' && it.id !== 'folder-catatan' && it.id !== 'folder-clipkey')
       .map((it) => {
-        if (it.parentId === 'folder-hello-world') {
+        if (it.parentId === 'folder-hello-world' || it.parentId === 'folder-catatan' || it.parentId === 'folder-clipkey') {
           return { ...it, parentId: null };
-        }
-        if (it.parentId === 'folder-catatan') {
-          return { ...it, parentId: it.type === 'note' ? 'folder-clipkey' : null };
-        }
-        if (it.id === 'folder-clipkey') {
-          return { ...it, parentId: null, name: 'clipboard' };
         }
         return it;
       });
@@ -808,7 +744,7 @@ export const useFileSystem = () => {
       await db.clearItems();
       await db.saveItems(sanitizedIncoming);
     } else {
-      const nonSystemIncoming = sanitizedIncoming.filter((it) => it.id !== 'folder-pharse' && it.id !== 'folder-clipkey');
+      const nonSystemIncoming = sanitizedIncoming.filter((it) => it.id !== 'folder-pharse');
       const currentDb = await db.getAllItems();
       const currentIds = new Set(currentDb.map(it => it.id));
 
@@ -848,24 +784,15 @@ export const useFileSystem = () => {
     const toDeleteIds: string[] = [];
     const toSaveMap = new Map<string, FileSystemItem>();
 
-    // Helper: deteksi apakah sebuah folder adalah bagian dari folder clipboard (folder-clipkey)
-    const isClipboardTarget = (folderId: string | null): boolean => {
-      let cur = folderId;
-      const visited = new Set<string>();
-      while (cur && !visited.has(cur)) {
-        visited.add(cur);
-        if (cur === 'folder-clipkey' || cur === 'folder-catatan') return true;
-        const parent = all.find((i) => i.id === cur);
-        cur = parent ? parent.parentId : null;
-      }
-      return false;
-    };
-
-    // 1. Pastikan folder sistem memiliki nama yang tepat
+    // 1. Bersihkan folder-clipkey jika masih ada dan pindahkan isinya ke root
     const clipkeyFolder = all.find((it) => it.id === 'folder-clipkey');
-    if (clipkeyFolder && clipkeyFolder.name !== 'clipboard') {
-      toSaveMap.set(clipkeyFolder.id, { ...clipkeyFolder, name: 'clipboard', updatedAt: Date.now() });
+    if (clipkeyFolder) {
+      toDeleteIds.push(clipkeyFolder.id);
       foldersUpdated++;
+      const clipkeyChildren = all.filter((it) => it.parentId === 'folder-clipkey');
+      clipkeyChildren.forEach((child) => {
+        toSaveMap.set(child.id, { ...child, parentId: null, updatedAt: Date.now() });
+      });
     }
 
     const pharseFolder = all.find((it) => it.id === 'folder-pharse');
@@ -937,7 +864,6 @@ export const useFileSystem = () => {
     importItems,
     isDescendant,
     isPharseFolder,
-    isNoteFolder,
     clearClipboardAndPharseContents,
     refreshAndSanitizeAll,
   };

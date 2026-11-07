@@ -471,22 +471,27 @@ export function useAppwriteSync(
         }
       }
 
+      permanentlyDeletedSet.add('folder-clipkey');
+      permanentlyDeletedSet.add('folder-catatan');
+
       // Sanitasi item yang digabung agar duplikat dari cloud/lokal langsung dibersihkan
-      const rawMergedList = Array.from(itemMap.values()).map(it => {
-        if (it.id === 'folder-pharse' && it.name !== 'frasa') {
-          return { ...it, name: 'frasa', parentId: null };
-        }
-        if (it.id === 'folder-clipkey' && it.name !== 'clipboard') {
-          return { ...it, name: 'clipboard', parentId: null };
-        }
-        if (it.type === 'folder' && !it.name?.trim()) {
-          return { ...it, name: 'Folder' };
-        }
-        if (!mergedPinHash && it.type === 'folder' && it.locked) {
-          return { ...it, locked: false };
-        }
-        return it;
-      });
+      const rawMergedList = Array.from(itemMap.values())
+        .filter(it => it.id !== 'folder-clipkey' && it.id !== 'folder-catatan' && it.id !== 'folder-hello-world')
+        .map(it => {
+          if (it.parentId === 'folder-clipkey' || it.parentId === 'folder-catatan' || it.parentId === 'folder-hello-world') {
+            return { ...it, parentId: null };
+          }
+          if (it.id === 'folder-pharse' && it.name !== 'frasa') {
+            return { ...it, name: 'frasa', parentId: null };
+          }
+          if (it.type === 'folder' && !it.name?.trim()) {
+            return { ...it, name: 'Folder' };
+          }
+          if (!mergedPinHash && it.type === 'folder' && it.locked) {
+            return { ...it, locked: false };
+          }
+          return it;
+        });
 
       // Bersihkan duplikat frasa dari data cloud/lokal
       const seenPhrases = new Set<string>();

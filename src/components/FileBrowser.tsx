@@ -54,36 +54,27 @@ export const FileBrowser = ({
     return <div data-testid="empty-state" className="py-6" />;
   }
 
-  let noteCounter = 0;
-
   return (
     <ul data-testid="file-list" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1.5 p-1">
-      {items.map((it, index) => {
-        const isNote = it.type === 'note';
-        if (isNote) {
-          noteCounter += 1;
-        }
-        return (
-          <Row
-            key={it.id}
-            item={it}
-            selected={selectedIds.has(it.id)}
-            selectMode={selectMode}
-            onToggleSelect={() => onToggleSelect(it.id)}
-            onOpenFolder={() => onOpenFolder(it.id)}
-            onMenu={(rect) => onMenu(it, rect)}
-            onPin={(pinned) => onPin(it.id, pinned)}
-            onDelete={() => onDelete(it.id)}
-            allSelectedIds={selectedIds}
-            searchMode={searchMode}
-            pathLabel={searchMode && pathOf ? pathOf(it.parentId) : undefined}
-            currentFolderId={currentFolderId}
-            noteNumber={isNote ? noteCounter : undefined}
-            onOpenPhrase={onOpenPhrase}
-            unlockedFolderIds={unlockedFolderIds}
-          />
-        );
-      })}
+      {items.map((it) => (
+        <Row
+          key={it.id}
+          item={it}
+          selected={selectedIds.has(it.id)}
+          selectMode={selectMode}
+          onToggleSelect={() => onToggleSelect(it.id)}
+          onOpenFolder={() => onOpenFolder(it.id)}
+          onMenu={(rect) => onMenu(it, rect)}
+          onPin={(pinned) => onPin(it.id, pinned)}
+          onDelete={() => onDelete(it.id)}
+          allSelectedIds={selectedIds}
+          searchMode={searchMode}
+          pathLabel={searchMode && pathOf ? pathOf(it.parentId) : undefined}
+          currentFolderId={currentFolderId}
+          onOpenPhrase={onOpenPhrase}
+          unlockedFolderIds={unlockedFolderIds}
+        />
+      ))}
     </ul>
   );
 };
@@ -102,7 +93,6 @@ interface RowProps {
   searchMode: boolean;
   pathLabel?: string;
   currentFolderId?: string | null;
-  noteNumber?: number;
   unlockedFolderIds?: Set<string>;
 }
 
@@ -120,7 +110,6 @@ const Row = ({
   searchMode,
   pathLabel,
   currentFolderId,
-  noteNumber,
   unlockedFolderIds,
 }: RowProps) => {
   const { t } = useI18n();
@@ -136,7 +125,7 @@ const Row = ({
 
   const handleClick = () => {
     if (selectMode) {
-      if (item.id === 'folder-catatan' || item.id === 'folder-pharse' || item.id === 'folder-clipkey') {
+      if (item.id === 'folder-catatan' || item.id === 'folder-pharse') {
         return;
       }
       onToggleSelect();
@@ -162,7 +151,7 @@ const Row = ({
   };
 
   const renderItemLabel = () => {
-    if (item.type === 'folder') return null;
+    if (item.type !== 'phrase') return null;
     if (!item.label || !item.label.trim()) return null;
     const displayText = formatCleanUrl(item.label) || item.label.trim();
     return (
@@ -182,7 +171,7 @@ const Row = ({
       ].join(' ')}
     >
       {/* Select Mode Checkbox */}
-      {selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && item.id !== 'folder-clipkey' && (
+      {selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && (
         <span
           className={[
             'relative z-10 inline-block w-4 h-4 rounded border shrink-0 transition-colors',
@@ -196,7 +185,7 @@ const Row = ({
           }}
         />
       )}
-      {selectMode && (item.id === 'folder-catatan' || item.id === 'folder-pharse' || item.id === 'folder-clipkey') && (
+      {selectMode && (item.id === 'folder-catatan' || item.id === 'folder-pharse') && (
         <div className="w-4 h-4 shrink-0 relative z-10" />
       )}
 
@@ -209,8 +198,6 @@ const Row = ({
             (item.id === 'folder-pharse' && pinActive && !unlockedFolderIds?.has('folder-pharse')) ||
             (item.locked && pinActive && !unlockedFolderIds?.has(item.id)) ? (
               <Lock size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
-            ) : (item.id === 'folder-clipkey' || item.id === 'folder-catatan') ? (
-              <ClipboardList size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
             ) : item.id === 'folder-pharse' ? (
               <KeyRound size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
             ) : (
@@ -219,9 +206,7 @@ const Row = ({
           ) : copied ? (
             <Check size={13} className="text-emerald-600 dark:text-emerald-400 animate-in fade-in" strokeWidth={2.5} />
           ) : (
-            <span className="text-[11px] font-bold text-[#ff4f00] font-mono select-none">
-              {noteNumber}
-            </span>
+            <ClipboardList size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
           )}
         </div>
       )}
@@ -229,9 +214,9 @@ const Row = ({
       {/* Info */}
       <div className="min-w-0 flex-1 relative z-10">
         {item.type === 'folder' ? (
-          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.id === 'folder-clipkey' ? 'clipboard' : item.id === 'folder-pharse' ? 'frasa' : item.name}>
+          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.id === 'folder-pharse' ? 'frasa' : item.name}>
             {renderItemLabel()}
-            {item.id === 'folder-clipkey' ? 'clipboard' : item.id === 'folder-pharse' ? 'frasa' : (cleanText(item.name) || t('file.folder'))}
+            {item.id === 'folder-pharse' ? 'frasa' : (cleanText(item.name) || t('file.folder'))}
           </div>
         ) : item.type === 'phrase' ? (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name}>
@@ -247,7 +232,7 @@ const Row = ({
       </div>
 
       {/* Menu Button: folder di root tanpa titik tiga */}
-      {!selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && item.id !== 'folder-clipkey' && !(item.type === 'folder' && !item.parentId) && (
+      {!selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && !(item.type === 'folder' && !item.parentId) && (
         <div className="flex items-center shrink-0 relative z-10">
           <button
             data-testid={`item-menu-${item.id}`}

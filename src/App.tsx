@@ -35,7 +35,6 @@ import { isBip39EnglishWord } from './lib/bip39';
 import { FolderPicker } from './components/FolderPicker';
 import { SettingsDialog } from './components/SettingsDialog';
 import { PinModal } from './components/PinModal';
-import { MoveKeypadModal } from './components/MoveKeypadModal';
 import { FullscreenChatModal } from './components/FullscreenChatModal';
 import { PhraseViewModal } from './components/PhraseViewModal';
 
@@ -54,7 +53,6 @@ export default function App() {
     updateItem,
     deleteMany,
     moveMany,
-    reorderInParent,
     getBreadcrumbs,
     searchItems,
     pathOf,
@@ -97,14 +95,6 @@ export default function App() {
   const [pinModalMode, setPinModalMode] = useState<'setup' | 'unlock' | 'manage' | 'reset_password' | 'unlock_folder_lock' | null>(null);
   const [folderPendingUnlock, setFolderPendingUnlock] = useState<FileSystemItem | null>(null);
   const [unlockedFolderIds, setUnlockedFolderIds] = useState<Set<string>>(new Set());
-
-  // Move Keypad modal state
-  const [moveKeypadConfig, setMoveKeypadConfig] = useState<{
-    targetItem?: FileSystemItem;
-    isBulk?: boolean;
-    maxNum: number;
-  } | null>(null);
-
 
   // Phrase Read-Only modal state
   const [viewingPhraseItem, setViewingPhraseItem] = useState<FileSystemItem | null>(null);
@@ -173,27 +163,19 @@ export default function App() {
   );
 
   const isNoteFolderOrSubfolder = useCallback(
-    (folderId: string | null): boolean => {
-      if (!folderId) return false;
-      if (folderId === 'folder-clipkey') return true;
-      let cur = items.find((i) => i.id === folderId);
-      while (cur && cur.parentId) {
-        if (cur.parentId === 'folder-clipkey') return true;
-        cur = items.find((i) => i.id === cur!.parentId);
-      }
+    (_folderId: string | null): boolean => {
       return false;
     },
-    [items]
+    []
   );
 
   const isFromNoteFolder = useCallback(
     (id: string): boolean => {
       const item = items.find((i) => i.id === id);
       if (!item) return false;
-      if (item.type === 'note') return true;
-      return isNoteFolderOrSubfolder(item.parentId);
+      return item.type === 'note';
     },
-    [items, isNoteFolderOrSubfolder]
+    [items]
   );
 
   const isFromPharseFolder = useCallback(
@@ -284,7 +266,7 @@ export default function App() {
     const f = items.find((i) => i.id === folderId);
     if (!f) return;
 
-    if (folderId === 'folder-catatan' || folderId === 'folder-pharse' || folderId === 'folder-clipkey' || isPharseFolderOrSubfolder(folderId)) {
+    if (folderId === 'folder-catatan' || folderId === 'folder-pharse' || isPharseFolderOrSubfolder(folderId)) {
       showToast('Tidak dapat diubah');
       return;
     }
@@ -393,8 +375,8 @@ export default function App() {
     const text = await customPrompt('Clipboard Baru', '', { textarea: true, maxWidth: 'max-w-xl' });
     if (!text || !text.trim()) return;
     
-    // Clipboard baru ditempatkan sesuai posisi saat ditambahkan (currentFolderId), kecuali jika berada dalam folder frasa
-    const targetFolder = isPharseFolderOrSubfolder(currentFolderId) ? 'folder-clipkey' : currentFolderId;
+    // Clipboard baru ditempatkan sesuai posisi saat ditambahkan (currentFolderId), kecuali jika berada dalam folder frasa (fallback ke Root)
+    const targetFolder = isPharseFolderOrSubfolder(currentFolderId) ? null : currentFolderId;
     await createItem('', 'note', targetFolder, text.trim());
     showToast('Clipboard disimpan');
   };
@@ -465,7 +447,7 @@ export default function App() {
 
   const selectableItems = useMemo(() => {
     return listItems.filter((item) => {
-      const isSystem = item.id === 'folder-catatan' || item.id === 'folder-pharse' || item.id === 'folder-clipkey';
+      const isSystem = item.id === 'folder-catatan' || item.id === 'folder-pharse';
       const isLocked = item.type === 'folder' && item.locked;
       return !isSystem && !isLocked;
     });
@@ -595,7 +577,7 @@ export default function App() {
     opts?: { title?: string; afterDelete?: () => void },
   ) => {
     if (guardOffline()) return;
-    const filteredIds = ids.filter(id => id !== 'folder-catatan' && id !== 'folder-pharse' && id !== 'folder-clipkey');
+    const filteredIds = ids.filter(id => id !== 'folder-catatan' && id !== 'folder-pharse');
     if (filteredIds.length < ids.length && ids.length === 1) {
       showToast('Tidak dapat dihapus');
       return;
@@ -652,28 +634,6 @@ export default function App() {
     guardedDelete(ids);
   };
 
-  const handleConfirmMoveKeypad = async (targetNum: number) => {
-    if (!moveKeypadConfig) return;
-    if (guardOffline()) return;
-    const { targetItem } = moveKeypadConfig;
-    setMoveKeypadConfig(null);
-
-    if (targetItem) {
-      const isInsideClipkey = targetItem.parentId === 'folder-clipkey' || currentFolderId === 'folder-clipkey';
-      if (isInsideClipkey) {
-        const targetIdx = Math.max(0, targetNum - 1);
-        const currentIdx = listItems.findIndex((i) => i.id === targetItem.id);
-        if (currentIdx !== -1) {
-          const newList = [...listItems];
-          newList.splice(currentIdx, 1);
-          newList.splice(Math.min(targetIdx, newList.length), 0, targetItem);
-          await reorderInParent('folder-clipkey', newList.map((i) => i.id));
-          showToast('Dipindahkan');
-        }
-      }
-    }
-  };
-
 
 
 
@@ -711,26 +671,6 @@ export default function App() {
   const menuActions = (item: FileSystemItem): MenuAction[] => {
     if (item.type === 'folder' && !item.parentId) return [];
     const list: MenuAction[] = [];
-    const isInsideClipkey = currentFolderId === 'folder-clipkey' || item.parentId === 'folder-clipkey';
-
-    // Fitur "Pindah ke posisi" HANYA ada di sub folder catatan bernama clipkey
-    if (isInsideClipkey) {
-      list.push({
-        key: 'reorder',
-        label: t('action.moveToNum') || 'Pindah ke posisi',
-        onClick: () => {
-          if (searchMode) {
-            showToast('Tidak dapat dipindah');
-            return;
-          }
-          setMoveKeypadConfig({
-            targetItem: item,
-            isBulk: false,
-            maxNum: listItems.length,
-          });
-        },
-      });
-    }
 
     if (item.type === 'phrase') {
       list.push({
@@ -746,7 +686,7 @@ export default function App() {
       return list;
     }
 
-    const isPermanentFolder = item.type === 'folder' && (item.id === 'folder-catatan' || item.id === 'folder-pharse' || item.id === 'folder-clipkey');
+    const isPermanentFolder = item.type === 'folder' && (item.id === 'folder-catatan' || item.id === 'folder-pharse');
     const isAutoDomainFolder = item.type === 'folder' && Boolean(item.autoDomain);
 
     // Fitur ganti nama tidak ditampilkan untuk folder permanen dan folder yang dibuat otomatis
@@ -778,14 +718,7 @@ export default function App() {
     }
 
     list.push({ key: 'move', label: t('action.moveToFolder'), onClick: () => openMovePicker([item.id]) });
-    if (item.type !== 'folder') {
-      list.push({
-        key: 'label',
-        label: item.label ? 'Ubah Label' : 'Tambah Label',
-        onClick: () => handleSetLabel(item),
-      });
-    }
-    if (item.type === 'folder' && item.id !== 'folder-pharse' && item.id !== 'folder-clipkey' && !isPharseFolderOrSubfolder(item.id)) {
+    if (item.type === 'folder' && item.id !== 'folder-pharse' && !isPharseFolderOrSubfolder(item.id)) {
       list.push({
         key: 'lock',
         label: (item.locked && hasPinSet()) ? (t('pin.unlockPin') || 'Buka PIN') : (t('pin.lockPin') || 'Kunci PIN'),
@@ -906,13 +839,13 @@ export default function App() {
               </div>
               <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                 <button
-                  data-testid="new-note-btn"
-                  onClick={handleNewNote}
+                  data-testid="new-phrase-btn"
+                  onClick={handleNewPhrase}
                   className="p-2.5 border border-[#e2ddd5] dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 dark:text-neutral-200 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
-                  title="Clipboard"
-                  aria-label="Clipboard"
+                  title={t('btn.newPhrase') || 'Frasa (1x Klik Tempel)'}
+                  aria-label={t('btn.newPhrase') || 'Frasa (1x Klik Tempel)'}
                 >
-                  <ClipboardList size={20} />
+                  <KeyRound size={20} />
                 </button>
 
                 <button
@@ -925,13 +858,13 @@ export default function App() {
                 </button>
 
                 <button
-                  data-testid="new-phrase-btn"
-                  onClick={handleNewPhrase}
+                  data-testid="new-note-btn"
+                  onClick={handleNewNote}
                   className="p-2.5 border border-[#e2ddd5] dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 dark:text-neutral-200 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
-                  title={t('btn.newPhrase') || 'Frasa (1x Klik Tempel)'}
-                  aria-label={t('btn.newPhrase') || 'Frasa (1x Klik Tempel)'}
+                  title="Clipboard"
+                  aria-label="Clipboard"
                 >
-                  <KeyRound size={20} />
+                  <ClipboardList size={20} />
                 </button>
               </div>
             </div>
@@ -954,7 +887,7 @@ export default function App() {
                       onClick={() => navigateTo(b.id)}
                       className="px-2.5 py-1 rounded-lg hover:bg-[#faf8f5] dark:hover:bg-neutral-800 truncate max-w-[140px] text-neutral-800 dark:text-neutral-200 transition-colors cursor-pointer"
                     >
-                      {b.id === 'folder-clipkey' ? 'clipboard' : b.id === 'folder-pharse' ? 'frasa' : b.name}
+                      {b.id === 'folder-pharse' ? 'frasa' : b.name}
                     </button>
                   </div>
                 ))}
@@ -1054,8 +987,6 @@ export default function App() {
               ? menuFor.name || 'Pharse'
               : menuFor.type === 'note'
               ? (menuFor.content || '').substring(0, 30) + ((menuFor.content || '').length > 30 ? '...' : '')
-              : menuFor.id === 'folder-clipkey'
-              ? 'clipboard'
               : menuFor.id === 'folder-pharse'
               ? 'frasa'
               : menuFor.name || t('picker.newFolder')
@@ -1071,8 +1002,7 @@ export default function App() {
             initialFolderId={
               pickerConfig.restrictedRootFolderId
                 ? (
-                    (pickerConfig.restrictedRootFolderId === 'folder-pharse' && isPharseFolderOrSubfolder(currentFolderId)) ||
-                    (pickerConfig.restrictedRootFolderId === 'folder-clipkey' && isNoteFolderOrSubfolder(currentFolderId))
+                    pickerConfig.restrictedRootFolderId === 'folder-pharse' && isPharseFolderOrSubfolder(currentFolderId)
                       ? currentFolderId
                       : pickerConfig.restrictedRootFolderId
                   )
@@ -1111,7 +1041,7 @@ export default function App() {
           <PinModal
             mode={pinModalMode}
             folderToUnlock={folderPendingUnlock || undefined}
-            folders={items.filter((i) => i.type === 'folder' && i.id !== 'folder-catatan' && i.id !== 'folder-pharse' && i.id !== 'folder-clipkey' && !isPharseFolderOrSubfolder(i.id))}
+            folders={items.filter((i) => i.type === 'folder' && i.id !== 'folder-catatan' && i.id !== 'folder-pharse' && !isPharseFolderOrSubfolder(i.id))}
             onClose={() => {
               setPinModalMode(null);
               setFolderPendingUnlock(null);
@@ -1134,19 +1064,6 @@ export default function App() {
             }}
             onToggleFolderLock={handleToggleFolderLock}
             onVerifyPasswordAndReset={handleVerifyPasswordAndReset}
-          />
-        )}
-
-        {moveKeypadConfig && (
-          <MoveKeypadModal
-            maxNum={moveKeypadConfig.maxNum}
-            itemTitle={
-              moveKeypadConfig.isBulk
-                ? t('action.itemsSelected').replace('{count}', selectedIds.size.toString())
-                : moveKeypadConfig.targetItem?.name
-            }
-            onConfirm={handleConfirmMoveKeypad}
-            onClose={() => setMoveKeypadConfig(null)}
           />
         )}
 

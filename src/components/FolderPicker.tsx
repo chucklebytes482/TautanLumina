@@ -55,8 +55,7 @@ export const FolderPicker = ({
         .sort((a, b) => {
           if (current === null) {
             const sysRank = (id: string) => {
-              if (id === 'folder-clipkey' || id === 'folder-catatan') return 1;
-              if (id === 'folder-pharse') return 2;
+              if (id === 'folder-pharse') return 1;
               return 999;
             };
             const rA = sysRank(a.id);
@@ -126,12 +125,10 @@ export const FolderPicker = ({
             >
               {restrictedRootFolderId === 'folder-pharse' ? (
                 <KeyRound size={12} className="text-[#FF4F00]" />
-              ) : (restrictedRootFolderId === 'folder-clipkey' || restrictedRootFolderId === 'folder-catatan') ? (
-                <ClipboardList size={12} className="text-[#FF4F00]" />
               ) : (
                 <Folder size={12} className="text-[#FF4F00]" />
               )}
-              {items.find((i) => i.id === restrictedRootFolderId)?.name || (restrictedRootFolderId === 'folder-clipkey' ? 'clipboard' : restrictedRootFolderId === 'folder-catatan' ? 'Catatan' : 'Pharse')}
+              {items.find((i) => i.id === restrictedRootFolderId)?.name || (restrictedRootFolderId === 'folder-pharse' ? 'frasa' : 'Folder')}
             </button>
           ) : (
             <button
@@ -155,7 +152,7 @@ export const FolderPicker = ({
                 }}
                 className="hover:text-[#FF4F00] font-medium truncate max-w-[120px] transition-colors"
               >
-                {b.id === 'folder-clipkey' ? 'clipboard' : b.id === 'folder-pharse' ? 'frasa' : b.name}
+                {b.id === 'folder-pharse' ? 'frasa' : b.name}
               </button>
             </span>
           ))}
@@ -214,14 +211,12 @@ export const FolderPicker = ({
                       ].join(' ')}
                     >
                       <div className="flex items-center gap-2 truncate">
-                        {f.id === 'folder-clipkey' || f.id === 'folder-catatan' ? (
-                          <ClipboardList size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
-                        ) : f.id === 'folder-pharse' ? (
+                        {f.id === 'folder-pharse' ? (
                           <KeyRound size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
                         ) : (
                           <Folder size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
                         )}
-                        <span className="truncate">{f.id === 'folder-clipkey' ? 'clipboard' : f.id === 'folder-pharse' ? 'frasa' : f.name}</span>
+                        <span className="truncate">{f.id === 'folder-pharse' ? 'frasa' : f.name}</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {subfolderCount > 0 && !disabled && (
