@@ -433,11 +433,19 @@ export default function App() {
       return;
     }
 
-    // Judul frasa otomatis diambil dari 1 kata pertama isi frasa
-    const firstWord = words[0] || 'frasa';
+    // Penamaan frasa dari kata pertama dihapus, digantikan dengan alamat dompet
+    const walletAddressInput = await customPrompt('Alamat Dompet', '', {
+      placeholder: 'Tulis alamat dompet (opsional)...',
+    });
+    if (walletAddressInput === null) {
+      // Batal tambah frasa
+      return;
+    }
+
+    const walletAddress = walletAddressInput.trim();
 
     try {
-      await createItem(firstWord, 'phrase', 'folder-pharse', cleanContent);
+      await createItem(walletAddress, 'phrase', 'folder-pharse', cleanContent);
       navigateTo('folder-pharse');
       showToast('Frasa disimpan');
     } catch (e: any) {
@@ -664,12 +672,12 @@ export default function App() {
   };
 
   const openItemMenu = (item: FileSystemItem) => {
-    if (item.type === 'folder' && !item.parentId) return;
+    if (item.id === 'folder-pharse') return;
     setMenuFor(item);
   };
 
   const menuActions = (item: FileSystemItem): MenuAction[] => {
-    if (item.type === 'folder' && !item.parentId) return [];
+    if (item.id === 'folder-pharse') return [];
     const list: MenuAction[] = [];
 
     if (item.type === 'phrase') {
@@ -983,7 +991,11 @@ export default function App() {
           item={menuFor}
           title={
             menuFor.type === 'phrase'
-              ? menuFor.name || 'Pharse'
+              ? (() => {
+                  const wallet = (menuFor.label || menuFor.name || '').trim();
+                  if (!wallet) return 'Frasa';
+                  return wallet.length > 4 ? wallet.slice(-4) : wallet;
+                })()
               : menuFor.type === 'note'
               ? (menuFor.content || '').substring(0, 30) + ((menuFor.content || '').length > 30 ? '...' : '')
               : menuFor.id === 'folder-pharse'

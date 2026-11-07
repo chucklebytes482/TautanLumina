@@ -150,18 +150,6 @@ const Row = ({
     }
   };
 
-  const renderItemLabel = () => {
-    if (item.type !== 'phrase') return null;
-    const walletAddress = item.label ? item.label.trim() : '';
-    if (!walletAddress) return null;
-    const displayText = walletAddress.length > 4 ? walletAddress.slice(-4) : walletAddress;
-    return (
-      <span className="inline-flex items-center text-[8px] font-bold leading-none px-1.5 py-[1.5px] rounded border border-neutral-700 text-neutral-800 bg-transparent dark:border-white dark:text-white dark:bg-white/5 mr-1.5 align-middle shrink-0 select-none tracking-wide pointer-events-none">
-        {displayText}
-      </span>
-    );
-  };
-
   return (
     <li
       data-testid={`item-row-${item.id}`}
@@ -216,24 +204,25 @@ const Row = ({
       <div className="min-w-0 flex-1 relative z-10">
         {item.type === 'folder' ? (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.id === 'folder-pharse' ? 'frasa' : item.name}>
-            {renderItemLabel()}
             {item.id === 'folder-pharse' ? 'frasa' : (cleanText(item.name) || t('file.folder'))}
           </div>
         ) : item.type === 'phrase' ? (
-          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name}>
-            {renderItemLabel()}
-            {cleanText(item.name) || 'Frasa'}
+          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.label || item.name || 'Frasa'}>
+            {(() => {
+              const wallet = (item.label || item.name || '').trim();
+              if (!wallet) return 'Frasa';
+              return wallet.length > 4 ? wallet.slice(-4) : wallet;
+            })()}
           </div>
         ) : (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.content || item.name}>
-            {renderItemLabel()}
             {cleanText(item.content) || cleanText(item.name) || t('file.note')}
           </div>
         )}
       </div>
 
-      {/* Menu Button: folder di root tanpa titik tiga */}
-      {!selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && !(item.type === 'folder' && !item.parentId) && (
+      {/* Menu Button: folder frasa tanpa titik tiga */}
+      {!selectMode && item.id !== 'folder-pharse' && (
         <div className="flex items-center shrink-0 relative z-10">
           <button
             data-testid={`item-menu-${item.id}`}

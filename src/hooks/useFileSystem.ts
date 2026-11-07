@@ -149,13 +149,15 @@ export const useFileSystem = () => {
         all = all.filter(it => !orphanedItems.some(op => op.id === it.id));
       }
 
-      // Ensure all phrase items' names are automatically taken from the 1st word of content
+      // Ensure all phrase items' names are automatically taken from wallet address if set, otherwise 1st word of content
       const phraseItems = all.filter(it => it.type === 'phrase' && it.content);
       const invalidPhrases: FileSystemItem[] = [];
       phraseItems.forEach(it => {
-        const firstWord = it.content!.trim().split(/\s+/)[0];
-        if (firstWord && it.name !== firstWord) {
-          it.name = firstWord;
+        const walletAddress = it.label ? it.label.trim() : '';
+        const firstWord = it.content!.trim().split(/\s+/)[0] || 'frasa';
+        const expectedName = walletAddress || firstWord;
+        if (it.name !== expectedName) {
+          it.name = expectedName;
           it.updatedAt = Date.now();
           invalidPhrases.push(it);
         }
@@ -372,9 +374,17 @@ export const useFileSystem = () => {
     } else if (updates.label !== undefined) {
       if (!updates.label || !updates.label.trim()) {
         delete merged.label;
+        if (it.type === 'phrase' && it.content) {
+          merged.name = it.content.trim().split(/\s+/)[0] || 'frasa';
+        }
       } else {
         merged.label = updates.label.trim();
+        if (it.type === 'phrase') {
+          merged.name = merged.label;
+        }
       }
+    } else if (it.type === 'phrase' && merged.label) {
+      merged.name = merged.label;
     }
     await db.saveItem(merged);
     await reload();

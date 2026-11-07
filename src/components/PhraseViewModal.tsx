@@ -13,15 +13,15 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
   const [headerCopied, setHeaderCopied] = useState(false);
 
   const words = (item.content || '').trim().split(/\s+/).filter(Boolean);
-  const rawTitle = item.name || words[0] || 'Pharse';
-
-  const walletAddress = (item.label || '').trim();
+  const walletAddress = (item.label || item.name || '').trim();
   // Alamat dompet dipotong hanya menampilkan 4 karakter terakhir jika lebih dari 4 karakter
   const truncatedWallet = walletAddress
     ? walletAddress.length > 4
       ? walletAddress.slice(-4)
       : walletAddress
     : '';
+  const displayTitle = truncatedWallet || 'Frasa';
+
 
   const handleCopy = async () => {
     try {
@@ -35,12 +35,11 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
 
   const handleCopyHeader = async () => {
     try {
-      // Salin alamat dompet lengkap jika ada, atau salin judul jika tidak ada
-      const textToCopy = walletAddress || rawTitle;
+      const textToCopy = walletAddress || 'Frasa';
       await navigator.clipboard.writeText(textToCopy);
       setHeaderCopied(true);
       toast.dismiss();
-      toast.success(walletAddress ? 'Alamat dompet disalin' : 'Judul disalin', { duration: 1500 });
+      toast.success(walletAddress ? 'Alamat dompet disalin' : 'Frasa disalin', { duration: 1500 });
       setTimeout(() => setHeaderCopied(false), 2000);
     } catch {
       // silent fallback
@@ -57,17 +56,12 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
               <button
                 type="button"
                 onClick={handleCopyHeader}
-                title={walletAddress ? `Klik untuk menyalin alamat dompet: ${walletAddress}` : `Klik untuk menyalin: ${rawTitle}`}
+                title={walletAddress ? `Klik untuk menyalin alamat dompet: ${walletAddress}` : 'Klik untuk menyalin'}
                 className="group flex items-center gap-2 max-w-full text-left cursor-pointer transition-transform active:scale-[0.98] select-none"
               >
                 <div className="flex items-center gap-2 truncate">
-                  {truncatedWallet && (
-                    <span className="text-[#FF4F00] text-sm sm:text-base font-bold shrink-0">
-                      {truncatedWallet}
-                    </span>
-                  )}
                   <span className="text-base font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-[#FF4F00] transition-colors truncate">
-                    {rawTitle}
+                    {displayTitle}
                   </span>
                 </div>
                 {headerCopied ? (

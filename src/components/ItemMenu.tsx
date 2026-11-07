@@ -108,7 +108,7 @@ export const ItemMenu = ({ title, item, actions, onClose }: Props) => {
       >
         <div className="flex items-center justify-between p-3 border-b border-[#e2ddd5] dark:border-neutral-800 bg-[#faf8f5] dark:bg-neutral-800/80">
           <div className="flex items-center min-w-0 flex-1 pr-2">
-            {renderLabelBadge()}
+            {item?.type !== 'phrase' && renderLabelBadge()}
             <div className="text-sm font-bold text-[#131313] dark:text-neutral-100 truncate">{title}</div>
           </div>
           <button
