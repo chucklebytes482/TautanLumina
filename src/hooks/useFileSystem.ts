@@ -33,10 +33,17 @@ export const useFileSystem = () => {
       
       let changed = false;
 
-      // Purge: Hapus semua data bookmark (type === 'file') dan folder otomatis domain lama jika ada
-      const bookmarkAndDomainItems = all.filter(it => (it as any).type === 'file' || (it as any).autoDomain === true);
-      if (bookmarkAndDomainItems.length > 0) {
-        const purgeIds = bookmarkAndDomainItems.map(it => it.id);
+      // Purge: Hapus semua data bookmark (type === 'file'), folder otomatis domain, folder-clipkey, dan semua catatan/clipboard (type === 'note')
+      const itemsToPurge = all.filter(
+        it => (it as any).type === 'file' ||
+              (it as any).type === 'note' ||
+              (it as any).autoDomain === true ||
+              it.id === 'folder-clipkey' ||
+              it.id === 'folder-catatan' ||
+              it.id === 'folder-hello-world'
+      );
+      if (itemsToPurge.length > 0) {
+        const purgeIds = itemsToPurge.map(it => it.id);
         await db.deleteItems(purgeIds);
         try {
           const stored = localStorage.getItem('tautanlumina:deleted_ids');
@@ -44,31 +51,9 @@ export const useFileSystem = () => {
           const updatedDeleted = Array.from(new Set([...currentDeleted, ...purgeIds]));
           localStorage.setItem('tautanlumina:deleted_ids', JSON.stringify(updatedDeleted));
         } catch (e) {}
-        all = all.filter(it => !((it as any).type === 'file' || (it as any).autoDomain === true));
+        all = all.filter(it => !purgeIds.includes(it.id));
         changed = true;
         notifyDataModified();
-      }
-      // Migrasi: hapus folder-catatan jika masih ada
-      const existingCatatan = all.find(it => it.id === 'folder-catatan');
-      if (existingCatatan) {
-        await db.deleteItems(['folder-catatan']);
-        changed = true;
-      }
-
-      // Hapus folder clipboard dan pindahkan semua isinya ke root (parentId: null)
-      const existingClipkey = all.find(it => it.id === 'folder-clipkey');
-      if (existingClipkey) {
-        const clipkeyChildren = all.filter(it => it.parentId === 'folder-clipkey');
-        if (clipkeyChildren.length > 0) {
-          clipkeyChildren.forEach(c => {
-            c.parentId = null;
-            c.updatedAt = Date.now();
-          });
-          await db.saveItems(clipkeyChildren);
-        }
-        await db.deleteItems(['folder-clipkey']);
-        all = all.filter(it => it.id !== 'folder-clipkey');
-        changed = true;
       }
 
       // Bersihkan & migrasikan folder-hello-world jika masih tersisa dari versi lama
@@ -86,34 +71,27 @@ export const useFileSystem = () => {
         changed = true;
       }
 
+      // Hapus folder frasa ('folder-pharse') dan pindahkan semua isinya ke root (parentId: null)
       const existingPharse = all.find(it => it.id === 'folder-pharse');
-      if (!existingPharse) {
-        const folderPharse: FileSystemItem = {
-          id: 'folder-pharse',
-          parentId: null,
-          name: 'frasa',
-          type: 'folder',
-          order: 1,
-          createdAt: 0,
-          updatedAt: Date.now(),
-        };
-        await db.saveItem(folderPharse);
+      if (existingPharse) {
+        const pharseChildren = all.filter(it => it.parentId === 'folder-pharse');
+        if (pharseChildren.length > 0) {
+          pharseChildren.forEach(c => {
+            c.parentId = null;
+            c.updatedAt = Date.now();
+          });
+          await db.saveItems(pharseChildren);
+        }
+        await db.deleteItems(['folder-pharse']);
+        try {
+          const stored = localStorage.getItem('tautanlumina:deleted_ids');
+          const currentDeleted: string[] = stored ? JSON.parse(stored) : [];
+          const updatedDeleted = Array.from(new Set([...currentDeleted, 'folder-pharse']));
+          localStorage.setItem('tautanlumina:deleted_ids', JSON.stringify(updatedDeleted));
+        } catch (e) {}
+        all = all.filter(it => it.id !== 'folder-pharse');
         changed = true;
-      } else {
-        let pharseUpdated = false;
-        if (existingPharse.parentId !== null) {
-          existingPharse.parentId = null;
-          pharseUpdated = true;
-        }
-        if (existingPharse.name !== 'frasa') {
-          existingPharse.name = 'frasa';
-          pharseUpdated = true;
-        }
-        if (pharseUpdated) {
-          existingPharse.updatedAt = Date.now();
-          await db.saveItem(existingPharse);
-          changed = true;
-        }
+        notifyDataModified();
       }
 
       if (changed) {
@@ -141,7 +119,6 @@ export const useFileSystem = () => {
       const allFolderIds = new Set(all.filter(it => it.type === 'folder').map(it => it.id));
       const orphanedItems = all.filter(it => 
         it.parentId && 
-        it.parentId !== 'folder-pharse' && 
         !allFolderIds.has(it.parentId)
       );
       if (orphanedItems.length > 0) {
@@ -167,11 +144,11 @@ export const useFileSystem = () => {
         all = await db.getAllItems();
       }
 
-      // Bersihkan duplikat terutama di dalam folder pharse
+      // Bersihkan duplikat frasa
       const seenContent = new Set<string>();
       const duplicateIds: string[] = [];
       all.forEach(it => {
-        if (it.content && (it.type === 'phrase' || it.parentId === 'folder-pharse')) {
+        if (it.content && it.type === 'phrase') {
           const key = `${it.type}:${it.content.trim().toLowerCase()}`;
           if (seenContent.has(key)) {
             duplicateIds.push(it.id);
@@ -217,8 +194,7 @@ export const useFileSystem = () => {
 
   const getItemSortKeys = (it: FileSystemItem): { primary: string; secondary: string } => {
     if (it.type === 'folder') {
-      const name = it.id === 'folder-catatan' ? 'Catatan' : it.id === 'folder-pharse' ? 'frasa' : it.name;
-      return { primary: name, secondary: '' };
+      return { primary: it.name, secondary: '' };
     }
     if (it.type === 'phrase') {
       return { primary: it.name || it.content || '', secondary: it.content || '' };
@@ -231,18 +207,7 @@ export const useFileSystem = () => {
       items
         .filter((i) => i.parentId === pid)
         .sort((a, b) => {
-          // 1. Folder frasa SELALU nomor 1 di root (folder lain TIDAK boleh di atasnya)
-          const sysRank = (id: string) => {
-            if (id === 'folder-pharse') return 1;
-            return 999;
-          };
-          const rankA = sysRank(a.id);
-          const rankB = sysRank(b.id);
-          if (rankA !== rankB) {
-            return rankA - rankB;
-          }
-
-          // 2. Folder selalu di tempatkan keatas
+          // 1. Folder selalu di tempatkan keatas
           if (a.type === 'folder' && b.type !== 'folder') return -1;
           if (b.type === 'folder' && a.type !== 'folder') return 1;
 
@@ -274,11 +239,7 @@ export const useFileSystem = () => {
     content = '',
     category?: string,
   ): Promise<FileSystemItem> => {
-    let targetParentId = type === 'phrase'
-      ? 'folder-pharse'
-      : (type === 'note')
-      ? (parentId && (parentId === 'folder-pharse' || isDescendant('folder-pharse', parentId)) ? null : parentId)
-      : parentId;
+    const targetParentId = parentId;
 
     // Query direct fresh DB items to guarantee no false duplicate matches from stale state or deleted items
     const currentDbItems = await db.getAllItems();
@@ -302,9 +263,7 @@ export const useFileSystem = () => {
     }
 
     const firstWordFromContent = (content || '').trim().split(/\s+/)[0] || '';
-    const itemName = type === 'note'
-      ? content.trim()
-      : type === 'phrase'
+    const itemName = type === 'phrase'
       ? (firstWordFromContent || 'frasa')
       : (name.trim() || (type === 'folder' ? 'Folder' : 'Untitled'));
     const item: FileSystemItem = {
@@ -337,9 +296,6 @@ export const useFileSystem = () => {
   };
 
   const renameItem = async (id: string, name: string) => {
-    if (id === 'folder-catatan' || id === 'folder-pharse') {
-      throw new Error('Tidak dapat diubah');
-    }
     const it = items.find((i) => i.id === id);
     if (!it) return;
     if (it.type === 'phrase') {
@@ -404,22 +360,20 @@ export const useFileSystem = () => {
 
   const deleteMany = async (ids: string[]) => {
     const activeIds = ids.filter(id => {
-      if (id === 'folder-catatan' || id === 'folder-pharse') return false;
       const it = items.find(i => i.id === id);
       if (it && it.type === 'phrase') return false; // Jangan pernah izinkan pharse dihapus
       return true;
     });
     if (activeIds.length === 0) return;
 
-    // Jika yang dihapus adalah folder di dalam area pharse (sub folder pharse),
-    // pindahkan item anak di dalamnya ke root 'folder-pharse' agar isinya TIDAK ikut terhapus.
+    // Jika folder dihapus, pindahkan item frasa di dalamnya ke parent folder atau ke root agar isinya tidak hilang
     const reassignItems: FileSystemItem[] = [];
     for (const id of activeIds) {
       const it = items.find(i => i.id === id);
-      if (it && it.type === 'folder' && (it.parentId === 'folder-pharse' || isDescendant('folder-pharse', it.parentId || ''))) {
+      if (it && it.type === 'folder') {
         const children = items.filter(child => child.parentId === id);
         children.forEach(child => {
-          reassignItems.push({ ...child, parentId: 'folder-pharse', updatedAt: Date.now() });
+          reassignItems.push({ ...child, parentId: it.parentId ?? null, updatedAt: Date.now() });
         });
       }
     }
@@ -430,7 +384,6 @@ export const useFileSystem = () => {
 
     const all = collectDescendants(activeIds);
     const finalIdsToDelete = all.filter(id => {
-      if (id === 'folder-catatan' || id === 'folder-pharse') return false;
       const it = items.find(item => item.id === id);
       if (it && it.type === 'phrase') return false;
       return true;
@@ -452,45 +405,17 @@ export const useFileSystem = () => {
 
   const clearClipboardAndPharseContents = useCallback(async () => {
     const allDbItems = await db.getAllItems();
-    const isInsideFolder = (ancestorId: string, nodeId: string | null): boolean => {
-      let cur = allDbItems.find((i) => i.id === nodeId);
-      while (cur && cur.parentId) {
-        if (cur.parentId === ancestorId) return true;
-        cur = allDbItems.find((i) => i.id === cur!.parentId);
-      }
-      return false;
-    };
-
     const targetIds = allDbItems
-      .filter((it) => {
-        // Jangan pernah menghapus folder permanen pharse itu sendiri
-        if (it.id === 'folder-pharse') return false;
-        
-        // Hapus semua catatan
-        const isNoteType = it.type === 'note';
-        // Hapus semua isi di dalam folder pharse
-        const insidePharse = it.parentId === 'folder-pharse' || isInsideFolder('folder-pharse', it.parentId);
-        // Hapus item bertipe phrase
-        const isPhraseType = it.type === 'phrase';
-
-        return isNoteType || insidePharse || isPhraseType;
-      })
+      .filter((it) => it.type === 'phrase' || (it as any).type === 'note')
       .map((it) => it.id);
 
     if (targetIds.length > 0) {
       await db.deleteItems(targetIds);
     }
 
-    if (
-      currentFolderId === 'folder-pharse' || 
-      isInsideFolder('folder-pharse', currentFolderId)
-    ) {
-      setCurrentFolderId(null);
-    }
-
     await reload();
     notifyDataModified();
-  }, [currentFolderId, reload]);
+  }, [reload]);
 
   const isDescendant = (ancestorId: string, nodeId: string): boolean => {
     let cur = items.find((i) => i.id === nodeId);
@@ -501,14 +426,12 @@ export const useFileSystem = () => {
     return false;
   };
 
-  const isPharseFolder = (folderId: string | null): boolean => {
-    if (!folderId) return false;
-    if (folderId === 'folder-pharse') return true;
-    return isDescendant('folder-pharse', folderId);
+  const isPharseFolder = (_folderId: string | null): boolean => {
+    return false;
   };
 
   const isPharseItem = (it: FileSystemItem): boolean => {
-    return it.type === 'phrase' || isPharseFolder(it.parentId);
+    return it.type === 'phrase';
   };
 
   const getRootAncestorFolderId = (folderId: string): string | null => {
@@ -524,61 +447,27 @@ export const useFileSystem = () => {
   };
 
   const moveMany = async (ids: string[], targetParentId: string | null) => {
-    const isTargetPharse = isPharseFolder(targetParentId);
-
     const validIds = ids.filter((id) => {
       if (id === targetParentId) return false;
-      if (id === 'folder-catatan' || id === 'folder-pharse') return false;
       const it = items.find((i) => i.id === id);
       if (!it) return false;
 
       // Cegah folder dipindahkan ke dalam dirinya sendiri atau ke dalam keturunannya
       if (it.type === 'folder' && targetParentId && (id === targetParentId || isDescendant(id, targetParentId))) return false;
 
-      // Folder di root (parentId === null) tidak dapat dipindahkan
-      if (it.type === 'folder' && !it.parentId) {
-        return false;
-      }
+      // Cegah memindahkan folder ke parent yang sama
+      if (it.parentId === targetParentId) return false;
 
-      const isPharseContent = isPharseItem(it);
-
-      if (isPharseContent) {
-        // Konten folder pharse hanya dapat dipindahkan di dalam folder pharse
-        return isTargetPharse;
-      } else {
-        // Sub folder dan isi dari folder clipboard (serta konten non-pharse)
-        // bisa dipindahkan kemana saja KECUALI ke folder frasa
-        return !isTargetPharse;
-      }
+      return true;
     });
 
     if (ids.length > 0 && validIds.length === 0) {
-      const isRootFolder = ids.some((id) => {
-        const it = items.find((i) => i.id === id);
-        return it && it.type === 'folder' && !it.parentId;
-      });
-      if (isRootFolder) {
-        throw new Error('Folder di root tidak dapat dipindahkan');
-      }
-
       const isMovingIntoDescendant = ids.some((id) => {
         const it = items.find((i) => i.id === id);
         return it && it.type === 'folder' && targetParentId && (id === targetParentId || isDescendant(id, targetParentId));
       });
       if (isMovingIntoDescendant) {
         throw new Error('Folder tidak dapat dipindahkan ke dalam dirinya sendiri');
-      }
-
-      const isAnyPharse = ids.some((id) => {
-        const it = items.find((i) => i.id === id);
-        return it && isPharseItem(it);
-      });
-
-      if (isAnyPharse && !isTargetPharse) {
-        throw new Error('Konten folder frasa tidak dapat dipindahkan ke luar folder frasa');
-      }
-      if (!isAnyPharse && isTargetPharse) {
-        throw new Error('Item tidak dapat dipindahkan ke folder frasa');
       }
       throw new Error('Item tidak dapat dipindahkan ke folder tujuan');
     }
@@ -599,14 +488,8 @@ export const useFileSystem = () => {
   };
 
   const reorderInParent = async (parentId: string | null, orderedIds: string[]) => {
-    let finalIds = [...orderedIds];
-    if (parentId === null) {
-      const systemIds = ['folder-pharse'];
-      const nonSystem = finalIds.filter((id) => !systemIds.includes(id));
-      finalIds = [...systemIds, ...nonSystem];
-    }
     const updated: FileSystemItem[] = [];
-    finalIds.forEach((id, idx) => {
+    orderedIds.forEach((id, idx) => {
       const it = items.find((i) => i.id === id);
       if (it && it.parentId === parentId) {
         updated.push({ ...it, order: idx, updatedAt: Date.now() });
@@ -641,22 +524,11 @@ export const useFileSystem = () => {
         .filter((i) => {
           if (i.name.toLowerCase().includes(query)) return true;
           if (i.label && i.label.toLowerCase().includes(query)) return true;
-          if (i.type === 'note' && i.content && i.content.toLowerCase().includes(query)) return true;
+          if (i.content && i.content.toLowerCase().includes(query)) return true;
           return false;
         })
         .sort((a, b) => {
-          // 1. Folder frasa SELALU nomor 1
-          const sysRank = (id: string) => {
-            if (id === 'folder-pharse') return 1;
-            return 999;
-          };
-          const rankA = sysRank(a.id);
-          const rankB = sysRank(b.id);
-          if (rankA !== rankB) {
-            return rankA - rankB;
-          }
-
-          // 2. Folder selalu di tempatkan keatas
+          // 1. Folder selalu di tempatkan keatas
           if (a.type === 'folder' && b.type !== 'folder') return -1;
           if (b.type === 'folder' && a.type !== 'folder') return 1;
 
@@ -678,8 +550,7 @@ export const useFileSystem = () => {
       const parts: string[] = [];
       let cur = items.find((i) => i.id === id);
       while (cur) {
-        const name = cur.id === 'folder-pharse' ? 'frasa' : cur.name;
-        parts.unshift(name);
+        parts.unshift(cur.name);
         cur = items.find((i) => i.id === cur!.parentId);
       }
       return '/' + parts.join('/');
@@ -791,27 +662,21 @@ export const useFileSystem = () => {
     const toDeleteIds: string[] = [];
     const toSaveMap = new Map<string, FileSystemItem>();
 
-    // 1. Bersihkan folder-clipkey jika masih ada dan pindahkan isinya ke root
-    const clipkeyFolder = all.find((it) => it.id === 'folder-clipkey');
-    if (clipkeyFolder) {
-      toDeleteIds.push(clipkeyFolder.id);
+    // 1. Bersihkan folder-pharse jika masih ada dan pindahkan isinya ke root
+    const pharseFolder = all.find((it) => it.id === 'folder-pharse');
+    if (pharseFolder) {
+      toDeleteIds.push(pharseFolder.id);
       foldersUpdated++;
-      const clipkeyChildren = all.filter((it) => it.parentId === 'folder-clipkey');
-      clipkeyChildren.forEach((child) => {
+      const pharseChildren = all.filter((it) => it.parentId === 'folder-pharse');
+      pharseChildren.forEach((child) => {
         toSaveMap.set(child.id, { ...child, parentId: null, updatedAt: Date.now() });
       });
     }
 
-    const pharseFolder = all.find((it) => it.id === 'folder-pharse');
-    if (pharseFolder && pharseFolder.name !== 'frasa') {
-      toSaveMap.set(pharseFolder.id, { ...pharseFolder, name: 'frasa', updatedAt: Date.now() });
-      foldersUpdated++;
-    }
-
-    // 2. Bersihkan duplikat frasa (dalam folder frasa / type phrase)
+    // 2. Bersihkan duplikat frasa
     const seenPhrases = new Set<string>();
     all.forEach((it) => {
-      if (!it.deletedAt && it.content && (it.type === 'phrase' || it.parentId === 'folder-pharse')) {
+      if (!it.deletedAt && it.content && it.type === 'phrase') {
         const norm = it.content.trim().toLowerCase();
         if (seenPhrases.has(norm)) {
           toDeleteIds.push(it.id);

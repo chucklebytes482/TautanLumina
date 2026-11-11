@@ -345,7 +345,7 @@ export const LoginScreen = ({ login, register, resetPassword, updatePasswordReco
 
       {/* Footer copyright */}
       <footer className="w-full max-w-5xl text-center pt-3 pb-1 text-[11px] text-neutral-500 dark:text-neutral-400">
-        <p>© 2026 TautanLumina • Ultra-Minimalist AI Note & Phrase Manager</p>
+        <p>© 2026 TautanLumina • Ultra-Minimalist AI Phrase Manager</p>
       </footer>
 
     </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X, ChevronRight, Home, ArrowLeft, Folder, ClipboardList, KeyRound } from 'lucide-react';
+import { X, ChevronRight, Home, ArrowLeft, Folder, KeyRound } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { useDialog } from '../context/DialogContext';
 import { useI18n } from '../lib/i18n';
@@ -53,15 +53,6 @@ export const FolderPicker = ({
       items
         .filter((i) => i.type === 'folder' && i.parentId === current && !hiddenFolderIds?.has(i.id))
         .sort((a, b) => {
-          if (current === null) {
-            const sysRank = (id: string) => {
-              if (id === 'folder-pharse') return 1;
-              return 999;
-            };
-            const rA = sysRank(a.id);
-            const rB = sysRank(b.id);
-            if (rA !== rB) return rA - rB;
-          }
           return (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' });
         }),
     [items, current, hiddenFolderIds],
@@ -123,12 +114,8 @@ export const FolderPicker = ({
               }}
               className="flex items-center gap-1 hover:text-[#FF4F00] font-medium transition-colors"
             >
-              {restrictedRootFolderId === 'folder-pharse' ? (
-                <KeyRound size={12} className="text-[#FF4F00]" />
-              ) : (
-                <Folder size={12} className="text-[#FF4F00]" />
-              )}
-              {items.find((i) => i.id === restrictedRootFolderId)?.name || (restrictedRootFolderId === 'folder-pharse' ? 'frasa' : 'Folder')}
+              <Folder size={12} className="text-[#FF4F00]" />
+              {items.find((i) => i.id === restrictedRootFolderId)?.name || 'Folder'}
             </button>
           ) : (
             <button
@@ -152,7 +139,7 @@ export const FolderPicker = ({
                 }}
                 className="hover:text-[#FF4F00] font-medium truncate max-w-[120px] transition-colors"
               >
-                {b.id === 'folder-pharse' ? 'frasa' : b.name}
+                {b.name}
               </button>
             </span>
           ))}
@@ -211,12 +198,8 @@ export const FolderPicker = ({
                       ].join(' ')}
                     >
                       <div className="flex items-center gap-2 truncate">
-                        {f.id === 'folder-pharse' ? (
-                          <KeyRound size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
-                        ) : (
-                          <Folder size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
-                        )}
-                        <span className="truncate">{f.id === 'folder-pharse' ? 'frasa' : f.name}</span>
+                        <Folder size={16} className="shrink-0 text-[#FF4F00]" strokeWidth={2} />
+                        <span className="truncate">{f.name}</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {subfolderCount > 0 && !disabled && (

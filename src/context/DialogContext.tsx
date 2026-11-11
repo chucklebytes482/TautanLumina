@@ -142,7 +142,7 @@ export const DialogProvider = ({ children }: { children: ReactNode }) => {
                         handleCancel();
                       }
                     }}
-                    placeholder="Ketik note di sini..."
+                    placeholder="Ketik teks di sini..."
                   />
                 ) : (
                   <input

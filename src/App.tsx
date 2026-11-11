@@ -3,7 +3,6 @@ import { toast as sonnerToast } from 'sonner';
 import {
   Search,
   FolderPlus,
-  ClipboardList,
   Home,
   ChevronRight,
   X,
@@ -126,27 +125,9 @@ export default function App() {
     sonnerToast(msg, { duration: 1500 });
   }, []);
 
-  const isPharseFolderOrSubfolder = useCallback(
-    (folderId: string | null): boolean => {
-      if (!folderId) return false;
-      if (folderId === 'folder-pharse') return true;
-      let cur = items.find((i) => i.id === folderId);
-      while (cur && cur.parentId) {
-        if (cur.parentId === 'folder-pharse') return true;
-        cur = items.find((i) => i.id === cur!.parentId);
-      }
-      return false;
-    },
-    [items]
-  );
-
   const isItemLocked = useCallback(
     (item: FileSystemItem): boolean => {
       if (!hasPinSet()) return false;
-      const isPharse = item.id === 'folder-pharse' || isPharseFolderOrSubfolder(item.id) || isPharseFolderOrSubfolder(item.parentId);
-      if (isPharse) {
-        return !unlockedFolderIds.has('folder-pharse');
-      }
       if (item.type === 'folder' && item.locked && !unlockedFolderIds.has(item.id)) {
         return true;
       }
@@ -159,49 +140,7 @@ export default function App() {
       }
       return false;
     },
-    [items, unlockedFolderIds, pinActive, isPharseFolderOrSubfolder],
-  );
-
-  const isNoteFolderOrSubfolder = useCallback(
-    (_folderId: string | null): boolean => {
-      return false;
-    },
-    []
-  );
-
-  const isFromNoteFolder = useCallback(
-    (id: string): boolean => {
-      const item = items.find((i) => i.id === id);
-      if (!item) return false;
-      return item.type === 'note';
-    },
-    [items]
-  );
-
-  const isFromPharseFolder = useCallback(
-    (id: string): boolean => {
-      const item = items.find((i) => i.id === id);
-      if (!item) return false;
-      if (item.type === 'phrase') return true;
-      return isPharseFolderOrSubfolder(item.parentId);
-    },
-    [items, isPharseFolderOrSubfolder]
-  );
-
-  const getRootFolderAncestorId = useCallback(
-    (id: string): string | null => {
-      let cur = items.find((i) => i.id === id);
-      if (!cur) return null;
-      if (!cur.parentId) return cur.id;
-      while (cur && cur.parentId) {
-        const parent = items.find((i) => i.id === cur!.parentId);
-        if (!parent) return cur.parentId;
-        if (!parent.parentId) return parent.id;
-        cur = parent;
-      }
-      return cur ? cur.id : null;
-    },
-    [items]
+    [items, unlockedFolderIds, pinActive],
   );
 
   const breadcrumbs = getBreadcrumbs();
@@ -227,20 +166,6 @@ export default function App() {
 
   const navigateTo = (id: string | null) => {
     if (id && hasPinSet()) {
-      if (id === 'folder-pharse' || isPharseFolderOrSubfolder(id)) {
-        if (!unlockedFolderIds.has('folder-pharse')) {
-          const pharseFolder = items.find((i) => i.id === 'folder-pharse') || ({
-            id: 'folder-pharse',
-            name: 'frasa',
-            type: 'folder',
-            locked: true,
-          } as FileSystemItem);
-          setFolderPendingUnlock(pharseFolder);
-          setPinModalMode('unlock');
-          return;
-        }
-      }
-
       let cur = items.find((i) => i.id === id);
       let lockedTarget: FileSystemItem | null = null;
       while (cur) {
@@ -265,11 +190,6 @@ export default function App() {
     if (guardOffline()) return;
     const f = items.find((i) => i.id === folderId);
     if (!f) return;
-
-    if (folderId === 'folder-catatan' || folderId === 'folder-pharse' || isPharseFolderOrSubfolder(folderId)) {
-      showToast('Tidak dapat diubah');
-      return;
-    }
 
     if (!hasPinSet()) {
       showToast('PIN belum diatur');
@@ -370,16 +290,6 @@ export default function App() {
     }
   };
 
-  const handleNewNote = async () => {
-    if (guardOffline()) return;
-    const text = await customPrompt('Clipboard Baru', '', { textarea: true, maxWidth: 'max-w-xl' });
-    if (!text || !text.trim()) return;
-    
-    // Clipboard baru ditempatkan sesuai posisi saat ditambahkan (currentFolderId), kecuali jika berada dalam folder frasa (fallback ke Root)
-    const targetFolder = isPharseFolderOrSubfolder(currentFolderId) ? null : currentFolderId;
-    await createItem('', 'note', targetFolder, text.trim());
-    showToast('Clipboard disimpan');
-  };
 
   const handleNewPhrase = async () => {
     if (guardOffline()) return;
@@ -445,8 +355,7 @@ export default function App() {
     const walletAddress = walletAddressInput.trim();
 
     try {
-      await createItem(walletAddress, 'phrase', 'folder-pharse', cleanContent);
-      navigateTo('folder-pharse');
+      await createItem(walletAddress, 'phrase', currentFolderId, cleanContent);
       showToast('Frasa disimpan');
     } catch (e: any) {
       showToast(e?.message || 'Gagal simpan');
@@ -455,9 +364,8 @@ export default function App() {
 
   const selectableItems = useMemo(() => {
     return listItems.filter((item) => {
-      const isSystem = item.id === 'folder-catatan' || item.id === 'folder-pharse';
       const isLocked = item.type === 'folder' && item.locked;
-      return !isSystem && !isLocked;
+      return !isLocked;
     });
   }, [listItems]);
 
@@ -510,64 +418,16 @@ export default function App() {
       });
     };
     movingIds.forEach(walk);
-
-    const isPharseMoving = movingIds.some((id) => isFromPharseFolder(id));
-
-    if (isPharseMoving) {
-      // Pharse diisolasi: nonaktifkan semua folder yang BUKAN di dalam pharse
-      items.filter((i) => i.type === 'folder' && !isPharseFolderOrSubfolder(i.id)).forEach((f) => {
-        disabled.add(f.id);
-      });
-    } else {
-      // Sub folder dan isi dari folder clipboard (dan non-pharse) tidak boleh dipindahkan ke folder frasa
-      disabled.add('folder-pharse');
-      walk('folder-pharse');
-    }
-
     return disabled;
   };
 
   const openMovePicker = (ids: string[]) => {
     if (guardOffline()) return;
 
-    const movingItems = items.filter((i) => ids.includes(i.id));
-
-    // Cegah folder di root dipindahkan
-    const hasRootFolder = movingItems.some((i) => i.type === 'folder' && !i.parentId);
-    if (hasRootFolder) {
-      showToast('Folder di root tidak dapat dipindahkan');
-      return;
-    }
-
-    const isPharseMoving = ids.some((id) => isFromPharseFolder(id));
-
-    let restrictedRootFolderId: string | undefined = undefined;
-    const hiddenFolderIds = new Set<string>();
-
-    const walk = (id: string) => {
-      items.filter((i) => i.parentId === id).forEach((c) => {
-        if (!hiddenFolderIds.has(c.id)) {
-          hiddenFolderIds.add(c.id);
-          walk(c.id);
-        }
-      });
-    };
-
-    if (isPharseMoving) {
-      restrictedRootFolderId = 'folder-pharse';
-    } else {
-      // Sub folder dan isi dari folder clipboard sekarang bisa dipindahkan kemana saja
-      // KECUALI ke folder frasa, sehingga folder frasa & subfoldernya disembunyikan
-      hiddenFolderIds.add('folder-pharse');
-      walk('folder-pharse');
-    }
-
     setPickerConfig({
       title: t('action.moveItems').replace('{count}', ids.length.toString()),
       confirmLabel: t('action.move'),
       disabledIds: disabledFolderIds(ids),
-      hiddenFolderIds,
-      restrictedRootFolderId,
       onConfirm: async (target) => {
         try {
           await moveMany(ids, target);
@@ -585,11 +445,7 @@ export default function App() {
     opts?: { title?: string; afterDelete?: () => void },
   ) => {
     if (guardOffline()) return;
-    const filteredIds = ids.filter(id => id !== 'folder-catatan' && id !== 'folder-pharse');
-    if (filteredIds.length < ids.length && ids.length === 1) {
-      showToast('Tidak dapat dihapus');
-      return;
-    }
+    const filteredIds = [...ids];
     if (filteredIds.length === 0) return;
 
     const lockedItems = filteredIds.filter(id => {
@@ -672,12 +528,10 @@ export default function App() {
   };
 
   const openItemMenu = (item: FileSystemItem) => {
-    if (item.id === 'folder-pharse') return;
     setMenuFor(item);
   };
 
   const menuActions = (item: FileSystemItem): MenuAction[] => {
-    if (item.id === 'folder-pharse') return [];
     const list: MenuAction[] = [];
 
     if (item.type === 'phrase') {
@@ -694,10 +548,7 @@ export default function App() {
       return list;
     }
 
-    const isPermanentFolder = item.type === 'folder' && (item.id === 'folder-catatan' || item.id === 'folder-pharse');
-
-    // Fitur ganti nama tidak ditampilkan untuk folder permanen
-    if (item.type === 'folder' && !isPermanentFolder) {
+    if (item.type === 'folder') {
       list.push({
         key: 'rename',
         label: t('action.rename') || 'Ubah Nama',
@@ -725,7 +576,7 @@ export default function App() {
     }
 
     list.push({ key: 'move', label: t('action.moveToFolder'), onClick: () => openMovePicker([item.id]) });
-    if (item.type === 'folder' && item.id !== 'folder-pharse' && !isPharseFolderOrSubfolder(item.id)) {
+    if (item.type === 'folder') {
       list.push({
         key: 'lock',
         label: (item.locked && hasPinSet()) ? (t('pin.unlockPin') || 'Buka PIN') : (t('pin.lockPin') || 'Kunci PIN'),
@@ -733,20 +584,7 @@ export default function App() {
       });
     }
 
-    if (item.type === 'note') {
-      list.push({
-        key: 'edit',
-        label: t('file.editContent') || 'Edit Isi',
-        onClick: async () => {
-          if (guardOffline()) return;
-          const content = await customPrompt(t('modal.noteText'), item.content || '', { textarea: true, maxWidth: 'max-w-xl' });
-          if (content !== null && content.trim() !== '') {
-            await updateContent(item.id, content.trim());
-            showToast('Catatan disimpan');
-          }
-        },
-      });
-    }
+
     if (!isItemLocked(item)) {
       list.push({
         key: 'delete',
@@ -863,16 +701,6 @@ export default function App() {
                 >
                   <FolderPlus size={20} />
                 </button>
-
-                <button
-                  data-testid="new-note-btn"
-                  onClick={handleNewNote}
-                  className="p-2.5 border border-[#e2ddd5] dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-xl hover:bg-[#fff0eb] hover:text-[#FF4F00] hover:border-[#FF4F00]/40 transition-colors text-neutral-700 dark:text-neutral-200 shrink-0 flex-1 sm:flex-initial flex items-center justify-center cursor-pointer"
-                  title="Clipboard"
-                  aria-label="Clipboard"
-                >
-                  <ClipboardList size={20} />
-                </button>
               </div>
             </div>
 
@@ -894,7 +722,7 @@ export default function App() {
                       onClick={() => navigateTo(b.id)}
                       className="px-2.5 py-1 rounded-lg hover:bg-[#faf8f5] dark:hover:bg-neutral-800 truncate max-w-[140px] text-neutral-800 dark:text-neutral-200 transition-colors cursor-pointer"
                     >
-                      {b.id === 'folder-pharse' ? 'frasa' : b.name}
+                      {b.name}
                     </button>
                   </div>
                 ))}
@@ -996,10 +824,6 @@ export default function App() {
                   if (!wallet) return 'Frasa';
                   return wallet.length > 4 ? wallet.slice(-4) : wallet;
                 })()
-              : menuFor.type === 'note'
-              ? (menuFor.content || '').substring(0, 30) + ((menuFor.content || '').length > 30 ? '...' : '')
-              : menuFor.id === 'folder-pharse'
-              ? 'frasa'
               : menuFor.name || t('picker.newFolder')
           }
           actions={menuActions(menuFor)}
@@ -1010,20 +834,10 @@ export default function App() {
         {pickerConfig && (
           <FolderPicker
             items={items}
-            initialFolderId={
-              pickerConfig.restrictedRootFolderId
-                ? (
-                    pickerConfig.restrictedRootFolderId === 'folder-pharse' && isPharseFolderOrSubfolder(currentFolderId)
-                      ? currentFolderId
-                      : pickerConfig.restrictedRootFolderId
-                  )
-                : currentFolderId
-            }
+            initialFolderId={currentFolderId}
             title={pickerConfig.title}
             confirmLabel={pickerConfig.confirmLabel}
             disabledIds={pickerConfig.disabledIds}
-            hiddenFolderIds={pickerConfig.hiddenFolderIds}
-            restrictedRootFolderId={pickerConfig.restrictedRootFolderId}
             onConfirm={async (id) => {
               await pickerConfig.onConfirm(id);
               setPickerConfig(null);
@@ -1052,7 +866,7 @@ export default function App() {
           <PinModal
             mode={pinModalMode}
             folderToUnlock={folderPendingUnlock || undefined}
-            folders={items.filter((i) => i.type === 'folder' && i.id !== 'folder-catatan' && i.id !== 'folder-pharse' && !isPharseFolderOrSubfolder(i.id))}
+            folders={items.filter((i) => i.type === 'folder')}
             onClose={() => {
               setPinModalMode(null);
               setFolderPendingUnlock(null);

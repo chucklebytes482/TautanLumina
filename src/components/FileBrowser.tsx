@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { MoreVertical, Folder, Lock, ClipboardList, KeyRound, Check } from 'lucide-react';
+import { useState } from 'react';
+import { MoreVertical, Folder, Lock, KeyRound } from 'lucide-react';
 import { FileSystemItem } from '../Types';
 import { useI18n } from '../lib/i18n';
 import { usePinState } from '../lib/pin';
@@ -114,39 +114,14 @@ const Row = ({
 }: RowProps) => {
   const { t } = useI18n();
   const pinActive = usePinState();
-  const [copied, setCopied] = useState(false);
-  const copyTimeoutRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current);
-    };
-  }, []);
-
   const handleClick = () => {
     if (selectMode) {
-      if (item.id === 'folder-catatan' || item.id === 'folder-pharse') {
-        return;
-      }
       onToggleSelect();
       return;
     }
     if (item.type === 'folder') onOpenFolder();
     else if (item.type === 'phrase') {
       onOpenPhrase?.(item);
-    }
-    else if (item.type === 'note') {
-      const textToCopy = item.content || item.name || '';
-      if (!textToCopy) return;
-      navigator.clipboard.writeText(textToCopy)
-        .then(() => {
-          setCopied(true);
-          if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current);
-          copyTimeoutRef.current = window.setTimeout(() => {
-            setCopied(false);
-          }, 1200);
-        })
-        .catch(() => {});
     }
   };
 
@@ -160,7 +135,7 @@ const Row = ({
       ].join(' ')}
     >
       {/* Select Mode Checkbox */}
-      {selectMode && item.id !== 'folder-catatan' && item.id !== 'folder-pharse' && (
+      {selectMode && (
         <span
           className={[
             'relative z-10 inline-block w-4 h-4 rounded border shrink-0 transition-colors',
@@ -174,28 +149,14 @@ const Row = ({
           }}
         />
       )}
-      {selectMode && (item.id === 'folder-catatan' || item.id === 'folder-pharse') && (
-        <div className="w-4 h-4 shrink-0 relative z-10" />
-      )}
 
-      {/* Icon / Note Badge (phrase items have no icon) */}
-      {(item.type === 'folder' || item.type === 'note') && (
-        <div className={`shrink-0 w-6.5 h-6.5 flex items-center justify-center rounded-lg border overflow-hidden relative z-10 transition-colors ${
-          copied ? 'bg-emerald-50 border-emerald-500/40 dark:bg-emerald-950/40 dark:border-emerald-500/50' : 'bg-[#faf8f5] border-[#e2ddd5]/60'
-        }`}>
-          {item.type === 'folder' ? (
-            (item.id === 'folder-pharse' && pinActive && !unlockedFolderIds?.has('folder-pharse')) ||
-            (item.locked && pinActive && !unlockedFolderIds?.has(item.id)) ? (
-              <Lock size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
-            ) : item.id === 'folder-pharse' ? (
-              <KeyRound size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
-            ) : (
-              <Folder size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
-            )
-          ) : copied ? (
-            <Check size={13} className="text-emerald-600 dark:text-emerald-400 animate-in fade-in" strokeWidth={2.5} />
+      {/* Folder Icon (phrase items have no icon) */}
+      {item.type === 'folder' && (
+        <div className="shrink-0 w-6.5 h-6.5 flex items-center justify-center rounded-lg border overflow-hidden relative z-10 transition-colors bg-[#faf8f5] border-[#e2ddd5]/60">
+          {item.locked && pinActive && !unlockedFolderIds?.has(item.id) ? (
+            <Lock size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
           ) : (
-            <ClipboardList size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
+            <Folder size={14} className="text-[#ff4f00]" strokeWidth={2.2} />
           )}
         </div>
       )}
@@ -203,10 +164,10 @@ const Row = ({
       {/* Info */}
       <div className="min-w-0 flex-1 relative z-10">
         {item.type === 'folder' ? (
-          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.id === 'folder-pharse' ? 'frasa' : item.name}>
-            {item.id === 'folder-pharse' ? 'frasa' : (cleanText(item.name) || t('file.folder'))}
+          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.name}>
+            {cleanText(item.name) || t('file.folder')}
           </div>
-        ) : item.type === 'phrase' ? (
+        ) : (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.label || item.name || 'Frasa'}>
             {(() => {
               const wallet = (item.label || item.name || '').trim();
@@ -214,15 +175,11 @@ const Row = ({
               return wallet.length > 4 ? wallet.slice(-4) : wallet;
             })()}
           </div>
-        ) : (
-          <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.content || item.name}>
-            {cleanText(item.content) || cleanText(item.name) || t('file.note')}
-          </div>
         )}
       </div>
 
-      {/* Menu Button: folder frasa tanpa titik tiga */}
-      {!selectMode && item.id !== 'folder-pharse' && (
+      {/* Menu Button */}
+      {!selectMode && (
         <div className="flex items-center shrink-0 relative z-10">
           <button
             data-testid={`item-menu-${item.id}`}

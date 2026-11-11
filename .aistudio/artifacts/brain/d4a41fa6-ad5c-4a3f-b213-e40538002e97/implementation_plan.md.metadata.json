@@ -1,6 +1,0 @@
-{
-  "summary": "Rencana pembersihan file tidak terpakai (termasuk aset screenshot lama dan kamus bahasa asing i18n-missing) serta optimasi kode mati dan duplikasi logika tanpa mengubah perilaku fitur.",
-  "updatedAt": "2026-11-04T07:28:40.109874653Z",
-  "requestFeedback": true,
-  "userFacing": true
-}

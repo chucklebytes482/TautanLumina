@@ -63,8 +63,8 @@ const nestedTranslations: Record<string, any> = {
   },
   app: {
     heroDesc:
-      'TautanLumina adalah pengelola catatan & frasa yang cepat dan ultra-minimalis. Kunci folder PIN 4-digit, voice note 30 detik dengan pratinjau audio, urutan posisi Keypad Move, serta sinkronisasi Awan Appwrite.',
-    tagline: 'Tautan Anda, Cerdas & Bercahaya.',
+      'TautanLumina adalah pengelola frasa yang cepat dan ultra-minimalis. Kunci folder PIN 4-digit, urutan posisi Keypad Move, serta sinkronisasi Awan Appwrite.',
+    tagline: 'Frasa Anda, Cerdas & Aman.',
   },
   btn: {
     exportJSON: 'Ekspor JSON',

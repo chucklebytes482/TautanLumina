@@ -451,7 +451,7 @@ export function useAppwriteSync(
       const itemMap = new Map<string, FileSystemItem>();
 
       for (const item of rawCloudItems) {
-        if ((item as any).type === 'file' || (item as any).autoDomain === true) {
+        if ((item as any).type === 'file' || (item as any).type === 'note' || (item as any).autoDomain === true) {
           permanentlyDeletedSet.add(item.id);
           continue;
         }
@@ -460,7 +460,7 @@ export function useAppwriteSync(
       }
 
       for (const item of currentLocalItems) {
-        if ((item as any).type === 'file' || (item as any).autoDomain === true) {
+        if ((item as any).type === 'file' || (item as any).type === 'note' || (item as any).autoDomain === true) {
           permanentlyDeletedSet.add(item.id);
           continue;
         }
@@ -473,16 +473,14 @@ export function useAppwriteSync(
 
       permanentlyDeletedSet.add('folder-clipkey');
       permanentlyDeletedSet.add('folder-catatan');
+      permanentlyDeletedSet.add('folder-pharse');
 
       // Sanitasi item yang digabung agar duplikat dari cloud/lokal langsung dibersihkan
       const rawMergedList = Array.from(itemMap.values())
-        .filter(it => it.id !== 'folder-clipkey' && it.id !== 'folder-catatan' && it.id !== 'folder-hello-world')
+        .filter(it => it.id !== 'folder-clipkey' && it.id !== 'folder-catatan' && it.id !== 'folder-hello-world' && it.id !== 'folder-pharse')
         .map(it => {
-          if (it.parentId === 'folder-clipkey' || it.parentId === 'folder-catatan' || it.parentId === 'folder-hello-world') {
+          if (it.parentId === 'folder-clipkey' || it.parentId === 'folder-catatan' || it.parentId === 'folder-hello-world' || it.parentId === 'folder-pharse') {
             return { ...it, parentId: null };
-          }
-          if (it.id === 'folder-pharse' && it.name !== 'frasa') {
-            return { ...it, name: 'frasa', parentId: null };
           }
           if (it.type === 'folder' && !it.name?.trim()) {
             return { ...it, name: 'Folder' };
@@ -498,7 +496,7 @@ export function useAppwriteSync(
       const dedupedList: FileSystemItem[] = [];
 
       for (const it of rawMergedList) {
-        if (it.type === 'phrase' || it.parentId === 'folder-pharse') {
+        if (it.type === 'phrase') {
           const norm = (it.content || '').trim().toLowerCase();
           if (norm) {
             const phraseKey = `phrase:${norm}`;
