@@ -13,14 +13,14 @@ export const PhraseViewModal: React.FC<Props> = ({ item, onClose }) => {
   const [headerCopied, setHeaderCopied] = useState(false);
 
   const words = (item.content || '').trim().split(/\s+/).filter(Boolean);
-  const walletAddress = (item.label || item.name || '').trim();
+  const walletAddress = (item.label || '').trim();
   // Alamat dompet dipotong hanya menampilkan 4 karakter terakhir jika lebih dari 4 karakter
   const truncatedWallet = walletAddress
     ? walletAddress.length > 4
       ? walletAddress.slice(-4)
       : walletAddress
     : '';
-  const displayTitle = truncatedWallet || 'Frasa';
+  const displayTitle = truncatedWallet || item.name || 'Frasa';
 
 
   const handleCopy = async () => {

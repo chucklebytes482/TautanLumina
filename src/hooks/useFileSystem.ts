@@ -238,6 +238,7 @@ export const useFileSystem = () => {
     parentId: string | null,
     content = '',
     category?: string,
+    label?: string,
   ): Promise<FileSystemItem> => {
     const targetParentId = parentId;
 
@@ -263,8 +264,9 @@ export const useFileSystem = () => {
     }
 
     const firstWordFromContent = (content || '').trim().split(/\s+/)[0] || '';
+    const trimmedLabel = label ? label.trim() : (name ? name.trim() : '');
     const itemName = type === 'phrase'
-      ? (firstWordFromContent || 'frasa')
+      ? (trimmedLabel || firstWordFromContent || 'frasa')
       : (name.trim() || (type === 'folder' ? 'Folder' : 'Untitled'));
     const item: FileSystemItem = {
       id: uid(),
@@ -272,6 +274,7 @@ export const useFileSystem = () => {
       name: itemName,
       type,
       content: type === 'folder' ? undefined : content,
+      label: type === 'phrase' && trimmedLabel ? trimmedLabel : undefined,
       category,
       order: nextOrder(targetParentId),
       createdAt: Date.now(),

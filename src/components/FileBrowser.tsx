@@ -170,9 +170,11 @@ const Row = ({
         ) : (
           <div className="text-[11.5px] leading-snug font-medium text-neutral-800 dark:text-neutral-200 line-clamp-2 break-words" title={item.label || item.name || 'Frasa'}>
             {(() => {
-              const wallet = (item.label || item.name || '').trim();
-              if (!wallet) return 'Frasa';
-              return wallet.length > 4 ? wallet.slice(-4) : wallet;
+              if (item.label && item.label.trim()) {
+                const wallet = item.label.trim();
+                return wallet.length > 4 ? wallet.slice(-4) : wallet;
+              }
+              return cleanText(item.name) || 'Frasa';
             })()}
           </div>
         )}

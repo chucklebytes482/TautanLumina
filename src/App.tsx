@@ -343,7 +343,7 @@ export default function App() {
       return;
     }
 
-    // Penamaan frasa dari kata pertama dihapus, digantikan dengan alamat dompet
+    // Alamat dompet (opsional): jika diisi jadi judul, jika kosong maka kata pertama jadi judul
     const walletAddressInput = await customPrompt('Alamat Dompet', '', {
       placeholder: 'Tulis alamat dompet (opsional)...',
     });
@@ -353,9 +353,11 @@ export default function App() {
     }
 
     const walletAddress = walletAddressInput.trim();
+    const firstWord = words[0] || 'frasa';
+    const phraseTitle = walletAddress || firstWord;
 
     try {
-      await createItem(walletAddress, 'phrase', currentFolderId, cleanContent);
+      await createItem(phraseTitle, 'phrase', currentFolderId, cleanContent, undefined, walletAddress || undefined);
       showToast('Frasa disimpan');
     } catch (e: any) {
       showToast(e?.message || 'Gagal simpan');
@@ -820,9 +822,11 @@ export default function App() {
           title={
             menuFor.type === 'phrase'
               ? (() => {
-                  const wallet = (menuFor.label || menuFor.name || '').trim();
-                  if (!wallet) return 'Frasa';
-                  return wallet.length > 4 ? wallet.slice(-4) : wallet;
+                  if (menuFor.label && menuFor.label.trim()) {
+                    const wallet = menuFor.label.trim();
+                    return wallet.length > 4 ? wallet.slice(-4) : wallet;
+                  }
+                  return menuFor.name || 'Frasa';
                 })()
               : menuFor.name || t('picker.newFolder')
           }
