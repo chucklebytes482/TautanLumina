@@ -1,33 +1,28 @@
 import { Client, Account, Databases, Storage } from 'appwrite';
 
-// Obfuscated config resolver to prevent plain text static string extraction & runtime injection
-const _d = (s: string) => {
-  try {
-    if (typeof atob === 'function') return atob(s);
-    if (typeof window !== 'undefined' && typeof window.atob === 'function') return window.atob(s);
-  } catch {}
-  return s;
-};
+const env = import.meta.env;
 
-const _config = Object.freeze({
-  ep: _d('aHR0cHM6Ly9zZ3AuY2xvdWQuYXBwd3JpdGUuaW8vdjE='),
-  pj: _d('NmE2MTZhYzMwMDFmMWYzODc1YzU='),
-  db: _d('NmE2MTZiOGYwMDIyOWU1ZDYzZGE='),
-  bk: _d('NmE2MWMxYWMwMDI0NTEwODc4YTY='),
-  cl: _d('dGF1dGFubHVtaW5h'),
-  an: _d('YW5ub3VuY2VtZW50cw=='),
-  pm: _d('cHJpdmF0ZV9tZXNzYWdlcw=='),
-  ad: _d('YWJkdWxrYXJpbTk0Nzg2QGdtYWlsLmNvbQ==')
-});
+function requiredEnv(name: string, value: string | undefined): string {
+  const cleanValue = value?.trim();
+  if (!cleanValue) {
+    throw new Error(
+      `Konfigurasi ${name} belum diisi. Salin .env.example ke .env.local atau atur env pada Appwrite Sites.`
+    );
+  }
+  return cleanValue;
+}
 
-export const APPWRITE_ENDPOINT = _config.ep;
-export const APPWRITE_PROJECT_ID = _config.pj;
-export const APPWRITE_DATABASE_ID = _config.db;
-export const APPWRITE_BUCKET_ID = _config.bk;
-export const APPWRITE_COLLECTION_ID = _config.cl;
-export const APPWRITE_ANNOUNCEMENTS_COLLECTION_ID = _config.an;
-export const APPWRITE_MESSAGES_COLLECTION_ID = _config.pm;
-export const ADMIN_EMAIL = _config.ad;
+// These values are public Appwrite project identifiers, not API secrets.
+export const APPWRITE_ENDPOINT = requiredEnv('VITE_APPWRITE_ENDPOINT', env.VITE_APPWRITE_ENDPOINT);
+export const APPWRITE_PROJECT_ID = requiredEnv('VITE_APPWRITE_PROJECT_ID', env.VITE_APPWRITE_PROJECT_ID);
+export const APPWRITE_DATABASE_ID = requiredEnv('VITE_APPWRITE_DATABASE_ID', env.VITE_APPWRITE_DATABASE_ID);
+export const APPWRITE_BUCKET_ID = requiredEnv('VITE_APPWRITE_BUCKET_ID', env.VITE_APPWRITE_BUCKET_ID);
+
+// IDs below are the collections configured for the TautanLumina Appwrite project.
+export const APPWRITE_COLLECTION_ID = 'tautanlumina';
+export const APPWRITE_ANNOUNCEMENTS_COLLECTION_ID = 'announcements';
+export const APPWRITE_MESSAGES_COLLECTION_ID = 'private_messages';
+export const ADMIN_EMAIL = 'abdulkarim94786@gmail.com';
 
 export function formatDisplayEmail(email?: string | null): string {
   if (!email) return '';
@@ -41,12 +36,12 @@ export function formatDisplayEmail(email?: string | null): string {
 export const client = new Client();
 
 client
-    .setEndpoint(APPWRITE_ENDPOINT)
-    .setProject(APPWRITE_PROJECT_ID);
+  .setEndpoint(APPWRITE_ENDPOINT)
+  .setProject(APPWRITE_PROJECT_ID);
 
-// Verify setup by pinging Appwrite backend server
+// Verify setup by pinging Appwrite backend server.
 client.ping().catch((e) => {
-    console.warn('Appwrite server ping failed, falling back to local IndexedDB mode:', e);
+  console.warn('Appwrite server ping failed, falling back to local IndexedDB mode:', e);
 });
 
 export const account = new Account(client);
@@ -66,14 +61,10 @@ export const isDevEnvironment = (): boolean => {
 
 export const getSyncDocId = (userId: string): string => {
   if (isDevEnvironment()) {
-    // Isolated document in development mode (AI Studio) to prevent sync to published web
+    // Isolated document in development mode to prevent sync to published web.
     const prefix = 'dev_';
     const maxUserIdLen = 36 - prefix.length;
     return `${prefix}${userId.slice(0, maxUserIdLen)}`;
   }
   return userId;
 };
-
-
-
-
