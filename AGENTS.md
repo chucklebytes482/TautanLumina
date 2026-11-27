@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Panduan umum (berlaku untuk semua repo) ada di root repo `encrypt`: https://github.com/chucklebytes482/encrypt
+Panduan umum (berlaku untuk semua repo) ada di root repo `plan`: https://github.com/chucklebytes482/plan
 
 Baca `00-prinsip-kerja-ai.md`. Ini berlaku untuk repo ini.
 
